@@ -33,27 +33,39 @@ public class MainActivity extends AppCompatActivity {
   public static final String FILE_INPUT_AVC = "/sdcard/Download/TestAVC.mp4";
   public static final String FILE_INPUT_AAC = "/sdcard/Download/TestAAC.aac";
   public static final String FILE_INPUT_RAW = "/sdcard/Download/TestRAW.mp4";
+  public static final String FILE_INPUT_WAV = "/sdcard/Download/TestWAV.wav";
   public static final String FILE_OUTPUT_RAW = "/sdcard/Download/TestRAW.mp4";
   public static final String FILE_OUTPUT_AAC = "/sdcard/Download/TestAAC.aac";
   public static final String FILE_OUTPUT_AVC = "/sdcard/Download/tmp2AVC.mp4";
   public static final String FILE_OUTPUT_MP4 = "/sdcard/Download/Test.mp4";
+  public static final String FILE_OUTPUT_WAV = "/sdcard/Download/TestWAV.wav";
+  public static final String FILE_OUTPUT_PCM = "/sdcard/Download/audioRaw.pcm";
 
   // Storage Permissions
   private static final int REQUEST_EXTERNAL_STORAGE = 1;
   private static String[] PERMISSIONS_STORAGE = {
     Manifest.permission.READ_EXTERNAL_STORAGE,
-    Manifest.permission.WRITE_EXTERNAL_STORAGE
+    Manifest.permission.WRITE_EXTERNAL_STORAGE,
+    Manifest.permission.RECORD_AUDIO
   };
+
+  // MainComponent
+  Extractor extractor;
+  Muxer muxer;
+  AudioRecorder audioRecorder;
+
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_main);
 
-    initView();
-
     verifyStoragePermissions(this);
 
+    initView();
+
+    initComponent();
+    testComponent();
 
   }
 
@@ -67,15 +79,11 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onClick(View view) {
 
-          // Test all the action here at FAB
-          new Extractor().extractVideoFile(FILE_INPUT_MP4);
-
-          try {
-            Log.d(TAG, "-------------- test Extractor / Muxer -----------------");
-            new Muxer().cloneMediaUsingMuxer(FILE_INPUT_MP4, FILE_OUTPUT_MP4, 180);
-          } catch(IOException e) {
-            e.printStackTrace();
-          }
+          // --- AudioRecord ---
+          if (audioRecorder.isRecording())
+            audioRecorder.stopRecroding();
+          else
+            audioRecorder.startRecroding();
 
           Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
             .setAction("Action", null).show();
@@ -84,6 +92,28 @@ public class MainActivity extends AppCompatActivity {
     }
   }
 
+  private void initComponent() {
+    // init main component
+    extractor = new Extractor();
+    muxer = new Muxer();
+    audioRecorder = new AudioRecorder(FILE_OUTPUT_PCM);
+  }
+
+  private void testComponent() {
+    // ----- test all the component here -----
+
+    // --- Extractor ---
+    //extractor.extractVideoFile(FILE_INPUT_MP4);
+
+    // --- Extractor -> Muxer ---
+    try {
+      Log.d(TAG, "-------------- test Extractor / Muxer -----------------");
+      muxer.cloneMediaUsingMuxer(FILE_INPUT_MP4, FILE_OUTPUT_MP4, 180);
+    } catch(IOException e) {
+      e.printStackTrace();
+    }
+
+  }
   /**
    * Checks if the app has permission to write to device storage
    *

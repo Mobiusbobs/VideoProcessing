@@ -71,9 +71,7 @@ public class Muxer {
         bufferInfo.flags = extractor.getSampleFlags();
         int trackIndex = extractor.getSampleTrackIndex();
 
-        // TODO tmp remove add video track to muxer to see if i can produce an audio track
-        if ()
-          muxer.writeSampleData(indexMap.get(trackIndex), dstBuf, bufferInfo);
+        muxer.writeSampleData(indexMap.get(trackIndex), dstBuf, bufferInfo);
         extractor.advance();
         frameCount++;
         if (VERBOSE) {
