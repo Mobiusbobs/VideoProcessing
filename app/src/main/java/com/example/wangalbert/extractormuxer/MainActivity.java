@@ -29,7 +29,7 @@ public class MainActivity extends AppCompatActivity {
   public static final String FILE_OUTPUT_RAW = "/sdcard/Download/TestRAW.mp4";
   public static final String FILE_OUTPUT_AAC = "/sdcard/Download/TestAAC.aac";
   public static final String FILE_OUTPUT_AVC = "/sdcard/Download/tmp2AVC.mp4";
-  public static final String FILE_OUTPUT_MP4 = "/sdcard/Download/TestCodec.mp4";
+  public static final String FILE_OUTPUT_MP4 = "/sdcard/Download/TestCodec3.mp4";
   public static final String FILE_OUTPUT_WAV = "/sdcard/Download/TestWAV.wav";
   public static final String FILE_OUTPUT_PCM = "/sdcard/Download/audioRaw.pcm";
 
@@ -90,7 +90,7 @@ public class MainActivity extends AppCompatActivity {
 
   private void runExtractDecodeEditEncodeMux() {
     try {
-      CodecManager.ExtractDecodeEditEncodeMuxWrapper.run(new CodecManager(this), FILE_OUTPUT_MP4, R.raw.front);
+      CodecManager.ExtractDecodeEditEncodeMuxWrapper.run(new CodecManager(this), FILE_OUTPUT_MP4, R.raw.test2);
     } catch (Throwable throwable) {
       throwable.printStackTrace();
     }

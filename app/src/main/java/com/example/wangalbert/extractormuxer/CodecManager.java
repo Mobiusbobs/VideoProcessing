@@ -39,24 +39,24 @@ public class CodecManager {
 
   // parameters for the video encoder
   private static final String OUTPUT_VIDEO_MIME_TYPE = "video/avc"; // H.264 Advanced Video Coding
-  private static final int OUTPUT_VIDEO_BIT_RATE = 6000000; // 2Mbps
-  private static final int OUTPUT_VIDEO_FRAME_RATE = 30; // 15fps
+  private static final int OUTPUT_VIDEO_BIT_RATE = 6000000; // 2Mbps      //TODO
+  private static final int OUTPUT_VIDEO_FRAME_RATE = 60; // 15fps         //TODO
   private static final int OUTPUT_VIDEO_IFRAME_INTERVAL = 10; // 10 seconds between I-frames    // TODO what is this for
   private static final int OUTPUT_VIDEO_COLOR_FORMAT =
     MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface;
 
   // parameters for the audio encoder
   private static final String OUTPUT_AUDIO_MIME_TYPE = "audio/mp4a-latm"; // Advanced Audio Coding
-  private static final int OUTPUT_AUDIO_CHANNEL_COUNT = 2; // Must match the input stream.
-  private static final int OUTPUT_AUDIO_BIT_RATE = 128 * 1024;
+  private static final int OUTPUT_AUDIO_CHANNEL_COUNT = 1;  //2; // Must match the input stream.
+  private static final int OUTPUT_AUDIO_BIT_RATE = 128 * 1024;      // TODO what is this
   private static final int OUTPUT_AUDIO_AAC_PROFILE =
     MediaCodecInfo.CodecProfileLevel.AACObjectHE;   //AACObjectHE
-  private static final int OUTPUT_AUDIO_SAMPLE_RATE_HZ = 44100; // Must match the input stream.
+  private static final int OUTPUT_AUDIO_SAMPLE_RATE_HZ = 48000; //44100; // Must match the input stream.  //TODO
 
   /** Width of the output frames. */
-  private int mWidth = 1080;  // TODO currently this is hardcode
+  private int mWidth = 480;  // TODO currently this is hardcode
   /** Height of the output frames. */
-  private int mHeight = 1920; // TODO currently this is hardcode
+  private int mHeight = 720; // TODO currently this is hardcode
 
   /**
    * Used for editing the frames.
@@ -145,7 +145,7 @@ public class CodecManager {
     outputAudioFormat.setInteger(MediaFormat.KEY_BIT_RATE, OUTPUT_AUDIO_BIT_RATE);
     outputAudioFormat.setInteger(MediaFormat.KEY_AAC_PROFILE, OUTPUT_AUDIO_AAC_PROFILE);
     // http://stackoverflow.com/questions/21284874/illegal-state-exception-when-calling-mediacodec-configure
-    outputAudioFormat.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, 0);
+    //outputAudioFormat.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, 0);
 
     // Create a MediaCodec for the desired codec, then configure it as an encoder with
     // our desired properties. Request a Surface to use for input.
@@ -184,8 +184,8 @@ public class CodecManager {
   ) {
     // video buffer
     ByteBuffer[] videoDecoderInputBuffers = videoDecoder.getInputBuffers();
-    ByteBuffer[] videoDecoderOutputBuffers = videoDecoder.getOutputBuffers();;
-    ByteBuffer[] videoEncoderOutputBuffers = videoEncoder.getOutputBuffers();;
+    ByteBuffer[] videoDecoderOutputBuffers = videoDecoder.getOutputBuffers();
+    ByteBuffer[] videoEncoderOutputBuffers = videoEncoder.getOutputBuffers();
     MediaCodec.BufferInfo videoDecoderOutputBufferInfo = new MediaCodec.BufferInfo();
     MediaCodec.BufferInfo videoEncoderOutputBufferInfo = new MediaCodec.BufferInfo();
 
@@ -230,7 +230,7 @@ public class CodecManager {
     int audioDecodedFrameCount = 0;
     int audioEncodedFrameCount = 0;
 
-    while(!videoEncoderDone) {  // || !audioEncoderDone) {
+    while(!videoEncoderDone || !audioEncoderDone) {
 
       // --- extract video from extractor ---
       while(!videoExtractorDone && (encoderOutputVideoFormat == null || muxing)) {
@@ -269,7 +269,6 @@ public class CodecManager {
       }
 
       // --- extract audio from extractor ---
-      /*
       while(!audioExtractorDone && (encoderOutputAudioFormat == null || muxing)) {
         // 1.) get the index of next buffer to be filled
         int decoderInputBufferIndex = audioDecoder.dequeueInputBuffer(TIMEOUT_USEC);
@@ -294,7 +293,7 @@ public class CodecManager {
         audioExtractorDone = !audioExtractor.advance();
         if (audioExtractorDone) {
           Log.d(TAG, "FLAG: audioExtractorDone!!!");
-          videoDecoder.queueInputBuffer(
+          audioDecoder.queueInputBuffer(
             decoderInputBufferIndex,
             0,
             0,
@@ -304,7 +303,7 @@ public class CodecManager {
         audioExtractedFrameCount++;
         break;
       }
-      */
+
 
       // pull output frames from video decoder and feed it to encoder
       // TODO here is where we can add sticker
@@ -360,7 +359,6 @@ public class CodecManager {
       }
 
       // poll output frames from audio decoder
-      /*
       while (!audioDecoderDone && pendingAudioDecoderOutputBufferIndex == -1) {
         int decoderOutputBufferIndex = audioDecoder.dequeueOutputBuffer(
           audioDecoderOutputBufferInfo, TIMEOUT_USEC);
@@ -390,7 +388,6 @@ public class CodecManager {
 
         pendingAudioDecoderOutputBufferIndex = decoderOutputBufferIndex;
         audioDecodedFrameCount++;
-        //Log.d(TAG, "TEST: audio Frame count ++");
         // We extracted a pending frame, let's try something else next.
         break;
       }
@@ -414,18 +411,14 @@ public class CodecManager {
             audioDecoderOutputBuffers[pendingAudioDecoderOutputBufferIndex].duplicate();
           decoderOutputBuffer.position(audioDecoderOutputBufferInfo.offset);
           decoderOutputBuffer.limit(audioDecoderOutputBufferInfo.offset + size);
-          //Log.d(TAG, "decoderOutputBuffer = " + decoderOutputBuffer.toString());
           encoderInputBuffer.position(0);
           encoderInputBuffer.put(decoderOutputBuffer);
-          //Log.d(TAG, "encoderInputBuffer = " + encoderInputBuffer.toString());
-          //Log.d(TAG, "encoderInputBufferIndex = " + encoderInputBufferIndex);
           audioEncoder.queueInputBuffer(
             encoderInputBufferIndex,
             0,
             size,
             presentationTime,
             audioDecoderOutputBufferInfo.flags);
-          //Log.d(TAG, "audioEncoder.queueInputBuffer... ... ...");
         }
         audioDecoder.releaseOutputBuffer(pendingAudioDecoderOutputBufferIndex, false);
         pendingAudioDecoderOutputBufferIndex = -1;
@@ -435,7 +428,7 @@ public class CodecManager {
         }
         break;
       }
-      */
+
 
       // Poll frames from the video encoder and send them to the muxer.
       while (!videoEncoderDone && (encoderOutputVideoFormat == null || muxing)) {
@@ -482,7 +475,7 @@ public class CodecManager {
         break;
       }
 
-      /*
+
       // Poll frames from the audio encoder and send them to the muxer.
       while (!audioEncoderDone && (encoderOutputAudioFormat == null || muxing)) {
         int encoderOutputBufferIndex = audioEncoder.dequeueOutputBuffer(
@@ -527,18 +520,18 @@ public class CodecManager {
         audioEncodedFrameCount++;
         break;
       }
-      */
+
 
       if (!muxing &&
-          //(encoderOutputAudioFormat != null) &&
+          (encoderOutputAudioFormat != null) &&
           (encoderOutputVideoFormat != null)
       ) {
 
         Log.d(TAG, "muxer: adding video track.");
         outputVideoTrack = muxer.addTrack(encoderOutputVideoFormat);
 
-        //Log.d(TAG, "muxer: adding audio track.");
-        //outputAudioTrack = muxer.addTrack(encoderOutputAudioFormat);
+        Log.d(TAG, "muxer: adding audio track.");
+        outputAudioTrack = muxer.addTrack(encoderOutputAudioFormat);
 
         Log.d(TAG, "muxer: starting");
         muxer.start();
