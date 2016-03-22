@@ -346,7 +346,9 @@ public class CodecManager {
         if (render) {
           outputSurface.awaitNewImage();
           // Edit the frame and send it to the encoder.
+
           outputSurface.drawImage();
+          // TODO setup blending
           stickerDrawer.draw();
 
           inputSurface.setPresentationTime(videoDecoderOutputBufferInfo.presentationTimeUs * 1000);

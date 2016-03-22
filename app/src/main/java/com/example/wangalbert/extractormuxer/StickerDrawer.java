@@ -56,7 +56,6 @@ public class StickerDrawer {
     final String vertexShader =
             "uniform mat4 u_MVPMatrix;      \n"     // A constant representing the combined model/view/projection matrix.
                     + "attribute vec4 a_Position;     \n"     // Per-vertex position information we will pass in.
-                    + "attribute vec4 a_Color;        \n"     // Per-vertex color information we will pass in.
                     + "attribute vec2 a_TexCoordinate; \n"
 
                     + "varying vec2 v_TexCoordinate;  \n"
