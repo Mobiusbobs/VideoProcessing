@@ -29,7 +29,7 @@ public class Muxer {
   {
 
     // Set up MediaExtractor to read from the source.
-    MediaExtractor extractor = new Extractor().getExtractor(filePath);
+    MediaExtractor extractor = new Extractor().createExtractor(filePath);
     int trackCount = extractor.getTrackCount();
 
     // Set up MediaMuxer for the destination.
@@ -86,5 +86,12 @@ public class Muxer {
     muxer.stop();
     muxer.release();
     return;
+  }
+
+  public static void release(MediaMuxer muxer) {
+    if (muxer != null) {
+      muxer.stop();
+      muxer.release();
+    }
   }
 }

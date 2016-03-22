@@ -2,29 +2,21 @@ package com.example.wangalbert.extractormuxer;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.Context;
 import android.content.pm.PackageManager;
-import android.media.MediaExtractor;
-import android.media.MediaFormat;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
 import android.view.View;
-import android.view.Menu;
-import android.view.MenuItem;
 
-import java.io.File;
-import java.io.FileDescriptor;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
-
+/*
+ * Sample:
+ * https://android.googlesource.com/platform/cts/+/jb-mr2-release/tests/tests/media/src/android/media/cts/ExtractDecodeEditEncodeMuxTest.java
+ *
+ */
 public class MainActivity extends AppCompatActivity {
   private static final String TAG = "TEST";
 
@@ -37,7 +29,7 @@ public class MainActivity extends AppCompatActivity {
   public static final String FILE_OUTPUT_RAW = "/sdcard/Download/TestRAW.mp4";
   public static final String FILE_OUTPUT_AAC = "/sdcard/Download/TestAAC.aac";
   public static final String FILE_OUTPUT_AVC = "/sdcard/Download/tmp2AVC.mp4";
-  public static final String FILE_OUTPUT_MP4 = "/sdcard/Download/Test.mp4";
+  public static final String FILE_OUTPUT_MP4 = "/sdcard/Download/TestCodec.mp4";
   public static final String FILE_OUTPUT_WAV = "/sdcard/Download/TestWAV.wav";
   public static final String FILE_OUTPUT_PCM = "/sdcard/Download/audioRaw.pcm";
 
@@ -79,14 +71,14 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onClick(View view) {
 
-          // --- AudioRecord ---
-          if (audioRecorder.isRecording())
-            audioRecorder.stopRecroding();
-          else
-            audioRecorder.startRecroding();
+        // --- AudioRecord ---
+        if (audioRecorder.isRecording())
+          audioRecorder.stopRecroding();
+        else
+          audioRecorder.startRecroding();
 
-          Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-            .setAction("Action", null).show();
+        Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
+          .setAction("Action", null).show();
         }
       });
     }
@@ -101,19 +93,32 @@ public class MainActivity extends AppCompatActivity {
 
   private void testComponent() {
     // ----- test all the component here -----
+    try {
+      CodecManager.TestWrapper.runTest(new CodecManager(this));
+    } catch (Throwable throwable) {
+      throwable.printStackTrace();
+    }
 
     // --- Extractor ---
     //extractor.extractVideoFile(FILE_INPUT_MP4);
 
     // --- Extractor -> Muxer ---
+    /*
     try {
       Log.d(TAG, "-------------- test Extractor / Muxer -----------------");
       muxer.cloneMediaUsingMuxer(FILE_INPUT_MP4, FILE_OUTPUT_MP4, 180);
     } catch(IOException e) {
       e.printStackTrace();
     }
+    */
+
+    // --- Extractor -> MediaCodec(decode) -> MediaCodec(encode) -> Muxer ---
+
 
   }
+
+
+
   /**
    * Checks if the app has permission to write to device storage
    *

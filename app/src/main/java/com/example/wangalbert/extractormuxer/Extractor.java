@@ -1,5 +1,7 @@
 package com.example.wangalbert.extractormuxer;
 
+import android.content.Context;
+import android.content.res.AssetFileDescriptor;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
 import android.util.Log;
@@ -25,7 +27,7 @@ public class Extractor {
 
   }
 
-  public MediaExtractor getExtractor(String filePath) {
+  public MediaExtractor createExtractor(String filePath) {
     MediaExtractor extractor = new MediaExtractor();
 
     // set dataSource for extractor
@@ -40,9 +42,19 @@ public class Extractor {
     return extractor;
   }
 
+  public static MediaExtractor createExtractor(Context context, int rawResId) throws IOException {
+    AssetFileDescriptor srcFd = context.getResources().openRawResourceFd(rawResId);
+    MediaExtractor extractor = new MediaExtractor();
+    extractor.setDataSource(srcFd.getFileDescriptor(), srcFd.getStartOffset(),
+      srcFd.getLength());
+    return extractor;
+  }
+
+
   // MediaExtractor
+  // TODO update this..?
   public void extractVideoFile(String filePath) {
-    MediaExtractor extractor = getExtractor(filePath);
+    MediaExtractor extractor = createExtractor(filePath);
 
     int videoTrack = -1;
     int audioTrack = -1;
@@ -135,8 +147,31 @@ public class Extractor {
   private static boolean isAudioFormat(MediaFormat format) {
     return getMimeTypeFor(format).startsWith("audio/");
   }
-  private static String getMimeTypeFor(MediaFormat format) {
+  public static String getMimeTypeFor(MediaFormat format) {
     return format.getString(MediaFormat.KEY_MIME);
+  }
+
+
+  public static int getAndSelectVideoTrackIndex(MediaExtractor extractor) {
+    for (int index = 0; index < extractor.getTrackCount(); ++index) {
+      if (isVideoFormat(extractor.getTrackFormat(index))) {
+        extractor.selectTrack(index);
+        Log.d(TAG, "Select Video Track index: " + index);
+        return index;
+      }
+    }
+    return -1;
+  }
+
+  public static int getAndSelectAudioTrackIndex(MediaExtractor extractor) {
+    for (int index = 0; index < extractor.getTrackCount(); ++index) {
+      if (isAudioFormat(extractor.getTrackFormat(index))) {
+        extractor.selectTrack(index);
+        Log.d(TAG, "Select Audio Track index: " + index);
+        return index;
+      }
+    }
+    return -1;
   }
 
   // ----- FOR TESTING -----
