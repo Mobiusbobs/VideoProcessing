@@ -56,8 +56,8 @@ public class MainActivity extends AppCompatActivity {
 
     initView();
 
-    initComponent();
-    testComponent();
+    //initComponent();  // not used for now
+    //testComponent();
 
   }
 
@@ -71,16 +71,28 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onClick(View view) {
 
-        // --- AudioRecord ---
-        if (audioRecorder.isRecording())
-          audioRecorder.stopRecroding();
-        else
-          audioRecorder.startRecroding();
+          runExtractDecodeEditEncodeMux();
 
-        Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-          .setAction("Action", null).show();
+          Snackbar.make(view, "Do Extract decode edit encode Mux action", Snackbar.LENGTH_LONG)
+            .setAction("Action", null).show();
+
+          // --- AudioRecord ---
+          /*
+          if (audioRecorder.isRecording())
+            audioRecorder.stopRecroding();
+          else
+            audioRecorder.startRecroding();
+          */
         }
       });
+    }
+  }
+
+  private void runExtractDecodeEditEncodeMux() {
+    try {
+      CodecManager.ExtractDecodeEditEncodeMuxWrapper.run(new CodecManager(this), FILE_OUTPUT_MP4, R.raw.front);
+    } catch (Throwable throwable) {
+      throwable.printStackTrace();
     }
   }
 
@@ -93,12 +105,6 @@ public class MainActivity extends AppCompatActivity {
 
   private void testComponent() {
     // ----- test all the component here -----
-    try {
-      CodecManager.TestWrapper.runTest(new CodecManager(this));
-    } catch (Throwable throwable) {
-      throwable.printStackTrace();
-    }
-
     // --- Extractor ---
     //extractor.extractVideoFile(FILE_INPUT_MP4);
 
@@ -113,11 +119,7 @@ public class MainActivity extends AppCompatActivity {
     */
 
     // --- Extractor -> MediaCodec(decode) -> MediaCodec(encode) -> Muxer ---
-
-
   }
-
-
 
   /**
    * Checks if the app has permission to write to device storage

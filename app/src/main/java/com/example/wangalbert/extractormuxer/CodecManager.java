@@ -22,6 +22,8 @@ import java.util.concurrent.atomic.AtomicReference;
  * android
  * <p>
  *   Test the different usage of MediaCodec(encoder/decoder)/MediaExtractor/MediaMuxer
+ *   This is based on example from
+ *   https://android.googlesource.com/platform/cts/+/jb-mr2-release/tests/tests/media/src/android/media/cts/ExtractDecodeEditEncodeMuxTest.java
  * </p>
  * Created by wangalbert on 3/21/16.
  * Copyright (c) 2016 MobiusBobs Inc. All rights reserved.
@@ -48,13 +50,26 @@ public class CodecManager {
   private static final int OUTPUT_AUDIO_CHANNEL_COUNT = 2; // Must match the input stream.
   private static final int OUTPUT_AUDIO_BIT_RATE = 128 * 1024;
   private static final int OUTPUT_AUDIO_AAC_PROFILE =
-    MediaCodecInfo.CodecProfileLevel.AACObjectHE;
+    MediaCodecInfo.CodecProfileLevel.AACObjectHE;   //AACObjectHE
   private static final int OUTPUT_AUDIO_SAMPLE_RATE_HZ = 44100; // Must match the input stream.
 
   /** Width of the output frames. */
   private int mWidth = 1080;  // TODO currently this is hardcode
   /** Height of the output frames. */
   private int mHeight = 1920; // TODO currently this is hardcode
+
+  /**
+   * Used for editing the frames.
+   * <p>Swaps green and blue channels by storing an RBGA color in an RGBA buffer.
+   */
+  private static final String FRAGMENT_SHADER =
+    "#extension GL_OES_EGL_image_external : require\n" +
+      "precision mediump float;\n" +
+      "varying vec2 vTextureCoord;\n" +
+      "uniform samplerExternalOES sTexture;\n" +
+      "void main() {\n" +
+      "  gl_FragColor = texture2D(sTexture, vTextureCoord).rbga;\n" +
+      "}\n";
 
   private Context context;
 
@@ -63,28 +78,21 @@ public class CodecManager {
     this.context = context;
   }
 
-  //
   public void extractDecodeEditEncodeMux(String outputPath, int inputRawFileId) throws Exception {
-    Exception exception = null;
+    MediaExtractor videoExtractor;
+    MediaExtractor audioExtractor;
 
-    // TODO: one extractor should be enough
-    MediaExtractor videoExtractor = null;
-    MediaExtractor audioExtractor = null;
-    //MediaExtractor mediaExtractor = null;
+    MediaCodec videoDecoder;
+    MediaCodec audioDecoder;
+    MediaCodec videoEncoder;
+    MediaCodec audioEncoder;
+    MediaMuxer muxer;
 
-    MediaCodec videoDecoder = null;
-    MediaCodec audioDecoder = null;
-    MediaCodec videoEncoder = null;
-    MediaCodec audioEncoder = null;
-    MediaMuxer muxer = null;
-
-    OutputSurface outputSurface = null; // output for decoder
-    InputSurface inputSurface = null;   // input for encoder
+    OutputSurface outputSurface;  // output for decoder
+    InputSurface inputSurface;    // input for encoder
 
     MediaCodecInfo videoCodecInfo = selectCodec(OUTPUT_VIDEO_MIME_TYPE);  // for video encoder
     MediaCodecInfo audioCodecInfo = selectCodec(OUTPUT_AUDIO_MIME_TYPE);  // for audio encoder
-
-    // --- init media component ---
 
     // --- extractor ---
     videoExtractor = Extractor.createExtractor(context, inputRawFileId);
@@ -97,9 +105,13 @@ public class CodecManager {
     MediaFormat inputAudioFormat = audioExtractor.getTrackFormat(audioTrackIndex);
 
     // TODO delete log input format
-    Log.d(TAG, "MediaFormat = " + inputVideoFormat.toString());
+    Log.d(TAG, "MediaFormat: VIDEO = " + inputVideoFormat.toString());
     String mime = inputVideoFormat.getString(MediaFormat.KEY_MIME);
     Log.d(TAG, "extractVideoFile: mime = " + mime);
+
+    Log.d(TAG, "MediaFormat: AUDIO = " + inputAudioFormat.toString());
+    String mime2 = inputAudioFormat.getString(MediaFormat.KEY_MIME);
+    Log.d(TAG, "extractAudioFile: mime = " + mime);
 
     // ----- mediacodec -----
     // --- video encoder ---
@@ -112,6 +124,7 @@ public class CodecManager {
     outputVideoFormat.setInteger(MediaFormat.KEY_FRAME_RATE, OUTPUT_VIDEO_FRAME_RATE);
     outputVideoFormat.setInteger(
       MediaFormat.KEY_I_FRAME_INTERVAL, OUTPUT_VIDEO_IFRAME_INTERVAL);
+    outputVideoFormat.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, 0);
 
     // Create a MediaCodec for the desired codec, then configure it as an encoder with
     // our desired properties. Request a Surface to use for input.
@@ -122,16 +135,17 @@ public class CodecManager {
 
     // --- video decoder ---
     outputSurface = new OutputSurface();
-    //outputSurface.changeFragmentShader(FRAGMENT_SHADER);  // TODO change shader for edit the video
+    outputSurface.changeFragmentShader(FRAGMENT_SHADER);  // TODO change shader for edit the video
     videoDecoder = createVideoDecoder(inputVideoFormat, outputSurface.getSurface());
 
-    // --- audio ---
+    // --- audio encoder / decoder ---
     MediaFormat outputAudioFormat =
       MediaFormat.createAudioFormat(
         OUTPUT_AUDIO_MIME_TYPE, OUTPUT_AUDIO_SAMPLE_RATE_HZ, OUTPUT_AUDIO_CHANNEL_COUNT);
-
     outputAudioFormat.setInteger(MediaFormat.KEY_BIT_RATE, OUTPUT_AUDIO_BIT_RATE);
     outputAudioFormat.setInteger(MediaFormat.KEY_AAC_PROFILE, OUTPUT_AUDIO_AAC_PROFILE);
+    // http://stackoverflow.com/questions/21284874/illegal-state-exception-when-calling-mediacodec-configure
+    outputAudioFormat.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, 0);
 
     // Create a MediaCodec for the desired codec, then configure it as an encoder with
     // our desired properties. Request a Surface to use for input.
@@ -142,13 +156,8 @@ public class CodecManager {
 
     // --- muxer ---
     muxer = new MediaMuxer(outputPath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
-    //int muxerAudioTrackIndex = muxer.addTrack(inputAudioFormat);
-    //int muxerVideoTrackIndex = muxer.addTrack(inputVideoFormat);
-    //muxer.start();
-    //muxer.writeSampleData(currentTrackIndex, inputBuffer, bufferInfo);
-    //Muxer.release(muxer);
 
-    // --- test ---
+    // --- do the actual extract decode edit encode mux ---
     doExtractDecodeEncodeMux(
       videoExtractor,
       audioExtractor,
@@ -172,8 +181,6 @@ public class CodecManager {
     MediaMuxer muxer,
     InputSurface inputSurface,
     OutputSurface outputSurface
-    //int muxerAudioTrackIndex,
-    //int muxerVideoTrackIndex
   ) {
     // video buffer
     ByteBuffer[] videoDecoderInputBuffers = videoDecoder.getInputBuffers();
@@ -183,26 +190,24 @@ public class CodecManager {
     MediaCodec.BufferInfo videoEncoderOutputBufferInfo = new MediaCodec.BufferInfo();
 
     // audio buffer
-    /*
     ByteBuffer[] audioDecoderInputBuffers = audioDecoder.getInputBuffers();
     ByteBuffer[] audioDecoderOutputBuffers = audioDecoder.getOutputBuffers();
     ByteBuffer[] audioEncoderInputBuffers = audioEncoder.getInputBuffers();
     ByteBuffer[] audioEncoderOutputBuffers = audioEncoder.getOutputBuffers();
     MediaCodec.BufferInfo audioDecoderOutputBufferInfo = new MediaCodec.BufferInfo();
     MediaCodec.BufferInfo audioEncoderOutputBufferInfo = new MediaCodec.BufferInfo();
-    */
 
     // We will get these from the decoders when notified of a format change.
     MediaFormat decoderOutputVideoFormat = null;
-    //MediaFormat decoderOutputAudioFormat = null;
+    MediaFormat decoderOutputAudioFormat = null;
 
     // We will get these from the encoders when notified of a format change.
     MediaFormat encoderOutputVideoFormat = null;
-    //MediaFormat encoderOutputAudioFormat = null;
+    MediaFormat encoderOutputAudioFormat = null;
 
     // We will determine these once we have the output format.
-    int outputVideoTrack = -1; //-1;  // TODO update this later
-    //int outputAudioTrack = -1; //-1;  // TODO update this later
+    int outputVideoTrack = -1;
+    int outputAudioTrack = -1;
 
     // Whether things are done on the video side.
     boolean videoExtractorDone = false;
@@ -225,20 +230,9 @@ public class CodecManager {
     int audioDecodedFrameCount = 0;
     int audioEncodedFrameCount = 0;
 
-    long counter = 0;
-    while(!videoEncoderDone) {// || !audioEncoderDone) {
-      if(counter%50000 == 0 ) {
-        Log.d(TAG, "counter = " + counter);
-        Log.d(TAG, "videoExtractorDone=" + videoExtractorDone +
-                   ", videoDecoderDone=" + videoDecoderDone +
-                   ", videoEncoderDone=" + videoEncoderDone +
-                   ", muxing=" + muxing +
-                   ", encoderOutputVideoFormat==null = " + (encoderOutputVideoFormat==null));
-      }
-      counter++;
-      // TODO add action here
+    while(!videoEncoderDone) {  // || !audioEncoderDone) {
 
-      // --- extract audio/video from extractor ---
+      // --- extract video from extractor ---
       while(!videoExtractorDone && (encoderOutputVideoFormat == null || muxing)) {
         // 1.) get the index of next buffer to be filled
         int decoderInputBufferIndex = videoDecoder.dequeueInputBuffer(TIMEOUT_USEC);
@@ -274,8 +268,9 @@ public class CodecManager {
         break;
       }
 
+      // --- extract audio from extractor ---
       /*
-      while(!audioExtractorDone) {
+      while(!audioExtractorDone && (encoderOutputAudioFormat == null || muxing)) {
         // 1.) get the index of next buffer to be filled
         int decoderInputBufferIndex = audioDecoder.dequeueInputBuffer(TIMEOUT_USEC);
         if (decoderInputBufferIndex < 0) {
@@ -330,17 +325,9 @@ public class CodecManager {
           Log.d(TAG, "video decoder: output format changed: " + decoderOutputVideoFormat);
           break;
         }
-        /*
-        if (decoderOutputBufferIndex < 0) {
-          Log.e(TAG, "videoDecoder.dequeueOutputBuffer: no video decoder output buffer");
-          break;
-        }
-        */
 
-        // TODO remove, this is unused
-        ByteBuffer decoderOutputBuffer = videoDecoderOutputBuffers[decoderOutputBufferIndex];
+        //ByteBuffer decoderOutputBuffer = videoDecoderOutputBuffers[decoderOutputBufferIndex];
 
-        // TODO figure whay this line is doing
         if ((videoDecoderOutputBufferInfo.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0) {
           Log.e(TAG, "video decoder: codec config buffer");
           videoDecoder.releaseOutputBuffer(decoderOutputBufferIndex, false);
@@ -354,7 +341,7 @@ public class CodecManager {
         if (render) {
           outputSurface.awaitNewImage();
           // Edit the frame and send it to the encoder.
-          // TODO here's where we can edit the frame!!!
+          // TODO here's where we can edit the frame
           outputSurface.drawImage();
 
           inputSurface.setPresentationTime(videoDecoderOutputBufferInfo.presentationTimeUs * 1000);
@@ -372,13 +359,24 @@ public class CodecManager {
         break;
       }
 
-      /*
       // poll output frames from audio decoder
+      /*
       while (!audioDecoderDone && pendingAudioDecoderOutputBufferIndex == -1) {
         int decoderOutputBufferIndex = audioDecoder.dequeueOutputBuffer(
           audioDecoderOutputBufferInfo, TIMEOUT_USEC);
-        if (decoderOutputBufferIndex < 0) {
-          Log.e(TAG, "audioDecoder.dequeueOutputBuffer: no audio decoder output buffer");
+
+        if (decoderOutputBufferIndex == MediaCodec.INFO_TRY_AGAIN_LATER) {
+          Log.d(TAG, "no audio decoder output buffer");
+          break;
+        }
+        if (decoderOutputBufferIndex == MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED) {
+          Log.d(TAG, "audio decoder: output buffers changed");
+          audioDecoderOutputBuffers = audioDecoder.getOutputBuffers();
+          break;
+        }
+        if (decoderOutputBufferIndex == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
+          decoderOutputAudioFormat = audioDecoder.getOutputFormat();
+          Log.d(TAG, "audio decoder: output format changed: " + decoderOutputAudioFormat);
           break;
         }
 
@@ -388,8 +386,11 @@ public class CodecManager {
           break;
         }
 
+        //ByteBuffer decoderOutputBuffer = audioDecoderOutputBuffers[decoderOutputBufferIndex];
+
         pendingAudioDecoderOutputBufferIndex = decoderOutputBufferIndex;
         audioDecodedFrameCount++;
+        //Log.d(TAG, "TEST: audio Frame count ++");
         // We extracted a pending frame, let's try something else next.
         break;
       }
@@ -403,6 +404,7 @@ public class CodecManager {
           break;
         }
 
+        //ByteBuffer encoderInputBuffer = audioEncoder.getInputBuffer(encoderInputBufferIndex);
         ByteBuffer encoderInputBuffer = audioEncoderInputBuffers[encoderInputBufferIndex];
         int size = audioDecoderOutputBufferInfo.size;
         long presentationTime = audioDecoderOutputBufferInfo.presentationTimeUs;
@@ -412,14 +414,18 @@ public class CodecManager {
             audioDecoderOutputBuffers[pendingAudioDecoderOutputBufferIndex].duplicate();
           decoderOutputBuffer.position(audioDecoderOutputBufferInfo.offset);
           decoderOutputBuffer.limit(audioDecoderOutputBufferInfo.offset + size);
+          //Log.d(TAG, "decoderOutputBuffer = " + decoderOutputBuffer.toString());
           encoderInputBuffer.position(0);
-          //encoderInputBuffer.put(decoderOutputBuffer);
+          encoderInputBuffer.put(decoderOutputBuffer);
+          //Log.d(TAG, "encoderInputBuffer = " + encoderInputBuffer.toString());
+          //Log.d(TAG, "encoderInputBufferIndex = " + encoderInputBufferIndex);
           audioEncoder.queueInputBuffer(
             encoderInputBufferIndex,
             0,
             size,
             presentationTime,
             audioDecoderOutputBufferInfo.flags);
+          //Log.d(TAG, "audioEncoder.queueInputBuffer... ... ...");
         }
         audioDecoder.releaseOutputBuffer(pendingAudioDecoderOutputBufferIndex, false);
         pendingAudioDecoderOutputBufferIndex = -1;
@@ -454,12 +460,6 @@ public class CodecManager {
           break;
         }
 
-        /*
-        if (encoderOutputBufferIndex < 0) {
-          Log.e(TAG, "videoEncoder.dequeueOutputBuffer: no video encoder output buffer");
-          break;
-        }
-        */
 
         ByteBuffer encoderOutputBuffer =
           videoEncoderOutputBuffers[encoderOutputBufferIndex];
@@ -484,14 +484,29 @@ public class CodecManager {
 
       /*
       // Poll frames from the audio encoder and send them to the muxer.
-      while (!audioEncoderDone) {
+      while (!audioEncoderDone && (encoderOutputAudioFormat == null || muxing)) {
         int encoderOutputBufferIndex = audioEncoder.dequeueOutputBuffer(
           audioEncoderOutputBufferInfo, TIMEOUT_USEC);
-        if (encoderOutputBufferIndex < 0) {
-          Log.e(TAG, "audioEncoder.dequeueOutputBuffer: no audio encoder output buffer");
+
+        if (encoderOutputBufferIndex == MediaCodec.INFO_TRY_AGAIN_LATER) {
+          Log.d(TAG, "no audio encoder output buffer");
+          break;
+        }
+        if (encoderOutputBufferIndex == MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED) {
+          Log.d(TAG, "audio encoder: output buffers changed");
+          audioEncoderOutputBuffers = audioEncoder.getOutputBuffers();
+          break;
+        }
+        if (encoderOutputBufferIndex == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
+          Log.d(TAG, "audio encoder: output format changed");
+          if (outputAudioTrack >= 0) {
+            Log.e(TAG, "SHOULD NOT ENTER HERE! audio encoder changed its output format again?");
+          }
+          encoderOutputAudioFormat = audioEncoder.getOutputFormat();
           break;
         }
 
+        Log.d(TAG, "TEST!!! ENTER ENCODER -> MUXER!");
         ByteBuffer encoderOutputBuffer = audioEncoderOutputBuffers[encoderOutputBufferIndex];
         if ((audioEncoderOutputBufferInfo.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0) {
           Log.d(TAG, "audio encoder: codec config buffer");
@@ -501,6 +516,7 @@ public class CodecManager {
         }
 
         if (audioEncoderOutputBufferInfo.size != 0) {
+          Log.d(TAG, "write Audio sample to muxer");
           muxer.writeSampleData(outputAudioTrack, encoderOutputBuffer, audioEncoderOutputBufferInfo);
         }
         if ((audioEncoderOutputBufferInfo.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
@@ -513,11 +529,13 @@ public class CodecManager {
       }
       */
 
-      if (!muxing && (encoderOutputVideoFormat!=null)) {
+      if (!muxing &&
+          //(encoderOutputAudioFormat != null) &&
+          (encoderOutputVideoFormat != null)
+      ) {
 
         Log.d(TAG, "muxer: adding video track.");
         outputVideoTrack = muxer.addTrack(encoderOutputVideoFormat);
-
 
         //Log.d(TAG, "muxer: adding audio track.");
         //outputAudioTrack = muxer.addTrack(encoderOutputAudioFormat);
@@ -535,37 +553,6 @@ public class CodecManager {
     Log.d(TAG, "doExtractDecodeEncodeMux Done: audioExtractedFrameCount = " + audioExtractedFrameCount);
     Log.d(TAG, "doExtractDecodeEncodeMux Done: audioDecodedFrameCount = " + audioDecodedFrameCount);
     Log.d(TAG, "doExtractDecodeEncodeMux Done: audioEncodedFrameCount = " + audioEncodedFrameCount);
-  }
-
-
-  /** Wraps testExtractDecodeEditEncodeMux() */
-  public static class TestWrapper implements Runnable {
-    private Throwable mThrowable;
-    private CodecManager codecManager;
-
-    private TestWrapper(CodecManager codecManager) {
-      this.codecManager = codecManager;
-    }
-    @Override
-    public void run() {
-      try {
-        codecManager.extractDecodeEditEncodeMux(MainActivity.FILE_OUTPUT_MP4, R.raw.front);
-      } catch (Throwable th) {
-        mThrowable = th;
-      }
-    }
-    /**
-     * Entry point.
-     */
-    public static void runTest(CodecManager test) throws Throwable {
-      TestWrapper wrapper = new TestWrapper(test);
-      Thread th = new Thread(wrapper, "codec test");
-      th.start();
-      //th.join();
-      if (wrapper.mThrowable != null) {
-        throw wrapper.mThrowable;
-      }
-    }
   }
 
   /**
@@ -654,5 +641,45 @@ public class CodecManager {
 
   public static String getMimeTypeFor(MediaFormat format) {
     return format.getString(MediaFormat.KEY_MIME);
+  }
+
+  /** Wraps testExtractDecodeEditEncodeMux() */
+  public static class ExtractDecodeEditEncodeMuxWrapper implements Runnable {
+    private CodecManager codecManager;
+    private String outputPath;
+    private int inputRawFileId;
+
+    private ExtractDecodeEditEncodeMuxWrapper(
+      CodecManager codecManager,
+      String outputPath,
+      int inputRawFileId)
+    {
+      this.codecManager = codecManager;
+      this.outputPath = outputPath;
+      this.inputRawFileId = inputRawFileId;
+    }
+
+    @Override
+    public void run() {
+      try {
+        codecManager.extractDecodeEditEncodeMux(outputPath, inputRawFileId);
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
+    }
+
+    /**
+     * Entry point.
+     */
+    public static void run(
+      CodecManager codecManager,
+      String outputPath,
+      int inputRawFileId) throws Throwable
+    {
+      ExtractDecodeEditEncodeMuxWrapper wrapper =
+        new ExtractDecodeEditEncodeMuxWrapper(codecManager, outputPath, inputRawFileId);
+      Thread thread = new Thread(wrapper, "codec test");
+      thread.start();
+    }
   }
 }
