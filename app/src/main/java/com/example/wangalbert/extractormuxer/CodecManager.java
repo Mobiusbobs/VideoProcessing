@@ -37,9 +37,9 @@ public class CodecManager {
 
   // parameters for the video encoder
   private static final String OUTPUT_VIDEO_MIME_TYPE = "video/avc"; // H.264 Advanced Video Coding
-  private static final int OUTPUT_VIDEO_BIT_RATE = 2000000; // 2Mbps
+  private static final int OUTPUT_VIDEO_BIT_RATE = 6000000; // 2Mbps
   private static final int OUTPUT_VIDEO_FRAME_RATE = 30; // 15fps
-  private static final int OUTPUT_VIDEO_IFRAME_INTERVAL = 10; // 10 seconds between I-frames
+  private static final int OUTPUT_VIDEO_IFRAME_INTERVAL = 10; // 10 seconds between I-frames    // TODO what is this for
   private static final int OUTPUT_VIDEO_COLOR_FORMAT =
     MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface;
 
@@ -52,9 +52,9 @@ public class CodecManager {
   private static final int OUTPUT_AUDIO_SAMPLE_RATE_HZ = 44100; // Must match the input stream.
 
   /** Width of the output frames. */
-  private int mWidth = 1920;  // TODO currently this is hardcode
+  private int mWidth = 1080;  // TODO currently this is hardcode
   /** Height of the output frames. */
-  private int mHeight = 1080; // TODO currently this is hardcode
+  private int mHeight = 1920; // TODO currently this is hardcode
 
   private Context context;
 
@@ -177,7 +177,7 @@ public class CodecManager {
   ) {
     // video buffer
     ByteBuffer[] videoDecoderInputBuffers = videoDecoder.getInputBuffers();
-    //ByteBuffer[] videoDecoderOutputBuffers = videoDecoder.getOutputBuffers();;
+    ByteBuffer[] videoDecoderOutputBuffers = videoDecoder.getOutputBuffers();;
     ByteBuffer[] videoEncoderOutputBuffers = videoEncoder.getOutputBuffers();;
     MediaCodec.BufferInfo videoDecoderOutputBufferInfo = new MediaCodec.BufferInfo();
     MediaCodec.BufferInfo videoEncoderOutputBufferInfo = new MediaCodec.BufferInfo();
@@ -225,7 +225,17 @@ public class CodecManager {
     int audioDecodedFrameCount = 0;
     int audioEncodedFrameCount = 0;
 
+    long counter = 0;
     while(!videoEncoderDone) {// || !audioEncoderDone) {
+      if(counter%50000 == 0 ) {
+        Log.d(TAG, "counter = " + counter);
+        Log.d(TAG, "videoExtractorDone=" + videoExtractorDone +
+                   ", videoDecoderDone=" + videoDecoderDone +
+                   ", videoEncoderDone=" + videoEncoderDone +
+                   ", muxing=" + muxing +
+                   ", encoderOutputVideoFormat==null = " + (encoderOutputVideoFormat==null));
+      }
+      counter++;
       // TODO add action here
 
       // --- extract audio/video from extractor ---
@@ -312,7 +322,7 @@ public class CodecManager {
         }
         if (decoderOutputBufferIndex == MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED) {
           Log.e(TAG, "video decoder: output buffers changed");
-          //videoDecoderOutputBuffers = videoDecoder.getOutputBuffers();
+          videoDecoderOutputBuffers = videoDecoder.getOutputBuffers();
           break;
         }
         if (decoderOutputBufferIndex == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
@@ -328,7 +338,7 @@ public class CodecManager {
         */
 
         // TODO remove, this is unused
-        //ByteBuffer decoderOutputBuffer = videoDecoderOutputBuffers[decoderOutputBufferIndex];
+        ByteBuffer decoderOutputBuffer = videoDecoderOutputBuffers[decoderOutputBufferIndex];
 
         // TODO figure whay this line is doing
         if ((videoDecoderOutputBufferInfo.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0) {
@@ -436,6 +446,10 @@ public class CodecManager {
         }
         if (encoderOutputBufferIndex == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
           Log.e(TAG, "video encoder: output format changed");
+          if (outputVideoTrack >= 0) {
+            Log.e(TAG, "SHOULD NOT ENTER HERE!");
+            //fail("video encoder changed its output format again?");
+          }
           encoderOutputVideoFormat = videoEncoder.getOutputFormat();
           break;
         }
@@ -498,22 +512,21 @@ public class CodecManager {
         break;
       }
       */
-    }
 
-    if (!muxing
-      //&& (encoderOutputAudioFormat != null)
-      && (encoderOutputVideoFormat != null)) {
+      if (!muxing && (encoderOutputVideoFormat!=null)) {
 
-      Log.d(TAG, "muxer: adding video track.");
-      outputVideoTrack = muxer.addTrack(encoderOutputVideoFormat);
+        Log.d(TAG, "muxer: adding video track.");
+        outputVideoTrack = muxer.addTrack(encoderOutputVideoFormat);
 
 
-      //Log.d(TAG, "muxer: adding audio track.");
-      //outputAudioTrack = muxer.addTrack(encoderOutputAudioFormat);
+        //Log.d(TAG, "muxer: adding audio track.");
+        //outputAudioTrack = muxer.addTrack(encoderOutputAudioFormat);
 
-      Log.d(TAG, "muxer: starting");
-      muxer.start();
-      muxing = true;
+        Log.d(TAG, "muxer: starting");
+        muxer.start();
+        muxing = true;
+      }
+
     }
 
     Log.d(TAG, "doExtractDecodeEncodeMux Done: videoExtractedFrameCount = " + videoExtractedFrameCount);
