@@ -73,6 +73,8 @@ public class CodecManager {
 
   private Context context;
 
+  private StickerDrawer stickerDrawer;
+
   // Constructor
   public CodecManager(Context context) {
     this.context = context;
@@ -156,6 +158,9 @@ public class CodecManager {
 
     // --- muxer ---
     muxer = new MediaMuxer(outputPath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
+
+    // --- setup sticker ----
+    stickerDrawer = new StickerDrawer(context);
 
     // --- do the actual extract decode edit encode mux ---
     doExtractDecodeEncodeMux(
@@ -341,8 +346,8 @@ public class CodecManager {
         if (render) {
           outputSurface.awaitNewImage();
           // Edit the frame and send it to the encoder.
-          // TODO here's where we can edit the frame
           outputSurface.drawImage();
+          stickerDrawer.draw();
 
           inputSurface.setPresentationTime(videoDecoderOutputBufferInfo.presentationTimeUs * 1000);
           Log.d(TAG, "input surface: swap buffers");
