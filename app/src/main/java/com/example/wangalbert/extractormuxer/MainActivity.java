@@ -2,7 +2,6 @@ package com.example.wangalbert.extractormuxer;
 
 import android.Manifest;
 import android.app.Activity;
-import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
@@ -42,10 +41,6 @@ public class MainActivity extends AppCompatActivity {
   };
 
   // MainComponent
-  Extractor extractor;
-  Muxer muxer;
-  AudioRecorder audioRecorder;
-
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -56,8 +51,8 @@ public class MainActivity extends AppCompatActivity {
 
     initView();
 
-    //initComponent();  // not used for now
-    //testComponent();
+    initComponent();
+    testComponent();
 
   }
 
@@ -75,14 +70,6 @@ public class MainActivity extends AppCompatActivity {
 
           Snackbar.make(view, "Do Extract decode edit encode Mux action", Snackbar.LENGTH_LONG)
             .setAction("Action", null).show();
-
-          // --- AudioRecord ---
-          /*
-          if (audioRecorder.isRecording())
-            audioRecorder.stopRecroding();
-          else
-            audioRecorder.startRecroding();
-          */
         }
       });
     }
@@ -97,28 +84,11 @@ public class MainActivity extends AppCompatActivity {
   }
 
   private void initComponent() {
-    // init main component
-    extractor = new Extractor();
-    muxer = new Muxer();
-    audioRecorder = new AudioRecorder(FILE_OUTPUT_PCM);
+
   }
 
   private void testComponent() {
-    // ----- test all the component here -----
-    // --- Extractor ---
-    //extractor.extractVideoFile(FILE_INPUT_MP4);
 
-    // --- Extractor -> Muxer ---
-    /*
-    try {
-      Log.d(TAG, "-------------- test Extractor / Muxer -----------------");
-      muxer.cloneMediaUsingMuxer(FILE_INPUT_MP4, FILE_OUTPUT_MP4, 180);
-    } catch(IOException e) {
-      e.printStackTrace();
-    }
-    */
-
-    // --- Extractor -> MediaCodec(decode) -> MediaCodec(encode) -> Muxer ---
   }
 
   /**

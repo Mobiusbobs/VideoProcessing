@@ -1,4 +1,4 @@
-package com.example.wangalbert.extractormuxer;
+package com.example.wangalbert.extractormuxer.unused;
 
 import android.content.res.AssetFileDescriptor;
 import android.media.MediaCodec;
@@ -6,6 +6,8 @@ import android.media.MediaExtractor;
 import android.media.MediaFormat;
 import android.media.MediaMuxer;
 import android.util.Log;
+
+import com.example.wangalbert.extractormuxer.Extractor;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;

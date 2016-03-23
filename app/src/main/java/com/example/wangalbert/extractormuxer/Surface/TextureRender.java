@@ -1,4 +1,4 @@
-package com.example.wangalbert.extractormuxer.Surface;
+package com.example.wangalbert.extractormuxer.surface;
 
 
 /*
@@ -17,7 +17,6 @@ package com.example.wangalbert.extractormuxer.Surface;
  * limitations under the License.
  */
 
-import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
