@@ -137,7 +137,7 @@ public class CodecManager {
 
     // --- video decoder ---
     outputSurface = new OutputSurface();
-    outputSurface.changeFragmentShader(FRAGMENT_SHADER);  // TODO change shader for edit the video
+    //outputSurface.changeFragmentShader(FRAGMENT_SHADER);  // TODO change shader for edit the video
     videoDecoder = createVideoDecoder(inputVideoFormat, outputSurface.getSurface());
 
     // --- audio encoder / decoder ---
@@ -349,7 +349,8 @@ public class CodecManager {
 
           outputSurface.drawImage();
           // TODO setup blending
-          stickerDrawer.draw();
+          stickerDrawer.drawSticker();
+          //stickerDrawer.drawBox(videoDecodedFrameCount);
 
           inputSurface.setPresentationTime(videoDecoderOutputBufferInfo.presentationTimeUs * 1000);
           Log.d(TAG, "input surface: swap buffers");
