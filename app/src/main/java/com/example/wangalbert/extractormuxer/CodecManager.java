@@ -1,6 +1,7 @@
 package com.example.wangalbert.extractormuxer;
 
 import android.content.Context;
+import android.graphics.Point;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaCodecList;
@@ -9,7 +10,9 @@ import android.media.MediaFormat;
 import android.media.MediaMuxer;
 import android.os.Environment;
 import android.util.Log;
+import android.view.Display;
 import android.view.Surface;
+import android.view.WindowManager;
 
 import com.example.wangalbert.extractormuxer.surface.InputSurface;
 import com.example.wangalbert.extractormuxer.surface.OutputSurface;
@@ -74,10 +77,24 @@ public class CodecManager {
   private Context context;
 
   private StickerDrawer stickerDrawer;
+  private StickerDrawer logoDrawer;
+
+  private int screenWidth;
+  private int screenHeight;
 
   // Constructor
   public CodecManager(Context context) {
     this.context = context;
+
+    // get screen size...
+    WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+    Display display = wm.getDefaultDisplay();
+    Point size = new Point();
+    display.getSize(size);
+    screenWidth = size.x;
+    screenHeight = size.y;
+    Log.d(TAG, "screen size width=" + screenWidth + ", height=" + screenHeight);
+
   }
 
   public void extractDecodeEditEncodeMux(String outputPath, int inputRawFileId) throws Exception {
@@ -160,7 +177,11 @@ public class CodecManager {
     muxer = new MediaMuxer(outputPath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
 
     // --- setup sticker ----
-    stickerDrawer = new StickerDrawer(context);
+    stickerDrawer = new StickerDrawer(context, R.drawable.frames_hungry);
+
+    // --- setup watermark ---
+    CoordinateHelper coordinateHelper = new CoordinateHelper(screenWidth, screenHeight);
+    logoDrawer = new StickerDrawer(context, R.drawable.logo_watermark, coordinateHelper.getCoordinate(20));
 
     // --- do the actual extract decode edit encode mux ---
     doExtractDecodeEncodeMux(
@@ -350,7 +371,8 @@ public class CodecManager {
           outputSurface.drawImage();
           // TODO setup blending
           stickerDrawer.drawSticker();
-          //stickerDrawer.drawBox(videoDecodedFrameCount);
+          logoDrawer.drawSticker();
+          stickerDrawer.drawBox(videoDecodedFrameCount);
 
           inputSurface.setPresentationTime(videoDecoderOutputBufferInfo.presentationTimeUs * 1000);
           Log.d(TAG, "input surface: swap buffers");
@@ -554,6 +576,9 @@ public class CodecManager {
       }
 
     }
+
+    muxer.stop();
+    muxer.release();
 
     Log.d(TAG, "doExtractDecodeEncodeMux Done: videoExtractedFrameCount = " + videoExtractedFrameCount);
     Log.d(TAG, "doExtractDecodeEncodeMux Done: videoDecodedFrameCount = " + videoDecodedFrameCount);

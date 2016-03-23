@@ -34,7 +34,7 @@ public class StickerDrawer {
     private Context context;
 
     /** Store our model data in a float buffer. */
-    private final float[] verticesPositionData = {
+    private float[] verticesPositionData = {
         // X, Y, Z,
         -1.0f, -1.0f, 0.0f,
         1.0f, -1.0f, 0.0f,
@@ -45,7 +45,7 @@ public class StickerDrawer {
         -1.0f, 1.0f, 0.0f
     };
 
-    private final float[] textureCoordinateData = {
+    private float[] textureCoordinateData = {
         // Front face
         0.0f, 1.0f,
         1.0f, 1.0f,
@@ -117,19 +117,34 @@ public class StickerDrawer {
             // triangle per fragment.
             + "void main()                    \n"     // The entry point for our fragment shader.
             + "{                              \n"
+            //+ "   gl_FragColor = vec4(1.0,0.0,0.0,1.0); \n"   // FOR DEBUG PURPOSE
             + "   gl_FragColor = texture2D(u_Texture, v_TexCoordinate);     \n"     // Pass the color directly through the pipeline.
             + "}                              \n";
 
     private int shaderProgramHandle;
 
-    public StickerDrawer(Context context) {
+
+    public StickerDrawer(Context context, int resId, float[] verticesPositionData) {
+        this.verticesPositionData = verticesPositionData;
         this.context = context;
         initCoordinateBuffer();
 
         setupProjectionMatrix();
         setupViewMatrix();
 
-        loadTexture();
+        loadTexture(resId);
+        setupShader();
+        bindTexture();
+    }
+
+    public StickerDrawer(Context context, int resId) {
+        this.context = context;
+        initCoordinateBuffer();
+
+        setupProjectionMatrix();
+        setupViewMatrix();
+
+        loadTexture(resId);
         setupShader();
         bindTexture();
     }
@@ -182,13 +197,13 @@ public class StickerDrawer {
     }
 
     // TODO error handle
-    private void loadTexture() {
+    private void loadTexture(int resId) {
         // alloc texture
         int[] textureHandle = new int[1];
         GLES20.glGenTextures(1, textureHandle, 0);
 
         // get bitmap
-        int resId = R.drawable.frames_hungry;
+        //int resId = R.drawable.frames_hungry;
         Bitmap bitmap = BitmapFactory.decodeResource(context.getResources(), resId);
 
         // bind texture
