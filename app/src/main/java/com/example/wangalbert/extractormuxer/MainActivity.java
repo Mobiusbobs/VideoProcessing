@@ -28,7 +28,7 @@ public class MainActivity extends AppCompatActivity {
   public static final String FILE_OUTPUT_RAW = "/sdcard/Download/TestRAW.mp4";
   public static final String FILE_OUTPUT_AAC = "/sdcard/Download/TestAAC.aac";
   public static final String FILE_OUTPUT_AVC = "/sdcard/Download/tmp2AVC.mp4";
-  public static final String FILE_OUTPUT_MP4 = "/sdcard/Download/TestCodec.mp4";
+  public static final String FILE_OUTPUT_MP4 = "/sdcard/Download/TestCodec5.mp4";
   public static final String FILE_OUTPUT_WAV = "/sdcard/Download/TestWAV.wav";
   public static final String FILE_OUTPUT_PCM = "/sdcard/Download/audioRaw.pcm";
 

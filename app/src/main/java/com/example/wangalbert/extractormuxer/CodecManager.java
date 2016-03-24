@@ -176,12 +176,15 @@ public class CodecManager {
     // --- muxer ---
     muxer = new MediaMuxer(outputPath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
 
-    // --- setup sticker ----
-    stickerDrawer = new StickerDrawer(context, R.drawable.frames_hungry);
+
 
     // --- setup watermark ---
-    CoordinateHelper coordinateHelper = new CoordinateHelper(screenWidth, screenHeight);
-    logoDrawer = new StickerDrawer(context, R.drawable.logo_watermark, coordinateHelper.getCoordinate(20));
+    CoordinateHelper coordinateHelper = new CoordinateHelper(context, screenWidth, screenHeight);
+    logoDrawer = new StickerDrawer(context, R.drawable.logo_watermark, coordinateHelper.getCoordinate(30));
+
+    // --- setup sticker ----
+    int stickerDrawableId = R.drawable.frames_hungry;
+    stickerDrawer = new StickerDrawer(context, stickerDrawableId, coordinateHelper.getAlignCenterVertices(stickerDrawableId));
 
     // --- do the actual extract decode edit encode mux ---
     doExtractDecodeEncodeMux(
@@ -372,7 +375,7 @@ public class CodecManager {
           // TODO setup blending
           stickerDrawer.drawSticker();
           logoDrawer.drawSticker();
-          stickerDrawer.drawBox(videoDecodedFrameCount);
+          //stickerDrawer.drawBox(videoDecodedFrameCount);
 
           inputSurface.setPresentationTime(videoDecoderOutputBufferInfo.presentationTimeUs * 1000);
           Log.d(TAG, "input surface: swap buffers");

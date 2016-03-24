@@ -164,26 +164,27 @@ public class StickerDrawer {
         // Create a new perspective projection matrix. The height will stay the same
         // while the width will vary as per aspect ratio.
         final float ratio = (float) 480 / 720;  //TODO: currently hardcode, update this later
-        final float left = -ratio;
-        final float right = ratio;
+        final float left = -1.0f;   //-ratio;
+        final float right = 1.0f;   //ratio;
         final float bottom = -1.0f;
         final float top = 1.0f;
-        final float near = 1.0f;
-        final float far = 10.0f;
+        final float near = -1.0f;   //1.0f;
+        final float far = 1.0f;     //10.0f;
 
-        Matrix.frustumM(mProjectionMatrix, 0, left, right, bottom, top, near, far);
+        Matrix.orthoM(mProjectionMatrix, 0, left, right, bottom, top, near, far);
+        //Matrix.frustumM(mProjectionMatrix, 0, left, right, bottom, top, near, far);
     }
 
     private void setupViewMatrix() {
         // Position the eye behind the origin.
         final float eyeX = 0.0f;
         final float eyeY = 0.0f;
-        final float eyeZ = 1.5f;
+        final float eyeZ = 1.0f;
 
         // We are looking toward the distance
         final float lookX = 0.0f;
         final float lookY = 0.0f;
-        final float lookZ = -5.0f;
+        final float lookZ = 0.0f;
 
         // Set our up vector. This is where our head would be pointing were we holding the camera.
         final float upX = 0.0f;
