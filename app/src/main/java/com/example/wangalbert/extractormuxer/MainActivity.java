@@ -9,6 +9,7 @@ import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.View;
 
 /*
@@ -77,7 +78,16 @@ public class MainActivity extends AppCompatActivity {
 
   private void runExtractDecodeEditEncodeMux() {
     try {
-      CodecManager.ExtractDecodeEditEncodeMuxWrapper.run(new CodecManager(this), FILE_OUTPUT_MP4, R.raw.front);
+      CodecManager codecManager = new CodecManager(this);
+      codecManager.setOnMuxerDone(new CodecManager.OnMuxerDone() {
+        @Override
+        public void onDone() {
+          Util.endTimer("mux is done");
+        }
+      });
+      Util.startTimer();
+      CodecManager.ExtractDecodeEditEncodeMuxWrapper.run(codecManager, FILE_OUTPUT_MP4, R.raw.test_27);
+
     } catch (Throwable throwable) {
       throwable.printStackTrace();
     }

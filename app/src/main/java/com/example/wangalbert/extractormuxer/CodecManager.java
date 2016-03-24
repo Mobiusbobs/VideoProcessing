@@ -57,9 +57,9 @@ public class CodecManager {
   private static final int OUTPUT_AUDIO_SAMPLE_RATE_HZ = 44100; // Must match the input stream.
 
   /** Width of the output frames. */
-  private int mWidth = 1080;  // TODO currently this is hardcode
+  private int mWidth = 480; //1080;  // TODO currently this is hardcode
   /** Height of the output frames. */
-  private int mHeight = 1920; // TODO currently this is hardcode
+  private int mHeight = 720;  //1920; // TODO currently this is hardcode
 
   /**
    * Used for editing the frames.
@@ -82,6 +82,12 @@ public class CodecManager {
   private int screenWidth;
   private int screenHeight;
 
+  public interface OnMuxerDone {
+    void onDone();
+  }
+
+  private OnMuxerDone onMuxerDone;
+
   // Constructor
   public CodecManager(Context context) {
     this.context = context;
@@ -95,6 +101,10 @@ public class CodecManager {
     screenHeight = size.y;
     Log.d(TAG, "screen size width=" + screenWidth + ", height=" + screenHeight);
 
+  }
+
+  public void setOnMuxerDone(OnMuxerDone onMuxerDone) {
+    this.onMuxerDone = onMuxerDone;
   }
 
   public void extractDecodeEditEncodeMux(String outputPath, int inputRawFileId) throws Exception {
@@ -582,6 +592,7 @@ public class CodecManager {
 
     muxer.stop();
     muxer.release();
+    onMuxerDone.onDone();
 
     Log.d(TAG, "doExtractDecodeEncodeMux Done: videoExtractedFrameCount = " + videoExtractedFrameCount);
     Log.d(TAG, "doExtractDecodeEncodeMux Done: videoDecodedFrameCount = " + videoDecodedFrameCount);
