@@ -311,7 +311,6 @@ public class StickerDrawer {
 
 
     public void drawSticker() {
-        Log.d(TAG, "draw sticker...");
         GLES20.glUseProgram(shaderProgramHandle);
 
         // Set the active texture unit to texture unit 0.

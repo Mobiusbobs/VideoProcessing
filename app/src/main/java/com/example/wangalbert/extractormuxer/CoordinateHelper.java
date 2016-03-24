@@ -110,8 +110,8 @@ public class CoordinateHelper {
   // get image's width and height
   private float[] getImageDimenInGLCoord() {
     //[width, height]
-    int imgWidth = 50;
-    int imgHeight = 66;
+    int imgWidth = 100;
+    int imgHeight = 100;
 
     // convert it to GL coordinate width/height
     float imgWidthInGLCoord = (float)imgWidth / screenWidth * GLCoordWidth;

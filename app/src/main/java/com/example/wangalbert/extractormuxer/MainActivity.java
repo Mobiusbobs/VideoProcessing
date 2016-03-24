@@ -86,7 +86,7 @@ public class MainActivity extends AppCompatActivity {
         }
       });
       Util.startTimer();
-      CodecManager.ExtractDecodeEditEncodeMuxWrapper.run(codecManager, FILE_OUTPUT_MP4, R.raw.test_27);
+      CodecManager.ExtractDecodeEditEncodeMuxWrapper.run(codecManager, FILE_OUTPUT_MP4, R.raw.test_21);
 
     } catch (Throwable throwable) {
       throwable.printStackTrace();
