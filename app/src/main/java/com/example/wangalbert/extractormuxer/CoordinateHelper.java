@@ -28,20 +28,24 @@ public class CoordinateHelper {
     this.screenHeight = screenHeight;
   }
 
+
+  private float convertToGLCoord(int input, int length) {
+    if (input == 0) return -1;
+    return (float)input / length * 2 - 1;  //length is either screenWidth or Height
+  }
+
   // TODO update and make it more generic
   // currently this is used for adding watermark at the bottom right corner
   public float[] getCoordinate(int padding) {
     // image [width, height]
-    float[] imgDimenInGLCoord = getImageDimenInGLCoord(); //TODO update input file
-
-    // padding [x, y]
-    float[] paddingInGLCoord = getPaddingInGLCoord(padding);
+    int imgWidth = 100; //50
+    int imgHeight = 132; //66
 
     float z = 0.0f;
-    float x1 = 1.0f - imgDimenInGLCoord[0] - paddingInGLCoord[0];
-    float x2 = 1.0f - paddingInGLCoord[0];
-    float y1 = -1.0f + paddingInGLCoord[1];
-    float y2 = -1.0f + imgDimenInGLCoord[1] + paddingInGLCoord[1];
+    float x1 = convertToGLCoord(screenWidth - imgWidth - padding, screenWidth); // L
+    float x2 = convertToGLCoord(screenWidth - padding, screenWidth); // R
+    float y1 = convertToGLCoord(padding, screenHeight); //B
+    float y2 = convertToGLCoord(imgHeight + padding, screenHeight); //T
 
     float[] verticesCoord = {
       x1, y1, z,  //BL
@@ -99,6 +103,7 @@ public class CoordinateHelper {
     return verticesCoord;
   }
 
+  /*
   // get padding's width and length in GL coord
   private float[] getPaddingInGLCoord(int padding) {
     float paddingRL = (float)padding / screenWidth;
@@ -110,8 +115,8 @@ public class CoordinateHelper {
   // get image's width and height
   private float[] getImageDimenInGLCoord() {
     //[width, height]
-    int imgWidth = 100;
-    int imgHeight = 100;
+    int imgWidth = 100; //50
+    int imgHeight = 132; //66
 
     // convert it to GL coordinate width/height
     float imgWidthInGLCoord = (float)imgWidth / screenWidth * GLCoordWidth;
@@ -120,6 +125,7 @@ public class CoordinateHelper {
     Log.d(TAG, "Image dimen: (" + imgWidthInGLCoord + ", " + imgHeightInGLCoord + ")");
     return new float[]{imgWidthInGLCoord, imgHeightInGLCoord};
   }
+  */
 
   //
   private int[] getImageDimen(int drawableId) {

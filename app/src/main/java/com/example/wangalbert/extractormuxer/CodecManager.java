@@ -61,6 +61,8 @@ public class CodecManager {
   private int screenWidth;
   private int screenHeight;
 
+  private boolean withWaterMark;
+
   public interface OnMuxerDone {
     void onDone();
   }
@@ -68,7 +70,8 @@ public class CodecManager {
   private OnMuxerDone onMuxerDone;
 
   // Constructor
-  public CodecManager(Context context) {
+  public CodecManager(Context context, boolean withWaterMark) {
+    this.withWaterMark = withWaterMark;
     this.context = context;
 
     // get screen size...
@@ -173,7 +176,7 @@ public class CodecManager {
 
     // --- setup watermark ---
     CoordinateHelper coordinateHelper = new CoordinateHelper(context, screenWidth, screenHeight);
-    logoDrawer = new StickerDrawer(context, R.drawable.logo_watermark, coordinateHelper.getCoordinate(30));
+    logoDrawer = new StickerDrawer(context, R.drawable.logo_watermark_m, coordinateHelper.getCoordinate(30));
 
     // --- setup sticker ----
     int stickerDrawableId = R.drawable.frames_hungry;
@@ -363,7 +366,9 @@ public class CodecManager {
           outputSurface.drawImage();
           // TODO setup blending
           stickerDrawer.drawSticker();
-          logoDrawer.drawSticker();
+
+          if(withWaterMark)
+            logoDrawer.drawSticker();
           //stickerDrawer.drawBox(videoDecodedFrameCount);
 
           inputSurface.setPresentationTime(videoDecoderOutputBufferInfo.presentationTimeUs * 1000);

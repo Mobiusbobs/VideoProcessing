@@ -223,6 +223,7 @@ public class StickerDrawer {
         mTextureDataHandle = textureHandle[0];
     }
 
+
     // TODO shader compile flow should be reused
     private void setupShader() {
         int vertexShaderHandle = compileShader(GLES20.GL_VERTEX_SHADER, vertexShader);

@@ -30,6 +30,7 @@ public class MainActivity extends AppCompatActivity {
   public static final String FILE_OUTPUT_AAC = "/sdcard/Download/TestAAC.aac";
   public static final String FILE_OUTPUT_AVC = "/sdcard/Download/tmp2AVC.mp4";
   public static final String FILE_OUTPUT_MP4 = "/sdcard/Download/TestCodec5.mp4";
+  public static final String FILE_OUTPUT_WATERMARK = "/sdcard/Download/Watermark.mp4";
   public static final String FILE_OUTPUT_WAV = "/sdcard/Download/TestWAV.wav";
   public static final String FILE_OUTPUT_PCM = "/sdcard/Download/audioRaw.pcm";
 
@@ -76,22 +77,38 @@ public class MainActivity extends AppCompatActivity {
     }
   }
 
+  private int resultCounter = 0;
   private void runExtractDecodeEditEncodeMux() {
+    Util.startTimer();
+    resultCounter = 0;
+
     try {
-      CodecManager codecManager = new CodecManager(this);
+      CodecManager codecManager2 = new CodecManager(this, false);
+      codecManager2.setOnMuxerDone(new CodecManager.OnMuxerDone() {
+        @Override
+        public void onDone() {
+          Util.endTimer("mux(no watermark) is done");
+          resultCounter++;
+          if(resultCounter==2) Log.d(TAG, "result done! call callback!!!");
+        }
+      });
+      CodecManager.ExtractDecodeEditEncodeMuxWrapper.run(codecManager2, FILE_OUTPUT_MP4, R.raw.test_21);
+
+      CodecManager codecManager = new CodecManager(this, true);
       codecManager.setOnMuxerDone(new CodecManager.OnMuxerDone() {
         @Override
         public void onDone() {
-          Util.endTimer("mux is done");
+          Util.endTimer("mux(with watermark) is done");
+          resultCounter++;
+          if(resultCounter==2) Log.d(TAG, "result done! call callback!!!");
         }
       });
-      Util.startTimer();
-      CodecManager.ExtractDecodeEditEncodeMuxWrapper.run(codecManager, FILE_OUTPUT_MP4, R.raw.test_21);
-
+      CodecManager.ExtractDecodeEditEncodeMuxWrapper.run(codecManager, FILE_OUTPUT_WATERMARK, R.raw.test_21);
     } catch (Throwable throwable) {
       throwable.printStackTrace();
     }
   }
+
 
   private void initComponent() {
 
