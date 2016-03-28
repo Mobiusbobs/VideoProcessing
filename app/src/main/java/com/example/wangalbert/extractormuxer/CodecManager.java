@@ -57,6 +57,7 @@ public class CodecManager {
 
   private StickerDrawer stickerDrawer;
   private StickerDrawer logoDrawer;
+  private GifDrawer gifDrawer;
 
   private int screenWidth;
   private int screenHeight;
@@ -181,6 +182,10 @@ public class CodecManager {
     // --- setup sticker ----
     int stickerDrawableId = R.drawable.frames_hungry;
     stickerDrawer = new StickerDrawer(context, stickerDrawableId, coordinateHelper.getAlignCenterVertices(stickerDrawableId));
+
+    // --- setup gif drawer ---
+    int gifId = R.raw.gif_love;
+    gifDrawer = new GifDrawer(context, gifId);
 
     // --- do the actual extract decode edit encode mux ---
     doExtractDecodeEncodeMux(
@@ -365,7 +370,8 @@ public class CodecManager {
 
           outputSurface.drawImage();
           // TODO setup blending
-          stickerDrawer.drawSticker();
+          //stickerDrawer.drawSticker();
+          gifDrawer.drawGif();
 
           if(withWaterMark)
             logoDrawer.drawSticker();

@@ -103,6 +103,43 @@ public class CoordinateHelper {
     return verticesCoord;
   }
 
+  public float[] getAlignCenterVertices(int width, int height) {
+    // image [width, height]
+
+    int imageWidth = width;
+    int imageHeight = height;
+
+    // init height coordinate in GL coordinate
+    float initHeightCoordinate = (float)imageHeight / screenHeight;
+
+    // screen width to image width ratio  //measure the amount of width we need to shrink/stretch
+    float imgScreenWidthRatio = (float)screenWidth/imageWidth;
+
+    Log.d(TAG, "imgScreenWidthRatio="+imgScreenWidthRatio+", initHeightCoordinate="+initHeightCoordinate);
+
+    float z = 0.0f;
+    float x1 = -1.0f;  // left
+    float x2 = 1.0f;  // right
+    float y1 = -1.0f * initHeightCoordinate * imgScreenWidthRatio;  // bottom
+    float y2 = 1.0f * initHeightCoordinate * imgScreenWidthRatio;   // top
+
+    float[] verticesCoord = {
+      x1, y1, z,  //BL
+      x2, y1, z,  //BR
+      x2, y2, z,  //TR
+
+      x1, y1, z,  //BL
+      x2, y2, z,  //TR
+      x1, y2, z   //TL
+    };
+
+    for(int i=0; i<verticesCoord.length; i=i+3) {
+      Log.d(TAG, "center verticesCoord(" + verticesCoord[i] + ", " + verticesCoord[i+1] + ", " + verticesCoord[i+2] + ")");
+    }
+
+    return verticesCoord;
+  }
+
   /*
   // get padding's width and length in GL coord
   private float[] getPaddingInGLCoord(int padding) {

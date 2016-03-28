@@ -34,7 +34,7 @@ public class StickerDrawer {
     private Context context;
 
     /** Store our model data in a float buffer. */
-    private float[] verticesPositionData = {
+    protected float[] verticesPositionData = {
         // X, Y, Z,
         -1.0f, -1.0f, 0.0f,
         1.0f, -1.0f, 0.0f,
@@ -45,7 +45,7 @@ public class StickerDrawer {
         -1.0f, 1.0f, 0.0f
     };
 
-    private float[] textureCoordinateData = {
+    float[] textureCoordinateData = {
         // Front face
         0.0f, 1.0f,
         1.0f, 1.0f,
@@ -55,43 +55,43 @@ public class StickerDrawer {
         0.0f, 0.0f
     };
 
-    private FloatBuffer verticesPosition;
-    private FloatBuffer texturePosition;
-    private final int mTextureCoordinateDataSize = 2;
-    private final int mPositionDataSize = 3;
-    private final int BytesPerFloat = 4;
+    protected FloatBuffer verticesPosition;
+    protected FloatBuffer texturePosition;
+    protected final int mTextureCoordinateDataSize = 2;
+    protected final int mPositionDataSize = 3;
+    protected final int BytesPerFloat = 4;
 
     // transformation
-    private int mMVPMatrixHandle;
+    protected int mMVPMatrixHandle;
 
     /** Allocate storage for the final combined matrix. This will be passed into the shader program. */
-    private float[] mMVPMatrix = new float[16];
+    protected float[] mMVPMatrix = new float[16];
 
     /**
      * Store the model matrix. This matrix is used to move models from object space (where each model can be thought
      * of being located at the center of the universe) to world space.
      */
-    private float[] mModelMatrix = new float[16];
+    protected float[] mModelMatrix = new float[16];
 
     /**
      * Store the view matrix. This can be thought of as our camera. This matrix transforms world space to eye space;
      * it positions things relative to our eye.
      */
-    private float[] mViewMatrix = new float[16];
+    protected float[] mViewMatrix = new float[16];
 
     /** Store the projection matrix. This is used to project the scene onto a 2D viewport. */
-    private float[] mProjectionMatrix = new float[16];
+    protected float[] mProjectionMatrix = new float[16];
 
     // texture
     /** This will be used to pass in the texture. */
-    private int mTextureUniformHandle;
+    protected int mTextureUniformHandle;
     /** This will be used to pass in model texture coordinate information. */
-    private int mTextureCoordinateHandle;
+    protected int mTextureCoordinateHandle;
     /** This will be used to pass in the position coordinate of the sticker. */
-    private int mPositionHandle;
+    protected int mPositionHandle;
 
     /** This is a handle to our texture data. */
-    private int mTextureDataHandle;
+    protected int mTextureDataHandle;
 
   // shader
     final String vertexShader =
@@ -121,7 +121,7 @@ public class StickerDrawer {
             + "   gl_FragColor = texture2D(u_Texture, v_TexCoordinate);     \n"     // Pass the color directly through the pipeline.
             + "}                              \n";
 
-    private int shaderProgramHandle;
+    protected int shaderProgramHandle;
 
 
     public StickerDrawer(Context context, int resId, float[] verticesPositionData) {
@@ -149,7 +149,16 @@ public class StickerDrawer {
         bindTexture();
     }
 
-    private void initCoordinateBuffer() {
+    public StickerDrawer(Context context, float[] verticesPositionData)  {
+        this.verticesPositionData = verticesPositionData;
+        this.context = context;
+    }
+
+    public StickerDrawer(Context context)  {
+        this.context = context;
+    }
+
+    protected void initCoordinateBuffer() {
         // Initialize the buffers.
       verticesPosition = ByteBuffer.allocateDirect(verticesPositionData.length * BytesPerFloat)
           .order(ByteOrder.nativeOrder()).asFloatBuffer();
@@ -160,7 +169,7 @@ public class StickerDrawer {
       texturePosition.put(textureCoordinateData).position(0);
     }
 
-    private void setupProjectionMatrix() {
+    protected void setupProjectionMatrix() {
         // Create a new perspective projection matrix. The height will stay the same
         // while the width will vary as per aspect ratio.
         final float ratio = (float) 480 / 720;  //TODO: currently hardcode, update this later
@@ -175,7 +184,7 @@ public class StickerDrawer {
         //Matrix.frustumM(mProjectionMatrix, 0, left, right, bottom, top, near, far);
     }
 
-    private void setupViewMatrix() {
+    protected void setupViewMatrix() {
         // Position the eye behind the origin.
         final float eyeX = 0.0f;
         final float eyeY = 0.0f;
@@ -198,7 +207,7 @@ public class StickerDrawer {
     }
 
     // TODO error handle
-    private void loadTexture(int resId) {
+    protected void loadTexture(int resId) {
         // alloc texture
         int[] textureHandle = new int[1];
         GLES20.glGenTextures(1, textureHandle, 0);
@@ -223,15 +232,14 @@ public class StickerDrawer {
         mTextureDataHandle = textureHandle[0];
     }
 
-
     // TODO shader compile flow should be reused
-    private void setupShader() {
+    protected void setupShader() {
         int vertexShaderHandle = compileShader(GLES20.GL_VERTEX_SHADER, vertexShader);
         int fragmentShaderHandle = compileShader(GLES20.GL_FRAGMENT_SHADER, fragmentShader);
         shaderProgramHandle = createShaderProgram(vertexShaderHandle, fragmentShaderHandle);
     }
 
-    private int compileShader(int shaderType, String shaderProgram) {
+    protected int compileShader(int shaderType, String shaderProgram) {
         // Load in the vertex shader.
         int shaderHandle = GLES20.glCreateShader(shaderType);
         //Log.d(TAG, "shaderType = " + shaderType + ", shaderProgram = " + shaderProgram);
@@ -265,7 +273,7 @@ public class StickerDrawer {
         return shaderHandle;
     }
 
-    private int createShaderProgram(int vertexShaderHandle, int fragmentShaderHandle) {
+    protected int createShaderProgram(int vertexShaderHandle, int fragmentShaderHandle) {
         // Create a program object and store the handle to it.
         int programHandle = GLES20.glCreateProgram();
 
@@ -302,7 +310,7 @@ public class StickerDrawer {
         return programHandle;
     }
 
-    private void bindTexture() {
+    protected void bindTexture() {
         // Set program handles. These will later be used to pass in values to the program.
         mMVPMatrixHandle = GLES20.glGetUniformLocation(shaderProgramHandle, "u_MVPMatrix");
         mTextureUniformHandle = GLES20.glGetUniformLocation(shaderProgramHandle, "u_Texture");

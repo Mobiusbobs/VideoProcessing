@@ -92,7 +92,7 @@ public class MainActivity extends AppCompatActivity {
           if(resultCounter==2) Log.d(TAG, "result done! call callback!!!");
         }
       });
-      CodecManager.ExtractDecodeEditEncodeMuxWrapper.run(codecManager2, FILE_OUTPUT_MP4, R.raw.test_21);
+      CodecManager.ExtractDecodeEditEncodeMuxWrapper.run(codecManager2, FILE_OUTPUT_MP4, R.raw.test_5);
 
       CodecManager codecManager = new CodecManager(this, true);
       codecManager.setOnMuxerDone(new CodecManager.OnMuxerDone() {
@@ -103,7 +103,7 @@ public class MainActivity extends AppCompatActivity {
           if(resultCounter==2) Log.d(TAG, "result done! call callback!!!");
         }
       });
-      CodecManager.ExtractDecodeEditEncodeMuxWrapper.run(codecManager, FILE_OUTPUT_WATERMARK, R.raw.test_21);
+      CodecManager.ExtractDecodeEditEncodeMuxWrapper.run(codecManager, FILE_OUTPUT_WATERMARK, R.raw.test_5);
     } catch (Throwable throwable) {
       throwable.printStackTrace();
     }
