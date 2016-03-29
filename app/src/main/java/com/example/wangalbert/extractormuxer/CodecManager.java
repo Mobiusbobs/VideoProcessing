@@ -14,6 +14,7 @@ import android.view.Display;
 import android.view.Surface;
 import android.view.WindowManager;
 
+import com.example.wangalbert.extractormuxer.gif.GifDecoder;
 import com.example.wangalbert.extractormuxer.surface.InputSurface;
 import com.example.wangalbert.extractormuxer.surface.OutputSurface;
 
@@ -184,8 +185,10 @@ public class CodecManager {
     stickerDrawer = new StickerDrawer(context, stickerDrawableId, coordinateHelper.getAlignCenterVertices(stickerDrawableId));
 
     // --- setup gif drawer ---
-    int gifId = R.raw.gif_love;
-    gifDrawer = new GifDrawer(context, gifId);
+    int gifId = R.raw.gif_music;
+    GifDecoder gifDecoder = GifDrawer.createGifDecoder(context, gifId);
+    float[] gifVertices = coordinateHelper.getAlignCenterVertices(gifDecoder.getWidth(), gifDecoder.getHeight());
+    gifDrawer = new GifDrawer(context, gifDecoder, gifVertices);
 
     // --- do the actual extract decode edit encode mux ---
     doExtractDecodeEncodeMux(
@@ -371,7 +374,7 @@ public class CodecManager {
           outputSurface.drawImage();
           // TODO setup blending
           //stickerDrawer.drawSticker();
-          gifDrawer.drawGif();
+          gifDrawer.drawGif(videoDecoderOutputBufferInfo.presentationTimeUs/1000);
 
           if(withWaterMark)
             logoDrawer.drawSticker();

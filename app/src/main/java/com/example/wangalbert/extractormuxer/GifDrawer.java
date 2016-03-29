@@ -30,10 +30,10 @@ public class GifDrawer extends StickerDrawer {
   private long gifStartTime;
   private int[] gifDimen = new int[2];
 
-  public GifDrawer(Context context, int rawGifId) {
+  public GifDrawer(Context context, GifDecoder gifDecoder) {
     super(context);
 
-    setupGifDecoder(context, rawGifId);
+    setupGifDecoder(gifDecoder);
 
     initCoordinateBuffer();
     setupProjectionMatrix();
@@ -44,34 +44,41 @@ public class GifDrawer extends StickerDrawer {
     bindTexture();
   }
 
-  public GifDrawer(Context context, int rawGifId, float[] verticesPositionData) {
+  public GifDrawer(Context context, GifDecoder gifDecoder, float[] verticesPositionData) {
     super(context, verticesPositionData);
 
     initCoordinateBuffer();
     setupProjectionMatrix();
     setupViewMatrix();
 
-    setupGifDecoder(context, rawGifId);
+    setupGifDecoder(gifDecoder);
     loadTextures(gifDecoder.getFrameCount());
     setupShader();
     bindTexture();
   }
 
-  private void setupGifDecoder(Context context, int rawGifId) {
+  public static GifDecoder createGifDecoder(Context context, int rawGifId) {
     // open gif file as inputSource
     InputStream inputStream = context.getResources().openRawResource(rawGifId);
 
-    // init gif decoder and read from inputStream
     GifDecoder gifDecoder = new GifDecoder();
     gifDecoder.read(inputStream, 0);
 
-    // by default, current frame index is -1, advance it.
-    gifDecoder.advance();
-    gifDimen[0] = gifDecoder.getWidth();
-    gifDimen[1] = gifDecoder.getHeight();
-    Log.d(TAG, "width=" + gifDimen[0] + ", height=" + gifDimen[1]);
+    return gifDecoder;
+  }
 
+  private void setupGifDecoder(GifDecoder gifDecoder) {
+    // open gif file as inputSource
+    //InputStream inputStream = context.getResources().openRawResource(rawGifId);
+
+    // init gif decoder and read from inputStream
+    //GifDecoder gifDecoder = new GifDecoder();
+    //gifDecoder.read(inputStream, 0);
+
+    // by default, current frame index is -1, advance it.
     this.gifDecoder = gifDecoder;
+    gifDecoder.resetFrameIndex();
+    gifDecoder.advance();
   }
 
   public void loadTextures(int frameCount) {
@@ -79,14 +86,15 @@ public class GifDrawer extends StickerDrawer {
     //textureHandle = new int[frameCount];
     GLES20.glGenTextures(frameCount, textureHandle, 0);
 
+    Log.d(TAG, "TOTAL frame count = " + frameCount);
     // load bitmap into GL texture of textureHandle[i]
     for (int i=0; i<frameCount; i++) {
-      Log.d(TAG, "loadTexture: i=" + i + ", index=" + gifDecoder.getCurrentFrameIndex());
+      Log.d(TAG, "loadTexture: i= " + i + ", index=" + gifDecoder.getCurrentFrameIndex() + ", delay = " + gifDecoder.getDelay(i));
       Bitmap bitmap = gifDecoder.getNextFrame();
       Log.d(TAG, "bitmap = " + bitmap);
       loadTexture(bitmap, i);
       gifDecoder.advance();
-      bitmap.recycle();
+      //bitmap.recycle();
     }
   }
 
@@ -105,31 +113,43 @@ public class GifDrawer extends StickerDrawer {
     bitmap.recycle();
   }
 
-  private int updateFrameIndex() {
-    long now = SystemClock.uptimeMillis();
+  private int updateFrameIndex(long timeMs) {
+    long now = timeMs;
+    Log.d(TAG, "updateFrameIndex: now = " + now);
 
     if (gifStartTime == 0) {
       gifStartTime = now;
     }
 
-    int delay = gifDecoder.getNextDelay();
+    //int delay = gifDecoder.getNextDelay();
+    //long relTime = now - gifStartTime;
+    //Log.d(TAG, "relTime = " + relTime);
+    //if (relTime >= delay ) {
+      //gifStartTime = now - (relTime - delay);
+      //gifDecoder.advance();
 
-    if (now - gifStartTime >= delay ) {
-      gifStartTime = now;
-      gifDecoder.advance();
-    }
+      int delay = gifDecoder.getNextDelay();
+      long relTime = now - gifStartTime;
+      while(relTime >= delay)  {
+        Log.d(TAG, "timeElapse = " + relTime);
+        gifStartTime = now - (relTime - delay);
+        gifDecoder.advance();
+        delay = gifDecoder.getNextDelay();
+        relTime = now - gifStartTime;
+      }
+    //}
     Log.d(TAG, "current index=" + gifDecoder.getCurrentFrameIndex());
     return gifDecoder.getCurrentFrameIndex();
   }
 
-  public void drawGif() {
+  public void drawGif(long timeMs) {
     GLES20.glUseProgram(shaderProgramHandle);
 
     // Set the active texture unit to texture unit 0.
     GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
     // TODO this is where we decide which frame to draw
     // Bind the texture to this unit.
-    GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureHandle[updateFrameIndex()]);
+    GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureHandle[updateFrameIndex(timeMs)]);
     // Tell the texture uniform sampler to use this texture in the shader by binding to texture unit 0.
     GLES20.glUniform1i(mTextureUniformHandle, 0);
 

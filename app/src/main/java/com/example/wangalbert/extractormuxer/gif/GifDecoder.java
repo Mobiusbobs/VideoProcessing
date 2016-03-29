@@ -434,7 +434,7 @@ public class GifDecoder {
 
   public synchronized void setData(GifHeader header, ByteBuffer buffer) {
     Log.d(TAG, "setData sampleSize 1 is called!");
-    setData(header, buffer, 8); //1
+    setData(header, buffer, 2); //1
   }
 
   public synchronized void setData(GifHeader header, ByteBuffer buffer, int sampleSize) {
