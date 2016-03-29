@@ -185,7 +185,7 @@ public class CodecManager {
     stickerDrawer = new StickerDrawer(context, stickerDrawableId, coordinateHelper.getAlignCenterVertices(stickerDrawableId));
 
     // --- setup gif drawer ---
-    int gifId = R.raw.gif_music;
+    int gifId = R.raw.gif_funny;
     GifDecoder gifDecoder = GifDrawer.createGifDecoder(context, gifId);
     float[] gifVertices = coordinateHelper.getAlignCenterVertices(gifDecoder.getWidth(), gifDecoder.getHeight());
     gifDrawer = new GifDrawer(context, gifDecoder, gifVertices);

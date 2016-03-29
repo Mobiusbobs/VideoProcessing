@@ -11,6 +11,10 @@ import android.util.Log;
 
 import com.example.wangalbert.extractormuxer.gif.GifDecoder;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOError;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -67,14 +71,22 @@ public class GifDrawer extends StickerDrawer {
     return gifDecoder;
   }
 
+  public static GifDecoder createGifDecoder(Context context, String filePath) {
+    try {
+      File gifFile = new File(filePath);
+      InputStream inputStream = new FileInputStream(gifFile);
+
+      GifDecoder gifDecoder = new GifDecoder();
+      gifDecoder.read(inputStream, 0);
+
+      return gifDecoder;
+    } catch (IOException e) {
+      e.printStackTrace();
+      return null;
+    }
+  }
+
   private void setupGifDecoder(GifDecoder gifDecoder) {
-    // open gif file as inputSource
-    //InputStream inputStream = context.getResources().openRawResource(rawGifId);
-
-    // init gif decoder and read from inputStream
-    //GifDecoder gifDecoder = new GifDecoder();
-    //gifDecoder.read(inputStream, 0);
-
     // by default, current frame index is -1, advance it.
     this.gifDecoder = gifDecoder;
     gifDecoder.resetFrameIndex();
@@ -115,29 +127,20 @@ public class GifDrawer extends StickerDrawer {
 
   private int updateFrameIndex(long timeMs) {
     long now = timeMs;
-    Log.d(TAG, "updateFrameIndex: now = " + now);
 
     if (gifStartTime == 0) {
       gifStartTime = now;
     }
 
-    //int delay = gifDecoder.getNextDelay();
-    //long relTime = now - gifStartTime;
-    //Log.d(TAG, "relTime = " + relTime);
-    //if (relTime >= delay ) {
-      //gifStartTime = now - (relTime - delay);
-      //gifDecoder.advance();
+    int delay = gifDecoder.getNextDelay();
+    long relTime = now - gifStartTime;
+    while(relTime >= delay)  {
+      gifStartTime = now - (relTime - delay);
+      gifDecoder.advance();
+      delay = gifDecoder.getNextDelay();
+      relTime = now - gifStartTime;
+    }
 
-      int delay = gifDecoder.getNextDelay();
-      long relTime = now - gifStartTime;
-      while(relTime >= delay)  {
-        Log.d(TAG, "timeElapse = " + relTime);
-        gifStartTime = now - (relTime - delay);
-        gifDecoder.advance();
-        delay = gifDecoder.getNextDelay();
-        relTime = now - gifStartTime;
-      }
-    //}
     Log.d(TAG, "current index=" + gifDecoder.getCurrentFrameIndex());
     return gifDecoder.getCurrentFrameIndex();
   }
@@ -177,10 +180,6 @@ public class GifDrawer extends StickerDrawer {
 
     // Draw the sticker.
     GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, 6);
-  }
-
-  public int[] getGifDimen() {
-    return gifDimen;
   }
 
 }

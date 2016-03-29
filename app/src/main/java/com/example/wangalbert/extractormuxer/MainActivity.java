@@ -29,8 +29,8 @@ public class MainActivity extends AppCompatActivity {
   public static final String FILE_OUTPUT_RAW = "/sdcard/Download/TestRAW.mp4";
   public static final String FILE_OUTPUT_AAC = "/sdcard/Download/TestAAC.aac";
   public static final String FILE_OUTPUT_AVC = "/sdcard/Download/tmp2AVC.mp4";
-  public static final String FILE_OUTPUT_MP4 = "/sdcard/Download/TestCodec6.mp4";
-  public static final String FILE_OUTPUT_WATERMARK = "/sdcard/Download/Watermark6.mp4";
+  public static final String FILE_OUTPUT_MP4 = "/sdcard/Download/TestCodec7.mp4";
+  public static final String FILE_OUTPUT_WATERMARK = "/sdcard/Download/Watermark7.mp4";
   public static final String FILE_OUTPUT_WAV = "/sdcard/Download/TestWAV.wav";
   public static final String FILE_OUTPUT_PCM = "/sdcard/Download/audioRaw.pcm";
 
