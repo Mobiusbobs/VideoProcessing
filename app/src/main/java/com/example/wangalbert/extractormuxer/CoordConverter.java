@@ -97,7 +97,6 @@ public class CoordConverter {
   // convert a single rect coordinate to GL vertices
   // ex: convert x=0 to GL_vertices = -1
   private float rectCoordToGLCoord(int rectCoord, int length) {
-    if (rectCoord == 0) return -1;
     return (float)rectCoord / length * 2 - 1;  //length is either Width or Height
   }
 
