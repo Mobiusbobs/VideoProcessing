@@ -2,23 +2,16 @@ package com.example.wangalbert.extractormuxer;
 
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.opengl.GLES20;
 import android.opengl.GLUtils;
-import android.opengl.Matrix;
-import android.os.SystemClock;
 import android.util.Log;
 
 import com.example.wangalbert.extractormuxer.gif.GifDecoder;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.IOError;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.FloatBuffer;
 
 /**
  * android
@@ -31,29 +24,29 @@ public class GifDrawer extends StickerDrawer {
 
   private int[] textureHandle = new int[30];
   private GifDecoder gifDecoder;
-  private long gifStartTime;
+  private long gifLastFrameTime;
   private int[] gifDimen = new int[2];
 
   public GifDrawer(Context context, GifDecoder gifDecoder) {
     super(context);
-
-    setupGifDecoder(gifDecoder);
-
-    initCoordinateBuffer();
-    setupProjectionMatrix();
-    setupViewMatrix();
-
-    loadTextures(gifDecoder.getFrameCount());
-    setupShader();
-    bindTexture();
+    this.gifDecoder = gifDecoder;
+    init();
   }
 
   public GifDrawer(Context context, GifDecoder gifDecoder, float[] verticesPositionData) {
     super(context, verticesPositionData);
+    this.gifDecoder = gifDecoder;
+    this.verticesPositionData = verticesPositionData;
+    init();
+  }
 
+  private void init() {
     initCoordinateBuffer();
+
+    // calculate matrix
     setupProjectionMatrix();
     setupViewMatrix();
+    calculateMVPMatrix();
 
     setupGifDecoder(gifDecoder);
     loadTextures(gifDecoder.getFrameCount());
@@ -106,7 +99,7 @@ public class GifDrawer extends StickerDrawer {
       Log.d(TAG, "bitmap = " + bitmap);
       loadTexture(bitmap, i);
       gifDecoder.advance();
-      //bitmap.recycle();
+      bitmap.recycle();
     }
   }
 
@@ -128,24 +121,23 @@ public class GifDrawer extends StickerDrawer {
   private int updateFrameIndex(long timeMs) {
     long now = timeMs;
 
-    if (gifStartTime == 0) {
-      gifStartTime = now;
+    if (gifLastFrameTime == 0) {
+      gifLastFrameTime = now;
     }
 
     int delay = gifDecoder.getNextDelay();
-    long relTime = now - gifStartTime;
-    while(relTime >= delay)  {
-      gifStartTime = now - (relTime - delay);
+
+    while(now >= gifLastFrameTime + delay) {
+      gifLastFrameTime += delay;
       gifDecoder.advance();
       delay = gifDecoder.getNextDelay();
-      relTime = now - gifStartTime;
     }
 
     Log.d(TAG, "current index=" + gifDecoder.getCurrentFrameIndex());
     return gifDecoder.getCurrentFrameIndex();
   }
 
-  public void drawGif(long timeMs) {
+  public void draw(long timeMs) {
     GLES20.glUseProgram(shaderProgramHandle);
 
     // Set the active texture unit to texture unit 0.
@@ -173,9 +165,6 @@ public class GifDrawer extends StickerDrawer {
     GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA);
 
     // set the matrix
-    Matrix.setIdentityM(mModelMatrix, 0);
-    Matrix.multiplyMM(mMVPMatrix, 0, mViewMatrix, 0, mModelMatrix, 0);
-    Matrix.multiplyMM(mMVPMatrix, 0, mProjectionMatrix, 0, mMVPMatrix, 0);
     GLES20.glUniformMatrix4fv(mMVPMatrixHandle, 1, false, mMVPMatrix, 0);
 
     // Draw the sticker.

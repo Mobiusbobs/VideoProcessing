@@ -227,7 +227,7 @@ public class StickerDrawer {
     }
 
 
-    private void calculateMVPMatrix()   {
+    protected void calculateMVPMatrix()   {
         Matrix.setIdentityM(mModelMatrix, 0);
         Matrix.multiplyMM(mMVPMatrix, 0, mViewMatrix, 0, mModelMatrix, 0);
         Matrix.multiplyMM(mMVPMatrix, 0, mProjectionMatrix, 0, mMVPMatrix, 0);

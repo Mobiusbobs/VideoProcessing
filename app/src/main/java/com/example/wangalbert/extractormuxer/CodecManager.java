@@ -370,13 +370,13 @@ public class CodecManager {
           outputSurface.drawImage();
 
           // draw gif
-          gifDrawer.drawGif(videoDecoderOutputBufferInfo.presentationTimeUs / 1000);
+          gifDrawer.draw(videoDecoderOutputBufferInfo.presentationTimeUs / 1000);
 
           // draw sticker
           //stickerDrawer.draw();
 
           // draw watermark
-          if(withWaterMark)
+          if (withWaterMark)
             logoDrawer.draw();
 
           inputSurface.setPresentationTime(videoDecoderOutputBufferInfo.presentationTimeUs * 1000);
