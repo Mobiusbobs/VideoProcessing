@@ -52,10 +52,6 @@ public class MainActivity extends AppCompatActivity {
     verifyStoragePermissions(this);
 
     initView();
-
-    initComponent();
-    testComponent();
-
   }
 
   private void initView() {
@@ -107,15 +103,6 @@ public class MainActivity extends AppCompatActivity {
     } catch (Throwable throwable) {
       throwable.printStackTrace();
     }
-  }
-
-
-  private void initComponent() {
-
-  }
-
-  private void testComponent() {
-
   }
 
   /**

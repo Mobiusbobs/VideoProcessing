@@ -8,7 +8,6 @@ import android.media.MediaCodecList;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
 import android.media.MediaMuxer;
-import android.os.Environment;
 import android.util.Log;
 import android.view.Display;
 import android.view.Surface;
@@ -17,7 +16,6 @@ import android.view.WindowManager;
 import com.example.wangalbert.extractormuxer.surface.InputSurface;
 import com.example.wangalbert.extractormuxer.surface.OutputSurface;
 
-import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -41,7 +39,7 @@ public class CodecManager {
   private static final String OUTPUT_VIDEO_MIME_TYPE = "video/avc"; // H.264 Advanced Video Coding
   private static final int OUTPUT_VIDEO_BIT_RATE = 6000000; // 2Mbps
   private static final int OUTPUT_VIDEO_FRAME_RATE = 30;    // 15fps
-  private static final int OUTPUT_VIDEO_IFRAME_INTERVAL = 10; // 10 seconds between I-frames    // TODO what is this for
+  private static final int OUTPUT_VIDEO_IFRAME_INTERVAL = 10; // 10 seconds between I-frames
   private static final int OUTPUT_VIDEO_COLOR_FORMAT =
     MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface;
 
@@ -112,7 +110,6 @@ public class CodecManager {
     int audioChannelCount = inputAudioFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT);
     int audioMaxInputSize = inputAudioFormat.getInteger(MediaFormat.KEY_MAX_INPUT_SIZE);
 
-
     MediaFormat outputAudioFormat =
       MediaFormat.createAudioFormat(OUTPUT_AUDIO_MIME_TYPE, audioSamplingRate, audioChannelCount);
     outputAudioFormat.setInteger(MediaFormat.KEY_BIT_RATE, OUTPUT_AUDIO_BIT_RATE);
@@ -175,12 +172,21 @@ public class CodecManager {
     muxer = new MediaMuxer(outputPath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
 
     // --- setup watermark ---
-    CoordinateHelper coordinateHelper = new CoordinateHelper(context, screenWidth, screenHeight);
-    logoDrawer = new StickerDrawer(context, R.drawable.logo_watermark_m, coordinateHelper.getCoordinate(30));
+    CoordConverter coordConverter = new CoordConverter(context, screenWidth, screenHeight);
+    int watermarkId = R.drawable.logo_watermark;
+    logoDrawer = new StickerDrawer(
+      context,
+      watermarkId,
+      coordConverter.getAlignBtmRightVertices(watermarkId, 30)
+    );
 
     // --- setup sticker ----
     int stickerDrawableId = R.drawable.frames_hungry;
-    stickerDrawer = new StickerDrawer(context, stickerDrawableId, coordinateHelper.getAlignCenterVertices(stickerDrawableId));
+    stickerDrawer = new StickerDrawer(
+      context,
+      stickerDrawableId,
+      coordConverter.getAlignCenterVertices(stickerDrawableId)
+    );
 
     // --- do the actual extract decode edit encode mux ---
     doExtractDecodeEncodeMux(
@@ -255,10 +261,10 @@ public class CodecManager {
     int audioDecodedFrameCount = 0;
     int audioEncodedFrameCount = 0;
 
-    while(!videoEncoderDone || !audioEncoderDone) {
+    while (!videoEncoderDone || !audioEncoderDone) {
 
       // --- extract video from extractor ---
-      while(!videoExtractorDone && (encoderOutputVideoFormat == null || muxing)) {
+      while (!videoExtractorDone && (encoderOutputVideoFormat == null || muxing)) {
         // 1.) get the index of next buffer to be filled
         int decoderInputBufferIndex = videoDecoder.dequeueInputBuffer(TIMEOUT_USEC);
         if (decoderInputBufferIndex < 0) {
@@ -294,7 +300,7 @@ public class CodecManager {
       }
 
       // --- extract audio from extractor ---
-      while(!audioExtractorDone && (encoderOutputAudioFormat == null || muxing)) {
+      while (!audioExtractorDone && (encoderOutputAudioFormat == null || muxing)) {
         // 1.) get the index of next buffer to be filled
         int decoderInputBufferIndex = audioDecoder.dequeueInputBuffer(TIMEOUT_USEC);
         if (decoderInputBufferIndex == MediaCodec.INFO_TRY_AGAIN_LATER) {
@@ -369,7 +375,6 @@ public class CodecManager {
 
           if(withWaterMark)
             logoDrawer.drawSticker();
-          //stickerDrawer.drawBox(videoDecodedFrameCount);
 
           inputSurface.setPresentationTime(videoDecoderOutputBufferInfo.presentationTimeUs * 1000);
           Log.d(TAG, "input surface: swap buffers");
