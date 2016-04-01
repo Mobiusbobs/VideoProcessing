@@ -158,13 +158,13 @@ public class GifDrawer extends StickerDrawer {
 
     // Pass in the position information
     verticesPosition.position(0);
-    GLES20.glVertexAttribPointer(mPositionHandle, mPositionDataSize, GLES20.GL_FLOAT, false,
+    GLES20.glVertexAttribPointer(mPositionHandle, POSITION_DATASIZE, GLES20.GL_FLOAT, false,
       0, verticesPosition);
     GLES20.glEnableVertexAttribArray(mPositionHandle);
 
     // Pass in the texture coordinate information
     texturePosition.position(0);
-    GLES20.glVertexAttribPointer(mTextureCoordinateHandle, mTextureCoordinateDataSize, GLES20.GL_FLOAT, false,
+    GLES20.glVertexAttribPointer(mTextureCoordinateHandle, TEXTURE_COORD_DATASIZE, GLES20.GL_FLOAT, false,
       0, texturePosition);
     GLES20.glEnableVertexAttribArray(mTextureCoordinateHandle);
 
