@@ -68,18 +68,11 @@ public class CodecManager {
   private OnMuxerDone onMuxerDone;
 
   // Constructor
-  public CodecManager(Context context, boolean withWaterMark) {
+  public CodecManager(Context context, boolean withWaterMark, int[] screenDimen) {
     this.withWaterMark = withWaterMark;
     this.context = context;
-
-    // get screen size...
-    WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
-    Display display = wm.getDefaultDisplay();
-    Point size = new Point();
-    display.getSize(size);
-    screenWidth = size.x;
-    screenHeight = size.y;
-    Log.d(TAG, "screen size width=" + screenWidth + ", height=" + screenHeight);
+    screenWidth = screenDimen[0];
+    screenHeight = screenDimen[1];
   }
 
   public void setOnMuxerDone(OnMuxerDone onMuxerDone) {
@@ -371,10 +364,10 @@ public class CodecManager {
 
           outputSurface.drawImage();
           // TODO setup blending
-          stickerDrawer.drawSticker();
+          stickerDrawer.draw();
 
           if(withWaterMark)
-            logoDrawer.drawSticker();
+            logoDrawer.draw();
 
           inputSurface.setPresentationTime(videoDecoderOutputBufferInfo.presentationTimeUs * 1000);
           Log.d(TAG, "input surface: swap buffers");

@@ -75,31 +75,35 @@ public class MainActivity extends AppCompatActivity {
 
   private int resultCounter = 0;
   private void runExtractDecodeEditEncodeMux() {
-    Util.startTimer();
+    final Timer timer = new Timer();
+    final Timer timerW = new Timer();
+    timer.startTimer();
+    timerW.startTimer();
+
     resultCounter = 0;
 
     try {
-      CodecManager codecManager2 = new CodecManager(this, false);
-      codecManager2.setOnMuxerDone(new CodecManager.OnMuxerDone() {
+      CodecManager codec = new CodecManager(this, false, Util.getScreenDimen(this));
+      codec.setOnMuxerDone(new CodecManager.OnMuxerDone() {
         @Override
         public void onDone() {
-          Util.endTimer("mux(no watermark) is done");
+          timer.endTimer("mux(no watermark) is done");
           resultCounter++;
           if(resultCounter==2) Log.d(TAG, "result done! call callback!!!");
         }
       });
-      CodecManager.ExtractDecodeEditEncodeMuxWrapper.run(codecManager2, FILE_OUTPUT_MP4, R.raw.test_21);
+      CodecManager.ExtractDecodeEditEncodeMuxWrapper.run(codec, FILE_OUTPUT_MP4, R.raw.test_21);
 
-      CodecManager codecManager = new CodecManager(this, true);
-      codecManager.setOnMuxerDone(new CodecManager.OnMuxerDone() {
+      CodecManager codecWatermark = new CodecManager(this, true, Util.getScreenDimen(this));
+      codecWatermark.setOnMuxerDone(new CodecManager.OnMuxerDone() {
         @Override
         public void onDone() {
-          Util.endTimer("mux(with watermark) is done");
+          timerW.endTimer("mux(with watermark) is done");
           resultCounter++;
           if(resultCounter==2) Log.d(TAG, "result done! call callback!!!");
         }
       });
-      CodecManager.ExtractDecodeEditEncodeMuxWrapper.run(codecManager, FILE_OUTPUT_WATERMARK, R.raw.test_21);
+      CodecManager.ExtractDecodeEditEncodeMuxWrapper.run(codecWatermark, FILE_OUTPUT_WATERMARK, R.raw.test_21);
     } catch (Throwable throwable) {
       throwable.printStackTrace();
     }
