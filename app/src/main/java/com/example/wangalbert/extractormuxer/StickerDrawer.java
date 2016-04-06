@@ -153,7 +153,7 @@ public class StickerDrawer {
         return BitmapFactory.decodeResource(context.getResources(), resId);
     }
 
-    private Bitmap generateBitmap(String fileUrl) throws IOException{
+    private Bitmap generateBitmap(String fileUrl) throws IOException {
         // get bitmap
         File imageFile = new File(fileUrl);
         BitmapFactory.Options bmOptions = new BitmapFactory.Options();
@@ -161,14 +161,10 @@ public class StickerDrawer {
 
         if (bitmap != null) return bitmap;
 
-        //try {
-            InputStream is = new URL(fileUrl).openStream();
-            bitmap = BitmapFactory.decodeStream(is);
-            Log.d(TAG, "generateBitmap: bitmap = " + bitmap);
-            Log.d(TAG, "generateBitmap: bitmap.width=" + bitmap.getWidth()+ ", bitmap.height=" + bitmap.getHeight());
-        //} catch (Exception e) {
-        //    e.printStackTrace();
-        //}
+        InputStream is = new URL(fileUrl).openStream();
+        bitmap = BitmapFactory.decodeStream(is);
+        Log.d(TAG, "generateBitmap: bitmap = " + bitmap);
+        Log.d(TAG, "generateBitmap: bitmap.width=" + bitmap.getWidth()+ ", bitmap.height=" + bitmap.getHeight());
 
         return bitmap;
     }
