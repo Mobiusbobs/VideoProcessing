@@ -9,6 +9,7 @@ import android.opengl.Matrix;
 import android.util.Log;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.nio.ByteBuffer;
@@ -128,7 +129,8 @@ public class StickerDrawer {
         init(generateBitmap(resId));
     }
 
-    public StickerDrawer(Context context, String filePath, float[] verticesPositionData) {
+    public StickerDrawer(Context context, String filePath, float[] verticesPositionData)
+      throws IOException {
         this.verticesPositionData = verticesPositionData;
         this.context = context;
         init(generateBitmap(filePath));
@@ -151,22 +153,22 @@ public class StickerDrawer {
         return BitmapFactory.decodeResource(context.getResources(), resId);
     }
 
-    private Bitmap generateBitmap(String fileUrl) {
+    private Bitmap generateBitmap(String fileUrl) throws IOException{
         // get bitmap
         File imageFile = new File(fileUrl);
         BitmapFactory.Options bmOptions = new BitmapFactory.Options();
-        Bitmap bitmap =  BitmapFactory.decodeFile(imageFile.getAbsolutePath(), bmOptions);
+        Bitmap bitmap = BitmapFactory.decodeFile(imageFile.getAbsolutePath(), bmOptions);
 
-        if (bitmap!=null)   return bitmap;
+        if (bitmap != null) return bitmap;
 
-        try {
+        //try {
             InputStream is = new URL(fileUrl).openStream();
             bitmap = BitmapFactory.decodeStream(is);
             Log.d(TAG, "generateBitmap: bitmap = " + bitmap);
             Log.d(TAG, "generateBitmap: bitmap.width=" + bitmap.getWidth()+ ", bitmap.height=" + bitmap.getHeight());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        //} catch (Exception e) {
+        //    e.printStackTrace();
+        //}
 
         return bitmap;
     }

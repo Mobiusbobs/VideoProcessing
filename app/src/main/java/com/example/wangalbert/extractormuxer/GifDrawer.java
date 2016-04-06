@@ -19,39 +19,41 @@ import java.io.InputStream;
  * Created by wangalbert on 3/28/16.
  * Copyright (c) 2016 MobiusBobs Inc. All rights reserved.
  */
-public class GifDrawer extends StickerDrawer {
+public class GifDrawer {
   private static final String TAG = "GifDrawer";
+
+  // composition
+  private StickerDrawer stickerDrawer;
 
   private int[] textureHandle = new int[30];
   private GifDecoder gifDecoder;
   private long gifLastFrameTime;
-  private int[] gifDimen = new int[2];
 
   public GifDrawer(Context context, GifDecoder gifDecoder) {
-    super(context);
+    stickerDrawer = new StickerDrawer(context);
     this.gifDecoder = gifDecoder;
     init();
   }
 
   public GifDrawer(Context context, GifDecoder gifDecoder, float[] verticesPositionData) {
-    super(context, verticesPositionData);
+    stickerDrawer = new StickerDrawer(context, verticesPositionData);
+    stickerDrawer.verticesPositionData = verticesPositionData;
     this.gifDecoder = gifDecoder;
-    this.verticesPositionData = verticesPositionData;
     init();
   }
 
   private void init() {
-    initCoordinateBuffer();
+    stickerDrawer.initCoordinateBuffer();
 
     // calculate matrix
-    setupProjectionMatrix();
-    setupViewMatrix();
-    calculateMVPMatrix();
+    stickerDrawer.setupProjectionMatrix();
+    stickerDrawer.setupViewMatrix();
+    stickerDrawer.calculateMVPMatrix();
 
     setupGifDecoder(gifDecoder);
     loadTextures(gifDecoder.getFrameCount());
-    setupShader();
-    bindTexture();
+    stickerDrawer.setupShader();
+    stickerDrawer.bindTexture();
   }
 
   public static GifDecoder createGifDecoder(Context context, int rawGifId) {
@@ -64,7 +66,7 @@ public class GifDrawer extends StickerDrawer {
     return gifDecoder;
   }
 
-  public static GifDecoder createGifDecoder(Context context, String filePath) {
+  public static GifDecoder createGifDecoder(String filePath) {
     try {
       File gifFile = new File(filePath);
       InputStream inputStream = new FileInputStream(gifFile);
@@ -98,8 +100,8 @@ public class GifDrawer extends StickerDrawer {
       Bitmap bitmap = gifDecoder.getNextFrame();
       Log.d(TAG, "bitmap = " + bitmap);
       loadTexture(bitmap, i);
-      gifDecoder.advance();
       bitmap.recycle();
+      gifDecoder.advance();
     }
   }
 
@@ -113,21 +115,16 @@ public class GifDrawer extends StickerDrawer {
 
     // load the bitmap into current GL texture
     GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, bitmap, 0);
-
-    // destroy the bitmap
-    bitmap.recycle();
   }
 
-  private int updateFrameIndex(long timeMs) {
-    long now = timeMs;
-
+  private int updateFrameIndex(long currentTimeMs) {
     if (gifLastFrameTime == 0) {
-      gifLastFrameTime = now;
+      gifLastFrameTime = currentTimeMs;
     }
 
     int delay = gifDecoder.getNextDelay();
 
-    while(now >= gifLastFrameTime + delay) {
+    while(currentTimeMs >= gifLastFrameTime + delay) {
       gifLastFrameTime += delay;
       gifDecoder.advance();
       delay = gifDecoder.getNextDelay();
@@ -138,7 +135,7 @@ public class GifDrawer extends StickerDrawer {
   }
 
   public void draw(long timeMs) {
-    GLES20.glUseProgram(shaderProgramHandle);
+    GLES20.glUseProgram(stickerDrawer.shaderProgramHandle);
 
     // Set the active texture unit to texture unit 0.
     GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
@@ -146,26 +143,36 @@ public class GifDrawer extends StickerDrawer {
     // Bind the texture to this unit.
     GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureHandle[updateFrameIndex(timeMs)]);
     // Tell the texture uniform sampler to use this texture in the shader by binding to texture unit 0.
-    GLES20.glUniform1i(mTextureUniformHandle, 0);
+    GLES20.glUniform1i(stickerDrawer.mTextureUniformHandle, 0);
 
     // Pass in the position information
-    verticesPosition.position(0);
-    GLES20.glVertexAttribPointer(mPositionHandle, POSITION_DATASIZE, GLES20.GL_FLOAT, false,
-      0, verticesPosition);
-    GLES20.glEnableVertexAttribArray(mPositionHandle);
+    stickerDrawer.verticesPosition.position(0);
+    GLES20.glVertexAttribPointer(
+      stickerDrawer.mPositionHandle,
+      stickerDrawer.POSITION_DATASIZE,
+      GLES20.GL_FLOAT,
+      false,
+      0,
+      stickerDrawer.verticesPosition);
+    GLES20.glEnableVertexAttribArray(stickerDrawer.mPositionHandle);
 
     // Pass in the texture coordinate information
-    texturePosition.position(0);
-    GLES20.glVertexAttribPointer(mTextureCoordinateHandle, TEXTURE_COORD_DATASIZE, GLES20.GL_FLOAT, false,
-      0, texturePosition);
-    GLES20.glEnableVertexAttribArray(mTextureCoordinateHandle);
+    stickerDrawer.texturePosition.position(0);
+    GLES20.glVertexAttribPointer(
+      stickerDrawer.mTextureCoordinateHandle,
+      stickerDrawer.TEXTURE_COORD_DATASIZE,
+      GLES20.GL_FLOAT,
+      false,
+      0,
+      stickerDrawer.texturePosition);
+    GLES20.glEnableVertexAttribArray(stickerDrawer.mTextureCoordinateHandle);
 
     // blend
     GLES20.glEnable(GLES20.GL_BLEND);
     GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA);
 
     // set the matrix
-    GLES20.glUniformMatrix4fv(mMVPMatrixHandle, 1, false, mMVPMatrix, 0);
+    GLES20.glUniformMatrix4fv(stickerDrawer.mMVPMatrixHandle, 1, false, stickerDrawer.mMVPMatrix, 0);
 
     // Draw the sticker.
     GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, 6);
