@@ -1,4 +1,4 @@
-package com.example.wangalbert.extractormuxer;
+package com.example.wangalbert.extractormuxersample;
 
 import android.content.Context;
 import android.media.MediaCodec;
@@ -11,8 +11,8 @@ import android.os.Environment;
 import android.util.Log;
 import android.view.Surface;
 
-import com.example.wangalbert.extractormuxer.Surface.InputSurface;
-import com.example.wangalbert.extractormuxer.Surface.OutputSurface;
+import com.example.wangalbert.extractormuxersample.Surface.InputSurface;
+import com.example.wangalbert.extractormuxersample.Surface.OutputSurface;
 
 import java.io.File;
 import java.nio.ByteBuffer;

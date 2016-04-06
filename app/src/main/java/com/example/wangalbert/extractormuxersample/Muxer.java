@@ -1,6 +1,5 @@
-package com.example.wangalbert.extractormuxer;
+package com.example.wangalbert.extractormuxersample;
 
-import android.content.res.AssetFileDescriptor;
 import android.media.MediaCodec;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
