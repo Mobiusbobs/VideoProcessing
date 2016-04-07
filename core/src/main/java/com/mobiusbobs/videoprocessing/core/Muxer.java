@@ -1,4 +1,4 @@
-package com.example.wangalbert.extractormuxersample;
+package com.mobiusbobs.videoprocessing.core;
 
 import android.media.MediaCodec;
 import android.media.MediaExtractor;

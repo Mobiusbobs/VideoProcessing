@@ -1,4 +1,4 @@
-package com.example.wangalbert.extractormuxersample;
+package com.mobiusbobs.videoprocessing.core;
 
 import android.media.AudioFormat;
 import android.media.AudioRecord;

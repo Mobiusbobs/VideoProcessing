@@ -1,4 +1,4 @@
-package com.example.wangalbert.extractormuxersample;
+package com.mobiusbobs.videoprocessing.sample;
 
 import android.app.Application;
 import android.test.ApplicationTestCase;

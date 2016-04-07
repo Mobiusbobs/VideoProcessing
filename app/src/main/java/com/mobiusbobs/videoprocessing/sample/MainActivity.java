@@ -1,4 +1,4 @@
-package com.example.wangalbert.extractormuxersample;
+package com.mobiusbobs.videoprocessing.sample;
 
 import android.Manifest;
 import android.app.Activity;
@@ -12,7 +12,11 @@ import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.View;
 
-import com.example.wangalbert.extractormuxer.TryLibrary;
+import com.mobiusbobs.videoprocessing.core.AudioRecorder;
+import com.mobiusbobs.videoprocessing.core.CodecManager;
+import com.mobiusbobs.videoprocessing.core.Extractor;
+import com.mobiusbobs.videoprocessing.core.Muxer;
+import com.mobiusbobs.videoprocessing.core.TryLibrary;
 
 /*
  * Sample:
