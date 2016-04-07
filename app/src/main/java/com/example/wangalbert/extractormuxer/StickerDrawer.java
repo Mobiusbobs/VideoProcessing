@@ -91,7 +91,8 @@ public class StickerDrawer {
     protected int mPositionHandle;
 
     /** This is a handle to our texture data. */
-    protected int mTextureDataHandle;
+    //protected int[] mTextureDataHandle;
+    private int[] textureHandle;
 
     // shader
     final String vertexShader =
@@ -126,17 +127,19 @@ public class StickerDrawer {
     public StickerDrawer(Context context, int resId, float[] verticesPositionData) {
         this.verticesPositionData = verticesPositionData;
         this.context = context;
-        init(generateBitmap(resId));
+        init();
+        loadTexture(generateBitmap(resId), 1);
     }
 
     public StickerDrawer(Context context, String filePath, float[] verticesPositionData)
       throws IOException {
         this.verticesPositionData = verticesPositionData;
         this.context = context;
-        init(generateBitmap(filePath));
+        init();
+        loadTexture(generateBitmap(filePath), 1);
     }
 
-    public void init(Bitmap bitmap) {
+    public void init() {
         initCoordinateBuffer();
 
         // calculate matrix
@@ -144,7 +147,7 @@ public class StickerDrawer {
         setupViewMatrix();
         calculateMVPMatrix();
 
-        loadTexture(bitmap);
+        //loadTexture(bitmap);
         setupShader();
         bindTexture();
     }
@@ -224,20 +227,29 @@ public class StickerDrawer {
         Matrix.setLookAtM(mViewMatrix, 0, eyeX, eyeY, eyeZ, lookX, lookY, lookZ, upX, upY, upZ);
     }
 
-
     protected void calculateMVPMatrix()   {
         Matrix.setIdentityM(mModelMatrix, 0);
         Matrix.multiplyMM(mMVPMatrix, 0, mViewMatrix, 0, mModelMatrix, 0);
         Matrix.multiplyMM(mMVPMatrix, 0, mProjectionMatrix, 0, mMVPMatrix, 0);
     }
 
-    private void loadTexture(Bitmap bitmap) {
+    public void setTextureHandleSize(int textureCount) {
+        textureHandle = new int[textureCount];
         // alloc texture
-        int[] textureHandle = new int[1];
-        GLES20.glGenTextures(1, textureHandle, 0);
+        GLES20.glGenTextures(textureCount, textureHandle, 0);
+    }
 
-        // bind texture
-        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureHandle[0]);
+    private void loadTexture(Bitmap bitmap, int textureCount) {
+        setTextureHandleSize(textureCount);
+
+        loadBitmapToTexture(bitmap, 0);
+
+        // Recycle the bitmap, since its data has been loaded into OpenGL.
+        bitmap.recycle();
+    }
+
+    public void loadBitmapToTexture(Bitmap bitmap, int textureIndex) {
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureHandle[textureIndex]);
 
         // Set filtering
         GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_NEAREST);
@@ -245,11 +257,6 @@ public class StickerDrawer {
 
         // Load the bitmap into the bound texture.
         GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, bitmap, 0);
-
-        // Recycle the bitmap, since its data has been loaded into OpenGL.
-        bitmap.recycle();
-
-        mTextureDataHandle = textureHandle[0];
     }
 
     // TODO shader compile flow should be reused
@@ -335,12 +342,16 @@ public class StickerDrawer {
     }
 
     public void draw() {
+        draw(0);
+    }
+
+    public void draw(int textureIndex) {
         GLES20.glUseProgram(shaderProgramHandle);
 
         // Set the active texture unit to texture unit 0.
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
         // Bind the texture to this unit.
-        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, mTextureDataHandle);
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureHandle[textureIndex]);
         // Tell the texture uniform sampler to use this texture in the shader by binding to texture unit 0.
         GLES20.glUniform1i(mTextureUniformHandle, 0);
 
