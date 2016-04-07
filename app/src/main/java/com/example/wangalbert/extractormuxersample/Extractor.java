@@ -1,4 +1,4 @@
-package com.example.wangalbert.extractormuxer;
+package com.example.wangalbert.extractormuxersample;
 
 import android.content.Context;
 import android.content.res.AssetFileDescriptor;
