@@ -1,4 +1,4 @@
-package com.example.wangalbert.extractormuxer;
+package com.mobiusbobs.videoprocessing.core;
 
 /**
  * android

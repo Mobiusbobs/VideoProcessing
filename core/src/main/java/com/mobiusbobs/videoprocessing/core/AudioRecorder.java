@@ -1,4 +1,4 @@
-package com.example.wangalbert.extractormuxersample;
+package com.mobiusbobs.videoprocessing.core;
 
 import android.media.AudioFormat;
 import android.media.AudioRecord;
@@ -49,7 +49,7 @@ public class AudioRecorder {
         for (short channelConfig : new short[]{AudioFormat.CHANNEL_IN_MONO, AudioFormat.CHANNEL_IN_STEREO}) {
           try {
             Log.d(TAG, "Attempting rate " + rate + "Hz, bits: " + audioFormat + ", channel: "
-              + channelConfig);
+                    + channelConfig);
             int bufferSize = AudioRecord.getMinBufferSize(rate, channelConfig, audioFormat);
 
             if (bufferSize != AudioRecord.ERROR_BAD_VALUE) {
@@ -70,7 +70,7 @@ public class AudioRecorder {
 
   private void init() {
     buffSize = AudioRecord
-      .getMinBufferSize(frequncy, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT);
+            .getMinBufferSize(frequncy, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT);
 
     // http://stackoverflow.com/questions/4843739/audiorecord-object-not-initializing
     recorder = findAudioRecord();

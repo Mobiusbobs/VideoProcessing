@@ -1,4 +1,4 @@
-package com.example.wangalbert.extractormuxersample;
+package com.mobiusbobs.videoprocessing.core;
 
 import android.media.MediaCodec;
 import android.media.MediaExtractor;
@@ -24,7 +24,7 @@ public class Muxer {
 
 
   public void cloneMediaUsingMuxer(String filePath, String outputPath, int degrees)
-    throws IOException
+          throws IOException
   {
 
     // Set up MediaExtractor to read from the source.
@@ -75,10 +75,10 @@ public class Muxer {
         frameCount++;
         if (VERBOSE) {
           Log.d(TAG, "Frame (" + frameCount + ") " +
-            "PresentationTimeUs:" + bufferInfo.presentationTimeUs +
-            " Flags:" + bufferInfo.flags +
-            " TrackIndex:" + trackIndex +
-            " Size(KB) " + bufferInfo.size / 1024);
+                  "PresentationTimeUs:" + bufferInfo.presentationTimeUs +
+                  " Flags:" + bufferInfo.flags +
+                  " TrackIndex:" + trackIndex +
+                  " Size(KB) " + bufferInfo.size / 1024);
         }
       }
     }

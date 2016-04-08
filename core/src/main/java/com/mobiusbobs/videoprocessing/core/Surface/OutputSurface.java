@@ -1,4 +1,4 @@
-package com.example.wangalbert.extractormuxersample.Surface;
+package com.mobiusbobs.videoprocessing.core.Surface;
 
 
 /*
@@ -119,12 +119,12 @@ public class OutputSurface implements SurfaceTexture.OnFrameAvailableListener {
     // Configure EGL for pbuffer and OpenGL ES 2.0.  We want enough RGB bits
     // to be able to tell if the frame is reasonable.
     int[] attribList = {
-      EGL10.EGL_RED_SIZE, 8,
-      EGL10.EGL_GREEN_SIZE, 8,
-      EGL10.EGL_BLUE_SIZE, 8,
-      EGL10.EGL_SURFACE_TYPE, EGL10.EGL_PBUFFER_BIT,
-      EGL10.EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
-      EGL10.EGL_NONE
+            EGL10.EGL_RED_SIZE, 8,
+            EGL10.EGL_GREEN_SIZE, 8,
+            EGL10.EGL_BLUE_SIZE, 8,
+            EGL10.EGL_SURFACE_TYPE, EGL10.EGL_PBUFFER_BIT,
+            EGL10.EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+            EGL10.EGL_NONE
     };
     EGLConfig[] configs = new EGLConfig[1];
     int[] numConfigs = new int[1];
@@ -133,11 +133,11 @@ public class OutputSurface implements SurfaceTexture.OnFrameAvailableListener {
     }
     // Configure context for OpenGL ES 2.0.
     int[] attrib_list = {
-      EGL14.EGL_CONTEXT_CLIENT_VERSION, 2,
-      EGL10.EGL_NONE
+            EGL14.EGL_CONTEXT_CLIENT_VERSION, 2,
+            EGL10.EGL_NONE
     };
     mEGLContext = mEGL.eglCreateContext(mEGLDisplay, configs[0], EGL10.EGL_NO_CONTEXT,
-      attrib_list);
+            attrib_list);
     checkEglError("eglCreateContext");
     if (mEGLContext == null) {
       throw new RuntimeException("null context");
@@ -145,9 +145,9 @@ public class OutputSurface implements SurfaceTexture.OnFrameAvailableListener {
     // Create a pbuffer surface.  By using this for output, we can use glReadPixels
     // to test values in the output.
     int[] surfaceAttribs = {
-      EGL10.EGL_WIDTH, width,
-      EGL10.EGL_HEIGHT, height,
-      EGL10.EGL_NONE
+            EGL10.EGL_WIDTH, width,
+            EGL10.EGL_HEIGHT, height,
+            EGL10.EGL_NONE
     };
     mEGLSurface = mEGL.eglCreatePbufferSurface(mEGLDisplay, configs[0], surfaceAttribs);
     checkEglError("eglCreatePbufferSurface");
@@ -164,7 +164,7 @@ public class OutputSurface implements SurfaceTexture.OnFrameAvailableListener {
       if (mEGL.eglGetCurrentContext().equals(mEGLContext)) {
         // Clear the current context and surface to ensure they are discarded immediately.
         mEGL.eglMakeCurrent(mEGLDisplay, EGL10.EGL_NO_SURFACE, EGL10.EGL_NO_SURFACE,
-          EGL10.EGL_NO_CONTEXT);
+                EGL10.EGL_NO_CONTEXT);
       }
       mEGL.eglDestroySurface(mEGLDisplay, mEGLSurface);
       mEGL.eglDestroyContext(mEGLDisplay, mEGLContext);
