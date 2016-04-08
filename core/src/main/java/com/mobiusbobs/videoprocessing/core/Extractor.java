@@ -30,7 +30,7 @@ public class Extractor {
 
     }
 
-    public MediaExtractor createExtractor(String filePath) {
+    public static MediaExtractor createExtractor(String filePath) {
         MediaExtractor extractor = new MediaExtractor();
 
         // set dataSource for extractor
@@ -176,8 +176,4 @@ public class Extractor {
         }
         return -1;
     }
-
-    // ----- FOR TESTING -----
-
-
 }
