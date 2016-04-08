@@ -9,6 +9,7 @@ import android.opengl.Matrix;
 import android.util.Log;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.nio.ByteBuffer;
@@ -33,7 +34,7 @@ public class StickerDrawer {
     private Context context;
 
     /** Store our model data in a float buffer. */
-    private float[] verticesPositionData = {
+    protected float[] verticesPositionData = {
         // X, Y, Z,
         -1.0f, -1.0f, 0.0f,
         1.0f, -1.0f, 0.0f,
@@ -44,7 +45,7 @@ public class StickerDrawer {
         -1.0f, 1.0f, 0.0f
     };
 
-    private float[] textureCoordinateData = {
+    float[] textureCoordinateData = {
         // Front face
         0.0f, 1.0f,
         1.0f, 1.0f,
@@ -54,43 +55,43 @@ public class StickerDrawer {
         0.0f, 0.0f
     };
 
-    private FloatBuffer verticesPosition;
-    private FloatBuffer texturePosition;
-    private final int TEXTURE_COORD_DATASIZE = 2;
-    private final int POSITION_DATASIZE = 3;
-    private final int BYTES_PER_FLOAT = 4;
+    protected FloatBuffer verticesPosition;
+    protected FloatBuffer texturePosition;
+    protected final int TEXTURE_COORD_DATASIZE = 2;
+    protected final int POSITION_DATASIZE = 3;
+    protected final int BYTES_PER_FLOAT = 4;
 
     // transformation
-    private int mMVPMatrixHandle;
+    protected int mMVPMatrixHandle;
 
     /** Allocate storage for the final combined matrix. This will be passed into the shader program. */
-    private float[] mMVPMatrix = new float[16];
+    protected float[] mMVPMatrix = new float[16];
 
     /**
      * Store the model matrix. This matrix is used to move models from object space (where each model can be thought
      * of being located at the center of the universe) to world space.
      */
-    private float[] mModelMatrix = new float[16];
+    protected float[] mModelMatrix = new float[16];
 
     /**
      * Store the view matrix. This can be thought of as our camera. This matrix transforms world space to eye space;
      * it positions things relative to our eye.
      */
-    private float[] mViewMatrix = new float[16];
+    protected float[] mViewMatrix = new float[16];
 
     /** Store the projection matrix. This is used to project the scene onto a 2D viewport. */
-    private float[] mProjectionMatrix = new float[16];
+    protected float[] mProjectionMatrix = new float[16];
 
     // texture
     /** This will be used to pass in the texture. */
-    private int mTextureUniformHandle;
+    protected int mTextureUniformHandle;
     /** This will be used to pass in model texture coordinate information. */
-    private int mTextureCoordinateHandle;
+    protected int mTextureCoordinateHandle;
     /** This will be used to pass in the position coordinate of the sticker. */
-    private int mPositionHandle;
+    protected int mPositionHandle;
 
     /** This is a handle to our texture data. */
-    private int mTextureDataHandle;
+    private int[] textureHandle;
 
     // shader
     final String vertexShader =
@@ -120,22 +121,28 @@ public class StickerDrawer {
             + "   gl_FragColor = texture2D(u_Texture, v_TexCoordinate);     \n"     // Pass the color directly through the pipeline.
             + "}                              \n";
 
-    private int shaderProgramHandle;
-
+    protected int shaderProgramHandle;
 
     public StickerDrawer(Context context, int resId, float[] verticesPositionData) {
         this.verticesPositionData = verticesPositionData;
         this.context = context;
-        init(generateBitmap(resId));
+        init();
+        Bitmap bitmap = generateBitmap(resId);
+        loadTexture(bitmap, 1);
+        bitmap.recycle();
     }
 
-    public StickerDrawer(Context context, String filePath, float[] verticesPositionData) {
+    public StickerDrawer(Context context, String filePath, float[] verticesPositionData)
+      throws IOException {
         this.verticesPositionData = verticesPositionData;
         this.context = context;
-        init(generateBitmap(filePath));
+        init();
+        Bitmap bitmap = generateBitmap(filePath);
+        loadTexture(bitmap, 1);
+        bitmap.recycle();
     }
 
-    public void init(Bitmap bitmap) {
+    public void init() {
         initCoordinateBuffer();
 
         // calculate matrix
@@ -143,7 +150,6 @@ public class StickerDrawer {
         setupViewMatrix();
         calculateMVPMatrix();
 
-        loadTexture(bitmap);
         setupShader();
         bindTexture();
     }
@@ -152,27 +158,32 @@ public class StickerDrawer {
         return BitmapFactory.decodeResource(context.getResources(), resId);
     }
 
-    private Bitmap generateBitmap(String fileUrl) {
+    private Bitmap generateBitmap(String fileUrl) throws IOException {
         // get bitmap
         File imageFile = new File(fileUrl);
         BitmapFactory.Options bmOptions = new BitmapFactory.Options();
-        Bitmap bitmap =  BitmapFactory.decodeFile(imageFile.getAbsolutePath(), bmOptions);
+        Bitmap bitmap = BitmapFactory.decodeFile(imageFile.getAbsolutePath(), bmOptions);
 
-        if (bitmap!=null)   return bitmap;
+        if (bitmap != null) return bitmap;
 
-        try {
-            InputStream is = new URL(fileUrl).openStream();
-            bitmap = BitmapFactory.decodeStream(is);
-            Log.d(TAG, "generateBitmap: bitmap = " + bitmap);
-            Log.d(TAG, "generateBitmap: bitmap.width=" + bitmap.getWidth()+ ", bitmap.height=" + bitmap.getHeight());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        InputStream is = new URL(fileUrl).openStream();
+        bitmap = BitmapFactory.decodeStream(is);
+        Log.d(TAG, "generateBitmap: bitmap = " + bitmap);
+        Log.d(TAG, "generateBitmap: bitmap.width=" + bitmap.getWidth() + ", bitmap.height=" + bitmap.getHeight());
 
         return bitmap;
     }
 
-    private void initCoordinateBuffer() {
+    public StickerDrawer(Context context, float[] verticesPositionData)  {
+        this.verticesPositionData = verticesPositionData;
+        this.context = context;
+    }
+
+    public StickerDrawer(Context context)  {
+        this.context = context;
+    }
+
+    protected void initCoordinateBuffer() {
         // Initialize the buffers.
       verticesPosition = ByteBuffer.allocateDirect(verticesPositionData.length * BYTES_PER_FLOAT)
           .order(ByteOrder.nativeOrder()).asFloatBuffer();
@@ -183,7 +194,7 @@ public class StickerDrawer {
       texturePosition.put(textureCoordinateData).position(0);
     }
 
-    private void setupProjectionMatrix() {
+    protected void setupProjectionMatrix() {
         // Create a new perspective projection matrix. The height will stay the same
         // while the width will vary as per aspect ratio.
         final float left = -1.0f;   //-ratio;
@@ -196,7 +207,7 @@ public class StickerDrawer {
         Matrix.orthoM(mProjectionMatrix, 0, left, right, bottom, top, near, far);
     }
 
-    private void setupViewMatrix() {
+    protected void setupViewMatrix() {
         // Position the eye behind the origin.
         final float eyeX = 0.0f;
         final float eyeY = 0.0f;
@@ -218,19 +229,25 @@ public class StickerDrawer {
         Matrix.setLookAtM(mViewMatrix, 0, eyeX, eyeY, eyeZ, lookX, lookY, lookZ, upX, upY, upZ);
     }
 
-    private void calculateMVPMatrix()   {
+    protected void calculateMVPMatrix()   {
         Matrix.setIdentityM(mModelMatrix, 0);
         Matrix.multiplyMM(mMVPMatrix, 0, mViewMatrix, 0, mModelMatrix, 0);
         Matrix.multiplyMM(mMVPMatrix, 0, mProjectionMatrix, 0, mMVPMatrix, 0);
     }
 
-    private void loadTexture(Bitmap bitmap) {
+    public void setTextureHandleSize(int textureCount) {
+        textureHandle = new int[textureCount];
         // alloc texture
-        int[] textureHandle = new int[1];
-        GLES20.glGenTextures(1, textureHandle, 0);
+        GLES20.glGenTextures(textureCount, textureHandle, 0);
+    }
 
-        // bind texture
-        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureHandle[0]);
+    private void loadTexture(Bitmap bitmap, int textureCount) {
+        setTextureHandleSize(textureCount);
+        loadBitmapToTexture(bitmap, 0);
+    }
+
+    public void loadBitmapToTexture(Bitmap bitmap, int textureIndex) {
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureHandle[textureIndex]);
 
         // Set filtering
         GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_NEAREST);
@@ -238,21 +255,16 @@ public class StickerDrawer {
 
         // Load the bitmap into the bound texture.
         GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, bitmap, 0);
-
-        // Recycle the bitmap, since its data has been loaded into OpenGL.
-        bitmap.recycle();
-
-        mTextureDataHandle = textureHandle[0];
     }
 
     // TODO shader compile flow should be reused
-    private void setupShader() {
+    protected void setupShader() {
         int vertexShaderHandle = compileShader(GLES20.GL_VERTEX_SHADER, vertexShader);
         int fragmentShaderHandle = compileShader(GLES20.GL_FRAGMENT_SHADER, fragmentShader);
         shaderProgramHandle = createShaderProgram(vertexShaderHandle, fragmentShaderHandle);
     }
 
-    private int compileShader(int shaderType, String shaderProgram) {
+    protected int compileShader(int shaderType, String shaderProgram) {
         // Load in the vertex shader.
         int shaderHandle = GLES20.glCreateShader(shaderType);
         //Log.d(TAG, "shaderType = " + shaderType + ", shaderProgram = " + shaderProgram);
@@ -286,7 +298,7 @@ public class StickerDrawer {
         return shaderHandle;
     }
 
-    private int createShaderProgram(int vertexShaderHandle, int fragmentShaderHandle) {
+    protected int createShaderProgram(int vertexShaderHandle, int fragmentShaderHandle) {
         // Create a program object and store the handle to it.
         int programHandle = GLES20.glCreateProgram();
 
@@ -319,7 +331,7 @@ public class StickerDrawer {
         return programHandle;
     }
 
-    private void bindTexture() {
+    protected void bindTexture() {
         // Set program handles. These will later be used to pass in values to the program.
         mMVPMatrixHandle = GLES20.glGetUniformLocation(shaderProgramHandle, "u_MVPMatrix");
         mTextureUniformHandle = GLES20.glGetUniformLocation(shaderProgramHandle, "u_Texture");
@@ -328,12 +340,16 @@ public class StickerDrawer {
     }
 
     public void draw() {
+        draw(0);
+    }
+
+    public void draw(int textureIndex) {
         GLES20.glUseProgram(shaderProgramHandle);
 
         // Set the active texture unit to texture unit 0.
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
         // Bind the texture to this unit.
-        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, mTextureDataHandle);
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureHandle[textureIndex]);
         // Tell the texture uniform sampler to use this texture in the shader by binding to texture unit 0.
         GLES20.glUniform1i(mTextureUniformHandle, 0);
 

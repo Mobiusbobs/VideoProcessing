@@ -1,7 +1,6 @@
 package com.example.wangalbert.extractormuxer;
 
 import android.content.Context;
-import android.graphics.Point;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaCodecList;
@@ -9,10 +8,9 @@ import android.media.MediaExtractor;
 import android.media.MediaFormat;
 import android.media.MediaMuxer;
 import android.util.Log;
-import android.view.Display;
 import android.view.Surface;
-import android.view.WindowManager;
 
+import com.example.wangalbert.extractormuxer.gif.GifDecoder;
 import com.example.wangalbert.extractormuxer.surface.InputSurface;
 import com.example.wangalbert.extractormuxer.surface.OutputSurface;
 
@@ -55,6 +53,7 @@ public class CodecManager {
 
   private StickerDrawer stickerDrawer;
   private StickerDrawer logoDrawer;
+  private GifDrawer gifDrawer;
 
   private int screenWidth;
   private int screenHeight;
@@ -180,6 +179,12 @@ public class CodecManager {
       stickerDrawableId,
       coordConverter.getAlignCenterVertices(stickerDrawableId)
     );
+
+    // --- setup gif drawer ---
+    int gifId = R.raw.gif_funny;
+    GifDecoder gifDecoder = GifDrawer.createGifDecoder(context, gifId);
+    float[] gifVertices = coordConverter.getAlignCenterVertices(gifId);
+    gifDrawer = new GifDrawer(context, gifDecoder, gifVertices);
 
     // --- do the actual extract decode edit encode mux ---
     doExtractDecodeEncodeMux(
@@ -363,10 +368,15 @@ public class CodecManager {
           // Edit the frame and send it to the encoder.
 
           outputSurface.drawImage();
-          // TODO setup blending
-          stickerDrawer.draw();
 
-          if(withWaterMark)
+          // draw gif
+          gifDrawer.draw(videoDecoderOutputBufferInfo.presentationTimeUs / 1000);
+
+          // draw sticker
+          //stickerDrawer.draw();
+
+          // draw watermark
+          if (withWaterMark)
             logoDrawer.draw();
 
           inputSurface.setPresentationTime(videoDecoderOutputBufferInfo.presentationTimeUs * 1000);

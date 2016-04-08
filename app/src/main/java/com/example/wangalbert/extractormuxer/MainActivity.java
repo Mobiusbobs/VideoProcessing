@@ -29,8 +29,8 @@ public class MainActivity extends AppCompatActivity {
   public static final String FILE_OUTPUT_RAW = "/sdcard/Download/TestRAW.mp4";
   public static final String FILE_OUTPUT_AAC = "/sdcard/Download/TestAAC.aac";
   public static final String FILE_OUTPUT_AVC = "/sdcard/Download/tmp2AVC.mp4";
-  public static final String FILE_OUTPUT_MP4 = "/sdcard/Download/TestCodec5.mp4";
-  public static final String FILE_OUTPUT_WATERMARK = "/sdcard/Download/Watermark.mp4";
+  public static final String FILE_OUTPUT_MP4 = "/sdcard/Download/TestCodec7.mp4";
+  public static final String FILE_OUTPUT_WATERMARK = "/sdcard/Download/Watermark7.mp4";
   public static final String FILE_OUTPUT_WAV = "/sdcard/Download/TestWAV.wav";
   public static final String FILE_OUTPUT_PCM = "/sdcard/Download/audioRaw.pcm";
 
@@ -83,6 +83,7 @@ public class MainActivity extends AppCompatActivity {
     resultCounter = 0;
 
     try {
+      /*
       CodecManager codec = new CodecManager(this, false, Util.getScreenDimen(this));
       codec.setOnMuxerDone(new CodecManager.OnMuxerDone() {
         @Override
@@ -93,6 +94,7 @@ public class MainActivity extends AppCompatActivity {
         }
       });
       CodecManager.ExtractDecodeEditEncodeMuxWrapper.run(codec, FILE_OUTPUT_MP4, R.raw.test_21);
+      */
 
       CodecManager codecWatermark = new CodecManager(this, true, Util.getScreenDimen(this));
       codecWatermark.setOnMuxerDone(new CodecManager.OnMuxerDone() {

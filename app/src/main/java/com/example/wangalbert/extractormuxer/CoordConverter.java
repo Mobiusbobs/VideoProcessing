@@ -44,19 +44,19 @@ public class CoordConverter {
   }
 
   // returns vertices that is centered, and scale to match width while keeping aspect ratio
-  public float[] getAlignBtmRightVertices(int drawableId, int padding) {
+  public float[] getAlignBtmRightVertices(int drawableId, int margin) {
     int[] imgDimen = getImageDimen(drawableId);
-    return calcAlignBtmRightVertices(imgDimen, padding);
+    return calcAlignBtmRightVertices(imgDimen, margin);
   }
 
   // align bottom right corner
-  private float[] calcAlignBtmRightVertices(int[] imgDimen, int padding) {
-    float x1 = rectCoordToGLCoord(screenWidth - imgDimen[0] - padding, screenWidth); // L
-    float x2 = rectCoordToGLCoord(screenWidth - padding, screenWidth); // R
-    float y1 = rectCoordToGLCoord(padding, screenHeight); //B
-    float y2 = rectCoordToGLCoord(imgDimen[1] + padding, screenHeight); //T
+  private float[] calcAlignBtmRightVertices(int[] imgDimen, int margin) {
+    float x1 = rectCoordToGLCoord(screenWidth - imgDimen[0] - margin, screenWidth); // L
+    float x2 = rectCoordToGLCoord(screenWidth - margin, screenWidth); // R
+    float y1 = rectCoordToGLCoord(margin, screenHeight); //B
+    float y2 = rectCoordToGLCoord(imgDimen[1] + margin, screenHeight); //T
 
-    float[] verticesCoord = getVerticesCoord(x1,y1,x2,y2);
+    float[] verticesCoord = getVerticesCoord(x1, y1, x2, y2);
     printVertices(verticesCoord);
     return verticesCoord;
   }
@@ -101,7 +101,7 @@ public class CoordConverter {
   }
 
   private void printVertices(float[] vertices)  {
-    for(int i=0; i<vertices.length; i=i+3) {
+    for (int i=0; i<vertices.length; i=i+3) {
       Log.d(TAG, "verticesCoord(" + vertices[i] + ", " + vertices[i+1] + ", " + vertices[i+2] + ")");
     }
   }
