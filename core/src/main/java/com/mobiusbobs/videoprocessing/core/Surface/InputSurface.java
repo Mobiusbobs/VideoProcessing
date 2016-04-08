@@ -1,5 +1,4 @@
-package com.example.wangalbert.extractormuxer.surface;
-
+package com.mobiusbobs.videoprocessing.core.surface;
 
 /*
  * Copyright (C) 2013 The Android Open Source Project

@@ -13,8 +13,8 @@ import android.view.Display;
 import android.view.Surface;
 import android.view.WindowManager;
 
-import com.mobiusbobs.videoprocessing.core.Surface.InputSurface;
-import com.mobiusbobs.videoprocessing.core.Surface.OutputSurface;
+import com.mobiusbobs.videoprocessing.core.surface.InputSurface;
+import com.mobiusbobs.videoprocessing.core.surface.OutputSurface;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicReference;

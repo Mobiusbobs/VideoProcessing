@@ -10,8 +10,8 @@ import android.media.MediaMuxer;
 import android.util.Log;
 import android.view.Surface;
 
-import com.mobiusbobs.videoprocessing.core.Surface.InputSurface;
-import com.mobiusbobs.videoprocessing.core.Surface.OutputSurface;
+import com.mobiusbobs.videoprocessing.core.surface.InputSurface;
+import com.mobiusbobs.videoprocessing.core.surface.OutputSurface;
 import com.mobiusbobs.videoprocessing.core.gif.GifDecoder;
 
 import java.nio.ByteBuffer;
