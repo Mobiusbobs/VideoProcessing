@@ -191,12 +191,12 @@ public class VideoProcessor {
     muxer = new MediaMuxer(outputPath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
 
     // --- setup watermark ---
-    VerticesHelper verticesHelper = new VerticesHelper(context, screenWidth, screenHeight);
-    logoDrawer = new StickerDrawer(context, watermarkId, verticesHelper.getWatermarkVertices(watermarkId, 30));
+    CoordConverter coordConverter = new CoordConverter(context, screenWidth, screenHeight);
+    logoDrawer = new StickerDrawer(context, watermarkId, coordConverter.getAlignBtmRightVertices(watermarkId, 30));
 
     // --- setup sticker ----
     if(stickerUrl!= null)
-      stickerDrawer = new StickerDrawer(context, stickerUrl, verticesHelper.getAlignCenterVertices(stickerUrl));
+      stickerDrawer = new StickerDrawer(context, stickerUrl, coordConverter.getAlignCenterVertices(stickerUrl));
 
     // --- do the actual extract decode edit encode mux ---
     doExtractDecodeEncodeMux(
@@ -380,9 +380,9 @@ public class VideoProcessor {
 
           outputSurface.drawImage();
           if (stickerDrawer!=null)
-            stickerDrawer.drawSticker();
+            stickerDrawer.draw();
           if (withWatermark)
-            logoDrawer.drawSticker();
+            logoDrawer.draw();
           //stickerDrawer.drawBox(videoDecodedFrameCount);
 
           inputSurface.setPresentationTime(videoDecoderOutputBufferInfo.presentationTimeUs * 1000);

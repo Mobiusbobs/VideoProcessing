@@ -12,10 +12,9 @@ import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.View;
 
-import com.mobiusbobs.videoprocessing.core.AudioRecorder;
+import com.mobiusbobs.videoprocessing.core.Timer;
+import com.mobiusbobs.videoprocessing.core.Util;
 import com.mobiusbobs.videoprocessing.core.CodecManager;
-import com.mobiusbobs.videoprocessing.core.Extractor;
-import com.mobiusbobs.videoprocessing.core.Muxer;
 import com.mobiusbobs.videoprocessing.core.TryLibrary;
 
 /*
@@ -34,7 +33,7 @@ public class MainActivity extends AppCompatActivity {
   public static final String FILE_INPUT_WAV = "/sdcard/Download/TestWAV.wav";
   public static final String FILE_OUTPUT_RAW = "/sdcard/Download/TestRAW.mp4";
   public static final String FILE_OUTPUT_AAC = "/sdcard/Download/TestAAC.aac";
-  public static final String FILE_OUTPUT_AVC = "/sdcard/Download/tmp2AVC.mp4";
+  public static final String FILE_OUTPUT_WATERMARK = "/sdcard/Download/Watermark7.mp4";
   public static final String FILE_OUTPUT_MP4 = "/sdcard/Download/TestCodec3.mp4";
   public static final String FILE_OUTPUT_WAV = "/sdcard/Download/TestWAV.wav";
   public static final String FILE_OUTPUT_PCM = "/sdcard/Download/audioRaw.pcm";
@@ -48,10 +47,6 @@ public class MainActivity extends AppCompatActivity {
   };
 
   // MainComponent
-  Extractor extractor;
-  Muxer muxer;
-  AudioRecorder audioRecorder;
-
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -61,9 +56,6 @@ public class MainActivity extends AppCompatActivity {
     verifyStoragePermissions(this);
 
     initView();
-
-    //initComponent();  // not used for now
-    //testComponent();
 
     Log.d("MainActivity", TryLibrary.hello("Ray Shih"));
   }
@@ -82,50 +74,48 @@ public class MainActivity extends AppCompatActivity {
 
           Snackbar.make(view, "Do Extract decode edit encode Mux action", Snackbar.LENGTH_LONG)
             .setAction("Action", null).show();
-
-          // --- AudioRecord ---
-          /*
-          if (audioRecorder.isRecording())
-            audioRecorder.stopRecroding();
-          else
-            audioRecorder.startRecroding();
-          */
         }
       });
     }
   }
 
+  private int resultCounter = 0;
   private void runExtractDecodeEditEncodeMux() {
+
+    final Timer timer = new Timer();
+    final Timer timerW = new Timer();
+    timer.startTimer();
+    timerW.startTimer();
+
+    resultCounter = 0;
+
     try {
-      CodecManager.ExtractDecodeEditEncodeMuxWrapper.run(new CodecManager(this), FILE_OUTPUT_MP4, R.raw.test2);
+      /*
+      CodecManager codec = new CodecManager(this, false, Util.getScreenDimen(this));
+      codec.setOnMuxerDone(new CodecManager.OnMuxerDone() {
+        @Override
+        public void onDone() {
+          timer.endTimer("mux(no watermark) is done");
+          resultCounter++;
+          if(resultCounter==2) Log.d(TAG, "result done! call callback!!!");
+        }
+      });
+      CodecManager.ExtractDecodeEditEncodeMuxWrapper.run(codec, FILE_OUTPUT_MP4, R.raw.test_21);
+      */
+
+      CodecManager codecWatermark = new CodecManager(this, true, Util.getScreenDimen(this));
+      codecWatermark.setOnMuxerDone(new CodecManager.OnMuxerDone() {
+        @Override
+        public void onDone() {
+          timerW.endTimer("mux(with watermark) is done");
+          resultCounter++;
+          if(resultCounter==2) Log.d(TAG, "result done! call callback!!!");
+        }
+      });
+      CodecManager.ExtractDecodeEditEncodeMuxWrapper.run(codecWatermark, FILE_OUTPUT_WATERMARK, R.raw.test_21);
     } catch (Throwable throwable) {
       throwable.printStackTrace();
     }
-  }
-
-  private void initComponent() {
-    // init main component
-    extractor = new Extractor();
-    muxer = new Muxer();
-    audioRecorder = new AudioRecorder(FILE_OUTPUT_PCM);
-  }
-
-  private void testComponent() {
-    // ----- test all the component here -----
-    // --- Extractor ---
-    //extractor.extractVideoFile(FILE_INPUT_MP4);
-
-    // --- Extractor -> Muxer ---
-    /*
-    try {
-      Log.d(TAG, "-------------- test Extractor / Muxer -----------------");
-      muxer.cloneMediaUsingMuxer(FILE_INPUT_MP4, FILE_OUTPUT_MP4, 180);
-    } catch(IOException e) {
-      e.printStackTrace();
-    }
-    */
-
-    // --- Extractor -> MediaCodec(decode) -> MediaCodec(encode) -> Muxer ---
   }
 
   /**

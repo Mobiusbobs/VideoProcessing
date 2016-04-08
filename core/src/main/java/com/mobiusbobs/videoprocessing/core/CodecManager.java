@@ -7,14 +7,13 @@ import android.media.MediaCodecList;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
 import android.media.MediaMuxer;
-import android.os.Environment;
 import android.util.Log;
 import android.view.Surface;
 
 import com.mobiusbobs.videoprocessing.core.Surface.InputSurface;
 import com.mobiusbobs.videoprocessing.core.Surface.OutputSurface;
+import com.mobiusbobs.videoprocessing.core.gif.GifDecoder;
 
-import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -34,14 +33,13 @@ public class CodecManager {
   /** How long to wait for the next buffer to become available. */
   private static final int TIMEOUT_USEC = 10000;
 
-  /** Where to output the test files. */
-  private static final File OUTPUT_FILENAME_DIR = Environment.getExternalStorageDirectory();
-
   // parameters for the video encoder
   private static final String OUTPUT_VIDEO_MIME_TYPE = "video/avc"; // H.264 Advanced Video Coding
-  private static final int OUTPUT_VIDEO_BIT_RATE = 6000000; // 2Mbps      //TODO
-  private static final int OUTPUT_VIDEO_FRAME_RATE = 60; // 15fps         //TODO
-  private static final int OUTPUT_VIDEO_IFRAME_INTERVAL = 10; // 10 seconds between I-frames    // TODO what is this for
+
+  private static final int OUTPUT_VIDEO_BIT_RATE = 6000000; // 2Mbps
+  private static final int OUTPUT_VIDEO_FRAME_RATE = 60; // 15fps
+  private static final int OUTPUT_VIDEO_IFRAME_INTERVAL = 10; // 10 seconds between I-frames
+
   private static final int OUTPUT_VIDEO_COLOR_FORMAT =
           MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface;
 
@@ -50,8 +48,14 @@ public class CodecManager {
   private static final int OUTPUT_AUDIO_CHANNEL_COUNT = 1;  //2; // Must match the input stream.
   private static final int OUTPUT_AUDIO_BIT_RATE = 128 * 1024;      // TODO what is this
   private static final int OUTPUT_AUDIO_AAC_PROFILE =
-          MediaCodecInfo.CodecProfileLevel.AACObjectHE;   //AACObjectHE
-  private static final int OUTPUT_AUDIO_SAMPLE_RATE_HZ = 48000; //44100; // Must match the input stream.  //TODO
+    MediaCodecInfo.CodecProfileLevel.AACObjectLC;   //AACObjectHE
+  private static final int OUTPUT_AUDIO_SAMPLE_RATE_HZ = 44100; // Must match the input stream.
+
+  private Context context;
+
+  private StickerDrawer stickerDrawer;
+  private StickerDrawer logoDrawer;
+  private GifDrawer gifDrawer;
 
   /** Width of the output frames. */
   private int mWidth = 480;  // TODO currently this is hardcode
@@ -71,11 +75,60 @@ public class CodecManager {
                   "  gl_FragColor = texture2D(sTexture, vTextureCoord).rbga;\n" +
                   "}\n";
 
-  private Context context;
+  private int screenWidth;
+  private int screenHeight;
+
+  private boolean withWaterMark;
+
+  public interface OnMuxerDone {
+    void onDone();
+  }
+
+  private OnMuxerDone onMuxerDone;
 
   // Constructor
-  public CodecManager(Context context) {
+  public CodecManager(Context context, boolean withWaterMark, int[] screenDimen) {
+    this.withWaterMark = withWaterMark;
     this.context = context;
+    screenWidth = screenDimen[0];
+    screenHeight = screenDimen[1];
+  }
+
+  public void setOnMuxerDone(OnMuxerDone onMuxerDone) {
+    this.onMuxerDone = onMuxerDone;
+  }
+
+  private MediaFormat createOutputVideoFormat(MediaFormat inputVideoFormat) {
+    int videoWidth = inputVideoFormat.getInteger(MediaFormat.KEY_WIDTH);
+    int videoHeight = inputVideoFormat.getInteger(MediaFormat.KEY_HEIGHT);
+    int videoFrameRate = inputVideoFormat.getInteger(MediaFormat.KEY_FRAME_RATE);
+    int videoMaxInputSize = inputVideoFormat.getInteger(MediaFormat.KEY_MAX_INPUT_SIZE);
+
+    MediaFormat outputVideoFormat =
+      MediaFormat.createVideoFormat(OUTPUT_VIDEO_MIME_TYPE, videoWidth, videoHeight);
+    outputVideoFormat.setInteger(
+      MediaFormat.KEY_COLOR_FORMAT, OUTPUT_VIDEO_COLOR_FORMAT);
+    outputVideoFormat.setInteger(MediaFormat.KEY_BIT_RATE, OUTPUT_VIDEO_BIT_RATE);
+    outputVideoFormat.setInteger(MediaFormat.KEY_FRAME_RATE, videoFrameRate);
+    outputVideoFormat.setInteger(
+      MediaFormat.KEY_I_FRAME_INTERVAL, OUTPUT_VIDEO_IFRAME_INTERVAL);
+    outputVideoFormat.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, videoMaxInputSize);
+
+    return outputVideoFormat;
+  }
+
+  private MediaFormat createOutputAudioFormat(MediaFormat inputAudioFormat) {
+    int audioSamplingRate = inputAudioFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE);
+    int audioChannelCount = inputAudioFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT);
+    int audioMaxInputSize = inputAudioFormat.getInteger(MediaFormat.KEY_MAX_INPUT_SIZE);
+
+    MediaFormat outputAudioFormat =
+      MediaFormat.createAudioFormat(OUTPUT_AUDIO_MIME_TYPE, audioSamplingRate, audioChannelCount);
+    outputAudioFormat.setInteger(MediaFormat.KEY_BIT_RATE, OUTPUT_AUDIO_BIT_RATE);
+    outputAudioFormat.setInteger(MediaFormat.KEY_AAC_PROFILE, OUTPUT_AUDIO_AAC_PROFILE);
+    outputAudioFormat.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, audioMaxInputSize);
+
+    return outputAudioFormat;
   }
 
   public void extractDecodeEditEncodeMux(String outputPath, int inputRawFileId) throws Exception {
@@ -104,30 +157,11 @@ public class CodecManager {
     MediaFormat inputVideoFormat = videoExtractor.getTrackFormat(videoTrackIndex);
     MediaFormat inputAudioFormat = audioExtractor.getTrackFormat(audioTrackIndex);
 
-    // TODO delete log input format
-    Log.d(TAG, "MediaFormat: VIDEO = " + inputVideoFormat.toString());
-    String mime = inputVideoFormat.getString(MediaFormat.KEY_MIME);
-    Log.d(TAG, "extractVideoFile: mime = " + mime);
-
-    Log.d(TAG, "MediaFormat: AUDIO = " + inputAudioFormat.toString());
-    String mime2 = inputAudioFormat.getString(MediaFormat.KEY_MIME);
-    Log.d(TAG, "extractAudioFile: mime = " + mime);
-
     // ----- mediacodec -----
     // --- video encoder ---
-    // output media format
-    MediaFormat outputVideoFormat =
-            MediaFormat.createVideoFormat(OUTPUT_VIDEO_MIME_TYPE, mWidth, mHeight);
-    outputVideoFormat.setInteger(
-            MediaFormat.KEY_COLOR_FORMAT, OUTPUT_VIDEO_COLOR_FORMAT);
-    outputVideoFormat.setInteger(MediaFormat.KEY_BIT_RATE, OUTPUT_VIDEO_BIT_RATE);
-    outputVideoFormat.setInteger(MediaFormat.KEY_FRAME_RATE, OUTPUT_VIDEO_FRAME_RATE);
-    outputVideoFormat.setInteger(
-            MediaFormat.KEY_I_FRAME_INTERVAL, OUTPUT_VIDEO_IFRAME_INTERVAL);
-    outputVideoFormat.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, 0);
-
     // Create a MediaCodec for the desired codec, then configure it as an encoder with
     // our desired properties. Request a Surface to use for input.
+    MediaFormat outputVideoFormat = createOutputVideoFormat(inputVideoFormat);
     AtomicReference<Surface> inputSurfaceReference = new AtomicReference<Surface>();
     videoEncoder = createVideoEncoder(videoCodecInfo, outputVideoFormat, inputSurfaceReference);
     inputSurface = new InputSurface(inputSurfaceReference.get());
@@ -135,13 +169,12 @@ public class CodecManager {
 
     // --- video decoder ---
     outputSurface = new OutputSurface();
-    outputSurface.changeFragmentShader(FRAGMENT_SHADER);  // TODO change shader for edit the video
     videoDecoder = createVideoDecoder(inputVideoFormat, outputSurface.getSurface());
 
     // --- audio encoder / decoder ---
     MediaFormat outputAudioFormat =
-            MediaFormat.createAudioFormat(
-                    OUTPUT_AUDIO_MIME_TYPE, OUTPUT_AUDIO_SAMPLE_RATE_HZ, OUTPUT_AUDIO_CHANNEL_COUNT);
+      MediaFormat.createAudioFormat(
+        OUTPUT_AUDIO_MIME_TYPE, OUTPUT_AUDIO_SAMPLE_RATE_HZ, OUTPUT_AUDIO_CHANNEL_COUNT);
     outputAudioFormat.setInteger(MediaFormat.KEY_BIT_RATE, OUTPUT_AUDIO_BIT_RATE);
     outputAudioFormat.setInteger(MediaFormat.KEY_AAC_PROFILE, OUTPUT_AUDIO_AAC_PROFILE);
     // http://stackoverflow.com/questions/21284874/illegal-state-exception-when-calling-mediacodec-configure
@@ -156,6 +189,29 @@ public class CodecManager {
 
     // --- muxer ---
     muxer = new MediaMuxer(outputPath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
+
+    // --- setup watermark ---
+    CoordConverter coordConverter = new CoordConverter(context, screenWidth, screenHeight);
+    int watermarkId = R.drawable.logo_watermark;
+    logoDrawer = new StickerDrawer(
+      context,
+      watermarkId,
+      coordConverter.getAlignBtmRightVertices(watermarkId, 30)
+    );
+
+    // --- setup sticker ----
+    int stickerDrawableId = R.drawable.frames_hungry;
+    stickerDrawer = new StickerDrawer(
+      context,
+      stickerDrawableId,
+      coordConverter.getAlignCenterVertices(stickerDrawableId)
+    );
+
+    // --- setup gif drawer ---
+    int gifId = R.raw.gif_funny;
+    GifDecoder gifDecoder = GifDrawer.createGifDecoder(context, gifId);
+    float[] gifVertices = coordConverter.getAlignCenterVertices(gifId);
+    gifDrawer = new GifDrawer(context, gifDecoder, gifVertices);
 
     // --- do the actual extract decode edit encode mux ---
     doExtractDecodeEncodeMux(
@@ -230,10 +286,9 @@ public class CodecManager {
     int audioDecodedFrameCount = 0;
     int audioEncodedFrameCount = 0;
 
-    while(!videoEncoderDone || !audioEncoderDone) {
-
+    while (!videoEncoderDone || !audioEncoderDone) {
       // --- extract video from extractor ---
-      while(!videoExtractorDone && (encoderOutputVideoFormat == null || muxing)) {
+      while (!videoExtractorDone && (encoderOutputVideoFormat == null || muxing)) {
         // 1.) get the index of next buffer to be filled
         int decoderInputBufferIndex = videoDecoder.dequeueInputBuffer(TIMEOUT_USEC);
         if (decoderInputBufferIndex < 0) {
@@ -269,10 +324,11 @@ public class CodecManager {
       }
 
       // --- extract audio from extractor ---
-      while(!audioExtractorDone && (encoderOutputAudioFormat == null || muxing)) {
+
+      while (!audioExtractorDone && (encoderOutputAudioFormat == null || muxing)) {
         // 1.) get the index of next buffer to be filled
         int decoderInputBufferIndex = audioDecoder.dequeueInputBuffer(TIMEOUT_USEC);
-        if (decoderInputBufferIndex < 0) {
+        if (decoderInputBufferIndex == MediaCodec.INFO_TRY_AGAIN_LATER) {
           Log.e(TAG, "audioDecoder.dequeueInputBuffer: no audio decoder input buffer");
           break;
         }
@@ -284,26 +340,25 @@ public class CodecManager {
         // 4.) queue the buffer to codec to process
         if (size >= 0) {
           audioDecoder.queueInputBuffer(
-                  decoderInputBufferIndex,
-                  0,
-                  size,
-                  presentationTime,
-                  videoExtractor.getSampleFlags());
+            decoderInputBufferIndex,
+            0,
+            size,
+            presentationTime,
+            audioExtractor.getSampleFlags());
         }
         audioExtractorDone = !audioExtractor.advance();
         if (audioExtractorDone) {
           Log.d(TAG, "FLAG: audioExtractorDone!!!");
           audioDecoder.queueInputBuffer(
-                  decoderInputBufferIndex,
-                  0,
-                  0,
-                  0,
-                  MediaCodec.BUFFER_FLAG_END_OF_STREAM);
+            decoderInputBufferIndex,
+            0,
+            0,
+            0,
+            MediaCodec.BUFFER_FLAG_END_OF_STREAM);
         }
         audioExtractedFrameCount++;
         break;
       }
-
 
       // pull output frames from video decoder and feed it to encoder
       // TODO here is where we can add sticker
@@ -325,8 +380,6 @@ public class CodecManager {
           break;
         }
 
-        //ByteBuffer decoderOutputBuffer = videoDecoderOutputBuffers[decoderOutputBufferIndex];
-
         if ((videoDecoderOutputBufferInfo.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0) {
           Log.e(TAG, "video decoder: codec config buffer");
           videoDecoder.releaseOutputBuffer(decoderOutputBufferIndex, false);
@@ -340,8 +393,18 @@ public class CodecManager {
         if (render) {
           outputSurface.awaitNewImage();
           // Edit the frame and send it to the encoder.
-          // TODO here's where we can edit the frame
+
           outputSurface.drawImage();
+
+          // draw gif
+          gifDrawer.draw(videoDecoderOutputBufferInfo.presentationTimeUs / 1000);
+
+          // draw sticker
+          //stickerDrawer.draw();
+
+          // draw watermark
+          if (withWaterMark)
+            logoDrawer.draw();
 
           inputSurface.setPresentationTime(videoDecoderOutputBufferInfo.presentationTimeUs * 1000);
           Log.d(TAG, "input surface: swap buffers");
@@ -384,8 +447,6 @@ public class CodecManager {
           break;
         }
 
-        //ByteBuffer decoderOutputBuffer = audioDecoderOutputBuffers[decoderOutputBufferIndex];
-
         pendingAudioDecoderOutputBufferIndex = decoderOutputBufferIndex;
         audioDecodedFrameCount++;
         // We extracted a pending frame, let's try something else next.
@@ -401,7 +462,6 @@ public class CodecManager {
           break;
         }
 
-        //ByteBuffer encoderInputBuffer = audioEncoder.getInputBuffer(encoderInputBufferIndex);
         ByteBuffer encoderInputBuffer = audioEncoderInputBuffers[encoderInputBufferIndex];
         int size = audioDecoderOutputBufferInfo.size;
         long presentationTime = audioDecoderOutputBufferInfo.presentationTimeUs;
@@ -414,11 +474,11 @@ public class CodecManager {
           encoderInputBuffer.position(0);
           encoderInputBuffer.put(decoderOutputBuffer);
           audioEncoder.queueInputBuffer(
-                  encoderInputBufferIndex,
-                  0,
-                  size,
-                  presentationTime,
-                  audioDecoderOutputBufferInfo.flags);
+            encoderInputBufferIndex,
+            0,
+            size,
+            presentationTime,
+            audioDecoderOutputBufferInfo.flags);
         }
         audioDecoder.releaseOutputBuffer(pendingAudioDecoderOutputBufferIndex, false);
         pendingAudioDecoderOutputBufferIndex = -1;
@@ -428,7 +488,6 @@ public class CodecManager {
         }
         break;
       }
-
 
       // Poll frames from the video encoder and send them to the muxer.
       while (!videoEncoderDone && (encoderOutputVideoFormat == null || muxing)) {
@@ -447,12 +506,10 @@ public class CodecManager {
           Log.e(TAG, "video encoder: output format changed");
           if (outputVideoTrack >= 0) {
             Log.e(TAG, "SHOULD NOT ENTER HERE!");
-            //fail("video encoder changed its output format again?");
           }
           encoderOutputVideoFormat = videoEncoder.getOutputFormat();
           break;
         }
-
 
         ByteBuffer encoderOutputBuffer =
                 videoEncoderOutputBuffers[encoderOutputBufferIndex];
@@ -474,7 +531,6 @@ public class CodecManager {
         videoEncodedFrameCount++;
         break;
       }
-
 
       // Poll frames from the audio encoder and send them to the muxer.
       while (!audioEncoderDone && (encoderOutputAudioFormat == null || muxing)) {
@@ -499,7 +555,6 @@ public class CodecManager {
           break;
         }
 
-        Log.d(TAG, "TEST!!! ENTER ENCODER -> MUXER!");
         ByteBuffer encoderOutputBuffer = audioEncoderOutputBuffers[encoderOutputBufferIndex];
         if ((audioEncoderOutputBufferInfo.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0) {
           Log.d(TAG, "audio encoder: codec config buffer");
@@ -521,12 +576,10 @@ public class CodecManager {
         break;
       }
 
-
       if (!muxing &&
-              (encoderOutputAudioFormat != null) &&
-              (encoderOutputVideoFormat != null)
-              ) {
-
+          (encoderOutputAudioFormat != null) &&
+          (encoderOutputVideoFormat != null)
+      ) {
         Log.d(TAG, "muxer: adding video track.");
         outputVideoTrack = muxer.addTrack(encoderOutputVideoFormat);
 
@@ -537,8 +590,11 @@ public class CodecManager {
         muxer.start();
         muxing = true;
       }
-
     }
+
+    muxer.stop();
+    muxer.release();
+    onMuxerDone.onDone();
 
     Log.d(TAG, "doExtractDecodeEncodeMux Done: videoExtractedFrameCount = " + videoExtractedFrameCount);
     Log.d(TAG, "doExtractDecodeEncodeMux Done: videoDecodedFrameCount = " + videoDecodedFrameCount);
@@ -546,9 +602,6 @@ public class CodecManager {
     Log.d(TAG, "doExtractDecodeEncodeMux Done: audioExtractedFrameCount = " + audioExtractedFrameCount);
     Log.d(TAG, "doExtractDecodeEncodeMux Done: audioDecodedFrameCount = " + audioDecodedFrameCount);
     Log.d(TAG, "doExtractDecodeEncodeMux Done: audioEncodedFrameCount = " + audioEncodedFrameCount);
-
-    muxer.stop();
-    muxer.release();
   }
 
   /**
