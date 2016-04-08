@@ -10,7 +10,6 @@ import java.io.File;
 
 
 public class Util {
-
     private static final String TAG = "Util";
 
     public static void fileSize(String filePath) {
@@ -27,5 +26,4 @@ public class Util {
         display.getSize(size);
         return new int[] {size.x, size.y};
     }
-
 }
