@@ -91,7 +91,6 @@ public class StickerDrawer {
     protected int mPositionHandle;
 
     /** This is a handle to our texture data. */
-    //protected int[] mTextureDataHandle;
     private int[] textureHandle;
 
     // shader
@@ -128,7 +127,9 @@ public class StickerDrawer {
         this.verticesPositionData = verticesPositionData;
         this.context = context;
         init();
-        loadTexture(generateBitmap(resId), 1);
+        Bitmap bitmap = generateBitmap(resId);
+        loadTexture(bitmap, 1);
+        bitmap.recycle();
     }
 
     public StickerDrawer(Context context, String filePath, float[] verticesPositionData)
@@ -136,7 +137,9 @@ public class StickerDrawer {
         this.verticesPositionData = verticesPositionData;
         this.context = context;
         init();
-        loadTexture(generateBitmap(filePath), 1);
+        Bitmap bitmap = generateBitmap(filePath);
+        loadTexture(bitmap, 1);
+        bitmap.recycle();
     }
 
     public void init() {
@@ -147,7 +150,6 @@ public class StickerDrawer {
         setupViewMatrix();
         calculateMVPMatrix();
 
-        //loadTexture(bitmap);
         setupShader();
         bindTexture();
     }
@@ -167,7 +169,7 @@ public class StickerDrawer {
         InputStream is = new URL(fileUrl).openStream();
         bitmap = BitmapFactory.decodeStream(is);
         Log.d(TAG, "generateBitmap: bitmap = " + bitmap);
-        Log.d(TAG, "generateBitmap: bitmap.width=" + bitmap.getWidth()+ ", bitmap.height=" + bitmap.getHeight());
+        Log.d(TAG, "generateBitmap: bitmap.width=" + bitmap.getWidth() + ", bitmap.height=" + bitmap.getHeight());
 
         return bitmap;
     }
@@ -241,11 +243,7 @@ public class StickerDrawer {
 
     private void loadTexture(Bitmap bitmap, int textureCount) {
         setTextureHandleSize(textureCount);
-
         loadBitmapToTexture(bitmap, 0);
-
-        // Recycle the bitmap, since its data has been loaded into OpenGL.
-        bitmap.recycle();
     }
 
     public void loadBitmapToTexture(Bitmap bitmap, int textureIndex) {

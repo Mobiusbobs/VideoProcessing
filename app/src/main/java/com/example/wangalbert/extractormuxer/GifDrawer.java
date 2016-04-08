@@ -2,8 +2,6 @@ package com.example.wangalbert.extractormuxer;
 
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.opengl.GLES20;
-import android.opengl.GLUtils;
 import android.util.Log;
 
 import com.example.wangalbert.extractormuxer.gif.GifDecoder;
