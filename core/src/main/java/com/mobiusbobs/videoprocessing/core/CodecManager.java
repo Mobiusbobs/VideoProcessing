@@ -56,6 +56,7 @@ public class CodecManager {
   private StickerDrawer stickerDrawer;
   private StickerDrawer logoDrawer;
   private GifDrawer gifDrawer;
+  private TextDrawer textDrawer;
 
   /** Width of the output frames. */
   private int mWidth = 480;  // TODO currently this is hardcode
@@ -212,6 +213,9 @@ public class CodecManager {
     GifDecoder gifDecoder = GifDrawer.createGifDecoder(context, gifId);
     float[] gifVertices = coordConverter.getAlignCenterVertices(gifId);
     gifDrawer = new GifDrawer(context, gifDecoder, gifVertices);
+
+    // --- setup textdrawer ---
+    textDrawer = new TextDrawer(context, "HELLO WORLD!!!!");
 
     // --- do the actual extract decode edit encode mux ---
     doExtractDecodeEncodeMux(
@@ -395,6 +399,9 @@ public class CodecManager {
           // Edit the frame and send it to the encoder.
 
           outputSurface.drawImage();
+
+          // draw text
+          textDrawer.draw();
 
           // draw gif
           gifDrawer.draw(videoDecoderOutputBufferInfo.presentationTimeUs / 1000);

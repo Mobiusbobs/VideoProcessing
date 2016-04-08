@@ -241,7 +241,7 @@ public class StickerDrawer {
         GLES20.glGenTextures(textureCount, textureHandle, 0);
     }
 
-    private void loadTexture(Bitmap bitmap, int textureCount) {
+    public void loadTexture(Bitmap bitmap, int textureCount) {
         setTextureHandleSize(textureCount);
         loadBitmapToTexture(bitmap, 0);
     }
