@@ -29,7 +29,7 @@ import java.net.URL;
  * Copyright (c) 2016 MobiusBobs Inc. All rights reserved.
  */
 public class CoordConverter {
-  private static final String TAG = "VerticesConverter";
+  private static final String TAG = "CoordConverter";
 
   private int screenWidth;
   private int screenHeight;
@@ -41,6 +41,20 @@ public class CoordConverter {
     this.context = context;
     this.screenWidth = screenWidth;
     this.screenHeight = screenHeight;
+    Log.d(TAG, "screenWidth="+screenWidth + ", screenHeight="+screenHeight);
+  }
+
+  public float[] getAlignTopVertices(Bitmap bitmap, int marginTop) {
+    int height = bitmap.getHeight();
+
+    float x1 = rectCoordToGLCoord(0, screenWidth); // L
+    float x2 = rectCoordToGLCoord(screenWidth, screenWidth); // R
+    float y1 = rectCoordToGLCoord(screenHeight - (marginTop + height), screenHeight); //B
+    float y2 = rectCoordToGLCoord(screenHeight - marginTop, screenHeight); //T
+
+    float[] verticesCoord = getVerticesCoord(x1, y1, x2, y2);
+    printVertices(verticesCoord);
+    return verticesCoord;
   }
 
   // returns vertices that is centered, and scale to match width while keeping aspect ratio

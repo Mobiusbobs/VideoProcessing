@@ -215,7 +215,7 @@ public class CodecManager {
     gifDrawer = new GifDrawer(context, gifDecoder, gifVertices);
 
     // --- setup textdrawer ---
-    textDrawer = new TextDrawer(context, "HELLO WORLD!!!!");
+    textDrawer = new TextDrawer(context, coordConverter, screenWidth, "Tiger");
 
     // --- do the actual extract decode edit encode mux ---
     doExtractDecodeEncodeMux(

@@ -4,9 +4,8 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
-import android.graphics.Matrix;
 import android.graphics.Paint;
-
+import android.graphics.Rect;
 
 /**
  * android
@@ -21,45 +20,54 @@ public class TextDrawer {
   private StickerDrawer stickerDrawer;
 
   private Context context;
+  private int screenWidth;
 
   // Constructor
-  public TextDrawer(Context context, String text) {
+  public TextDrawer(Context context, CoordConverter converter, int screenWidth, String text) {
     this.context = context;
-
-    stickerDrawer = new StickerDrawer(context);
-    stickerDrawer.init();
+    this.screenWidth = screenWidth;
 
     Bitmap bitmap = generateBitmap(text);
+    stickerDrawer = new StickerDrawer(context);
+    stickerDrawer.setVerticesCoordinate(converter.getAlignTopVertices(bitmap, 56));
+    stickerDrawer.init();
     stickerDrawer.loadTexture(bitmap, 1);
     bitmap.recycle();
   }
 
-  private Bitmap overlay(Bitmap bmp1, Bitmap bmp2) {
-    Bitmap bmOverlay = Bitmap.createBitmap(bmp1.getWidth(), bmp1.getHeight(), bmp1.getConfig());
-    Canvas canvas = new Canvas(bmOverlay);
-    canvas.drawBitmap(bmp1, new Matrix(), null);
-    canvas.drawBitmap(bmp2, new Matrix(), null);
-    return bmOverlay;
-  }
-
   public Bitmap generateBitmap(String text) {
-    Bitmap bitmap = Bitmap.createBitmap(256, 256, Bitmap.Config.ARGB_4444);
+    float rightMargin = 15;
+    int textShift = 5;
+
+    // create paw bitmap
     Bitmap icon = BitmapFactory.decodeResource(context.getResources(),
       R.drawable.icon_paw);
+
+    // create the bitmap to draw on
+    int iconHeight = icon.getHeight();
+    int containerHeight = iconHeight * 2;
+    Bitmap bitmap = Bitmap.createBitmap(screenWidth, containerHeight, Bitmap.Config.ARGB_4444);
 
     // get a canvas to paint over the bitmap
     Canvas canvas = new Canvas(bitmap);
     bitmap.eraseColor(0);
 
-    canvas.drawBitmap(icon, new Matrix(), null);
-
-    // Draw the text
+    // setup paint
+    Rect textBounds = new Rect();
     Paint textPaint = new Paint();
-    textPaint.setTextSize(32);
+    textPaint.setTextSize(50);
     textPaint.setAntiAlias(true);
-    textPaint.setARGB(0xff, 0x00, 0x00, 0x00);
-    // draw the text centered
-    canvas.drawText(text, 16, 112, textPaint);
+    textPaint.setARGB(0x7C, 0x00, 0x00, 0x00);
+    textPaint.getTextBounds(text, 0, text.length(), textBounds);
+
+    // draw text
+    float textLength = textBounds.width();
+    float textHeight = textBounds.height();
+    canvas.drawText(text, screenWidth - (textLength + rightMargin), (containerHeight + textHeight) / 2 - textShift, textPaint);
+
+    // draw paw image
+    float left = screenWidth - (icon.getWidth() + textLength + rightMargin);
+    canvas.drawBitmap(icon, left, (containerHeight-icon.getHeight())/2, null);
 
     return bitmap;
   }
@@ -67,5 +75,4 @@ public class TextDrawer {
   public void draw()  {
     stickerDrawer.draw();
   }
-  
 }

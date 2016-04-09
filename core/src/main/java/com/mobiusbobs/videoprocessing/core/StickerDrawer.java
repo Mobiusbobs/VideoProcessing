@@ -142,6 +142,15 @@ public class StickerDrawer {
         bitmap.recycle();
     }
 
+    public StickerDrawer(Context context, float[] verticesPositionData)  {
+        this.verticesPositionData = verticesPositionData;
+        this.context = context;
+    }
+
+    public StickerDrawer(Context context)  {
+        this.context = context;
+    }
+
     public void init() {
         initCoordinateBuffer();
 
@@ -174,13 +183,8 @@ public class StickerDrawer {
         return bitmap;
     }
 
-    public StickerDrawer(Context context, float[] verticesPositionData)  {
+    public void setVerticesCoordinate(float[] verticesPositionData) {
         this.verticesPositionData = verticesPositionData;
-        this.context = context;
-    }
-
-    public StickerDrawer(Context context)  {
-        this.context = context;
     }
 
     protected void initCoordinateBuffer() {
