@@ -1,5 +1,4 @@
-package com.mobiusbobs.videoprocessing.core.Surface;
-
+package com.mobiusbobs.videoprocessing.core.surface;
 
 /*
  * Copyright (C) 2013 The Android Open Source Project
@@ -18,10 +17,10 @@ package com.mobiusbobs.videoprocessing.core.Surface;
  */
 
 import android.opengl.EGL14;
+import android.opengl.EGLExt;
 import android.opengl.EGLConfig;
 import android.opengl.EGLContext;
 import android.opengl.EGLDisplay;
-import android.opengl.EGLExt;
 import android.opengl.EGLSurface;
 import android.util.Log;
 import android.view.Surface;

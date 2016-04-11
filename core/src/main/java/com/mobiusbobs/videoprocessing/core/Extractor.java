@@ -147,13 +147,14 @@ public class Extractor {
     private static boolean isVideoFormat(MediaFormat format) {
         return getMimeTypeFor(format).startsWith("video/");
     }
+
     private static boolean isAudioFormat(MediaFormat format) {
         return getMimeTypeFor(format).startsWith("audio/");
     }
+
     public static String getMimeTypeFor(MediaFormat format) {
         return format.getString(MediaFormat.KEY_MIME);
     }
-
 
     public static int getAndSelectVideoTrackIndex(MediaExtractor extractor) {
         for (int index = 0; index < extractor.getTrackCount(); ++index) {

@@ -18,7 +18,7 @@ import java.io.InputStream;
  * Created by wangalbert on 3/28/16.
  * Copyright (c) 2016 MobiusBobs Inc. All rights reserved.
  */
-public class GifDrawer {
+public class GifDrawer implements GLDrawable {
   private static final String TAG = "GifDrawer";
 
   // composition
@@ -30,22 +30,21 @@ public class GifDrawer {
   public GifDrawer(Context context, GifDecoder gifDecoder) {
     stickerDrawer = new StickerDrawer(context);
     this.gifDecoder = gifDecoder;
-    init();
   }
 
   public GifDrawer(Context context, GifDecoder gifDecoder, float[] verticesPositionData) {
     stickerDrawer = new StickerDrawer(context, verticesPositionData);
     stickerDrawer.verticesPositionData = verticesPositionData;
     this.gifDecoder = gifDecoder;
-    init();
   }
 
-  private void init() {
+  public void init() throws IOException {
     stickerDrawer.init();
     setupGifDecoder(gifDecoder);
     loadTextures(gifDecoder.getFrameCount());
   }
 
+  // TODO refactor this
   public static GifDecoder createGifDecoder(Context context, int rawGifId) {
     // open gif file as inputSource
     InputStream inputStream = context.getResources().openRawResource(rawGifId);
