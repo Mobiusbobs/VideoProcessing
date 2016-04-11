@@ -26,5 +26,4 @@ public class Util {
         display.getSize(size);
         return new int[] {size.x, size.y};
     }
-
 }

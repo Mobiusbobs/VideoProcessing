@@ -28,7 +28,7 @@ import java.nio.FloatBuffer;
  * Created by rayshih on 3/22/16.
  * Copyright (c) 2016 MobiusBobs Inc. All rights reserved.
  */
-public class StickerDrawer {
+public class StickerDrawer implements GLDrawable {
     private static final String TAG = "StickerDrawer";
 
     private Context context;
@@ -123,26 +123,23 @@ public class StickerDrawer {
 
     protected int shaderProgramHandle;
 
+    private int imageResId = -1;
+    private String imageFilePath = null;
+
     public StickerDrawer(Context context, int resId, float[] verticesPositionData) {
-        this.verticesPositionData = verticesPositionData;
         this.context = context;
-        init();
-        Bitmap bitmap = generateBitmap(resId);
-        loadTexture(bitmap, 1);
-        bitmap.recycle();
+        this.imageResId = resId;
+        this.verticesPositionData = verticesPositionData;
     }
 
     public StickerDrawer(Context context, String filePath, float[] verticesPositionData)
       throws IOException {
-        this.verticesPositionData = verticesPositionData;
         this.context = context;
-        init();
-        Bitmap bitmap = generateBitmap(filePath);
-        loadTexture(bitmap, 1);
-        bitmap.recycle();
+        this.imageFilePath = filePath;
+        this.verticesPositionData = verticesPositionData;
     }
 
-    public void init() {
+    public void init() throws IOException {
         initCoordinateBuffer();
 
         // calculate matrix
@@ -152,6 +149,18 @@ public class StickerDrawer {
 
         setupShader();
         bindTexture();
+
+        if (imageResId != -1) {
+            Bitmap bitmap = generateBitmap(imageResId);
+            loadTexture(bitmap, 1);
+            bitmap.recycle();
+        }
+
+        if (imageFilePath != null) {
+            Bitmap bitmap = generateBitmap(imageFilePath);
+            loadTexture(bitmap, 1);
+            bitmap.recycle();
+        }
     }
 
     private Bitmap generateBitmap(int resId) {
@@ -339,7 +348,7 @@ public class StickerDrawer {
         mTextureCoordinateHandle = GLES20.glGetAttribLocation(shaderProgramHandle, "a_TexCoordinate");
     }
 
-    public void draw() {
+    public void draw(long timeMs) {
         draw(0);
     }
 
