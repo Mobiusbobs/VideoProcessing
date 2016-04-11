@@ -7,13 +7,15 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Rect;
 
+import java.io.IOException;
+
 /**
  * android
  * <p/>
  * Created by wangalbert on 4/8/16.
  * Copyright (c) 2016 MobiusBobs Inc. All rights reserved.
  */
-public class TextDrawer {
+public class TextDrawer implements GLDrawable {
   private static final String TAG = "TextDrawer";
 
   // composition
@@ -21,13 +23,21 @@ public class TextDrawer {
 
   private Context context;
   private int screenWidth;
+  private CoordConverter converter;
+  private String text;
+  private int resId;
 
   // Constructor
-  public TextDrawer(Context context, CoordConverter converter, int screenWidth, String text) {
+  public TextDrawer(Context context, CoordConverter converter, int screenWidth, String text, int resId) {
     this.context = context;
     this.screenWidth = screenWidth;
+    this.converter = converter;
+    this.text = text;
+    this.resId = resId;
+  }
 
-    Bitmap bitmap = generateBitmap(text);
+  public void init() throws IOException {
+    Bitmap bitmap = generateBitmap(text, resId);
     stickerDrawer = new StickerDrawer(context);
     stickerDrawer.setVerticesCoordinate(converter.getAlignTopVertices(bitmap, 56));
     stickerDrawer.init();
@@ -35,13 +45,13 @@ public class TextDrawer {
     bitmap.recycle();
   }
 
-  public Bitmap generateBitmap(String text) {
+
+  public Bitmap generateBitmap(String text, int resId) {
     float rightMargin = 15;
     int textShift = 5;
 
     // create paw bitmap
-    Bitmap icon = BitmapFactory.decodeResource(context.getResources(),
-      R.drawable.icon_paw);
+    Bitmap icon = BitmapFactory.decodeResource(context.getResources(), resId);
 
     // create the bitmap to draw on
     int iconHeight = icon.getHeight();
@@ -72,7 +82,7 @@ public class TextDrawer {
     return bitmap;
   }
 
-  public void draw()  {
-    stickerDrawer.draw();
+  public void draw(long timeMs) {
+    stickerDrawer.draw(0);
   }
 }

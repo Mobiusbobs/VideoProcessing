@@ -184,6 +184,15 @@ public class StickerDrawer implements GLDrawable {
         return bitmap;
     }
 
+    public StickerDrawer(Context context, float[] verticesPositionData)  {
+        this.verticesPositionData = verticesPositionData;
+        this.context = context;
+    }
+
+    public StickerDrawer(Context context)  {
+        this.context = context;
+    }
+
     public void setVerticesCoordinate(float[] verticesPositionData) {
         this.verticesPositionData = verticesPositionData;
     }
