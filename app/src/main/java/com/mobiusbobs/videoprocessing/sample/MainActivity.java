@@ -20,7 +20,6 @@ import com.mobiusbobs.videoprocessing.core.GifDrawer;
 import com.mobiusbobs.videoprocessing.core.ProcessorRunner;
 import com.mobiusbobs.videoprocessing.core.StickerDrawer;
 import com.mobiusbobs.videoprocessing.core.Timer;
-import com.mobiusbobs.videoprocessing.core.TryLibrary;
 import com.mobiusbobs.videoprocessing.core.VideoProcessor;
 import com.mobiusbobs.videoprocessing.core.gif.GifDecoder;
 
@@ -65,8 +64,6 @@ public class MainActivity extends AppCompatActivity {
         verifyStoragePermissions(this);
 
         initView();
-
-        Log.d("MainActivity", TryLibrary.hello("Ray Shih"));
     }
 
     private void initView() {
@@ -79,17 +76,17 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void onClick(View view) {
 
-                    runExtractDecodeEditEncodeMux();
-
-                    Snackbar.make(view, "Do Extract decode edit encode Mux action", Snackbar.LENGTH_LONG)
+                    testAddGifAndWatermark();
+                    Snackbar.make(view, "Run test of adding gif and watermark", Snackbar.LENGTH_LONG)
                             .setAction("Action", null).show();
                 }
             });
         }
     }
 
+    // TODO two output from shared middle production
     private int resultCounter = 0;
-    private void runExtractDecodeEditEncodeMux() {
+    private void testAddGifAndWatermark() {
 
         final Timer timer = new Timer();
         final Timer timerW = new Timer();
@@ -159,19 +156,13 @@ public class MainActivity extends AppCompatActivity {
         }
 
         // --- setup sticker ----
+        // TODO create another example for this
 //        int stickerDrawableId = R.drawable.frames_hungry;
 //        stickerDrawer = new StickerDrawer(
 //                context,
 //                stickerDrawableId,
 //                coordConverter.getAlignCenterVertices(stickerDrawableId)
 //        );
-//
-//        if (stickerUrl!= null)
-//            stickerDrawer = new StickerDrawer(
-//                    context,
-//                    stickerUrl,
-//                    coordConverter.getAlignCenterVertices(stickerUrl)
-//            );
     }
 
     /**
