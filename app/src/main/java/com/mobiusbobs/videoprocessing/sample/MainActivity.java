@@ -34,17 +34,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG = "TEST";
 
     // File Path
-//    public static final String FILE_INPUT_MP4 = "/sdcard/Download/tmp2.mp4";
-//    public static final String FILE_INPUT_AVC = "/sdcard/Download/TestAVC.mp4";
-//    public static final String FILE_INPUT_AAC = "/sdcard/Download/TestAAC.aac";
-//    public static final String FILE_INPUT_RAW = "/sdcard/Download/TestRAW.mp4";
-//    public static final String FILE_INPUT_WAV = "/sdcard/Download/TestWAV.wav";
-//    public static final String FILE_OUTPUT_RAW = "/sdcard/Download/TestRAW.mp4";
-//    public static final String FILE_OUTPUT_AAC = "/sdcard/Download/TestAAC.aac";
-//    public static final String FILE_OUTPUT_WATERMARK = "/sdcard/Download/Watermark7.mp4";
     public static final String FILE_OUTPUT_MP4 = "/sdcard/Download/TestCodec3.mp4";
-//    public static final String FILE_OUTPUT_WAV = "/sdcard/Download/TestWAV.wav";
-//    public static final String FILE_OUTPUT_PCM = "/sdcard/Download/audioRaw.pcm";
 
     // Storage Permissions
     private static final int REQUEST_EXTERNAL_STORAGE = 1;
