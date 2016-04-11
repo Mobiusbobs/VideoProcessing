@@ -12,9 +12,11 @@ import android.view.Surface;
 
 import com.mobiusbobs.videoprocessing.core.surface.InputSurface;
 import com.mobiusbobs.videoprocessing.core.surface.OutputSurface;
-import com.mobiusbobs.videoprocessing.core.gif.GifDecoder;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -35,6 +37,12 @@ public class VideoProcessor {
 
     /** How long to wait for the next buffer to become available. */
     private static final int TIMEOUT_USEC = 10000;
+
+    // ----- input & output -----
+    private MediaExtractor videoExtractor;
+    private MediaExtractor audioExtractor;
+
+    public String outputPath;
 
     // ----- format parameters -----
     // parameters for the video encoder
@@ -59,16 +67,9 @@ public class VideoProcessor {
     private static final int OUTPUT_AUDIO_MAX_INPUT_SIZE = 0;
 
     // ----- other parameters -----
-    private Context context;
 
-    private StickerDrawer stickerDrawer;
-    private StickerDrawer logoDrawer;
-    private GifDrawer gifDrawer;
-
-    private int screenWidth;
-    private int screenHeight;
-
-    private boolean withWaterMark;
+    // drawers
+    private List<GLDrawable> drawerList;
 
     // ----- process states -----
     private int videoExtractedFrameCount = 0;
@@ -115,24 +116,9 @@ public class VideoProcessor {
     int outputAudioTrack = -1;
 
     // Constructor
-    public VideoProcessor(Context context, boolean withWaterMark, int[] screenDimen) {
-        this.context = context;
+    private VideoProcessor() {}
 
-        this.withWaterMark = withWaterMark;
-
-        screenWidth = screenDimen[0];
-        screenHeight = screenDimen[1];
-    }
-
-    // public void extractDecodeEditEncodeMux(String outputPath, int inputRawFileId) throws Exception {
-    public void extractDecodeEditEncodeMux(
-            String outputPath,
-            String inputFileUrl,
-            String stickerUrl,
-            int watermarkId
-    ) throws Exception {
-        MediaExtractor videoExtractor;
-        MediaExtractor audioExtractor;
+    public void process() throws Exception {
 
         MediaCodec videoDecoder;
         MediaCodec audioDecoder;
@@ -146,13 +132,8 @@ public class VideoProcessor {
         MediaCodecInfo videoCodecInfo = selectCodec(OUTPUT_VIDEO_MIME_TYPE);    // for video encoder
         MediaCodecInfo audioCodecInfo = selectCodec(OUTPUT_AUDIO_MIME_TYPE);    // for audio encoder
 
-        // --- extractor ---
-        // videoExtractor = Extractor.createExtractor(context, inputRawFileId);
-        videoExtractor = Extractor.createExtractor(inputFileUrl);
+        // --- setup extractors ---
         int videoTrackIndex = Extractor.getAndSelectVideoTrackIndex(videoExtractor);
-
-        // audioExtractor = Extractor.createExtractor(context, inputRawFileId);
-        audioExtractor = Extractor.createExtractor(inputFileUrl);
         int audioTrackIndex = Extractor.getAndSelectAudioTrackIndex(audioExtractor);
 
         MediaFormat inputVideoFormat = videoExtractor.getTrackFormat(videoTrackIndex);
@@ -174,6 +155,11 @@ public class VideoProcessor {
         outputSurface = new OutputSurface();
         videoDecoder = createVideoDecoder(inputVideoFormat, outputSurface.getSurface());
 
+        // setup drawers
+        for (GLDrawable drawer : drawerList) {
+            drawer.init();
+        }
+
         // --- audio encoder / decoder ---
         // Create a MediaCodec for the desired codec, then configure it as an encoder with
         // our desired properties. Request a Surface to use for input.
@@ -185,36 +171,6 @@ public class VideoProcessor {
 
         // --- muxer ---
         muxer = new MediaMuxer(outputPath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
-
-        // --- setup watermark ---
-        CoordConverter coordConverter = new CoordConverter(context, screenWidth, screenHeight);
-        int watermarkId = R.drawable.logo_watermark;
-        logoDrawer = new StickerDrawer(
-                context,
-                watermarkId,
-                coordConverter.getAlignBtmRightVertices(watermarkId, 30)
-        );
-
-        // --- setup sticker ----
-        int stickerDrawableId = R.drawable.frames_hungry;
-        stickerDrawer = new StickerDrawer(
-            context,
-            stickerDrawableId,
-            coordConverter.getAlignCenterVertices(stickerDrawableId)
-            );
-
-        if (stickerUrl!= null)
-            stickerDrawer = new StickerDrawer(
-                context,
-                stickerUrl,
-                coordConverter.getAlignCenterVertices(stickerUrl)
-                );
-
-        // --- setup gif drawer ---
-        int gifId = R.raw.gif_funny;
-        GifDecoder gifDecoder = GifDrawer.createGifDecoder(context, gifId);
-        float[] gifVertices = coordConverter.getAlignCenterVertices(gifId);
-        gifDrawer = new GifDrawer(context, gifDecoder, gifVertices);
 
         // --- do the actual extract decode edit encode mux ---
         doProcess(
@@ -510,15 +466,10 @@ public class VideoProcessor {
         outputSurface.awaitNewImage();
         outputSurface.drawImage();
 
-        // draw gif
-        gifDrawer.draw(videoDecoderOutputBufferInfo.presentationTimeUs / 1000);
-
-        if (stickerDrawer != null)
-                stickerDrawer.draw();
-
-        // draw watermark
-        if (withWaterMark)
-                logoDrawer.draw();
+        long timeMs = videoDecoderOutputBufferInfo.presentationTimeUs / 1000;
+        for (GLDrawable drawer : drawerList) {
+            drawer.draw(timeMs);
+        }
 
         inputSurface.setPresentationTime(videoDecoderOutputBufferInfo.presentationTimeUs * 1000);
 
@@ -866,5 +817,59 @@ public class VideoProcessor {
     private int getMediaDataOrDefault(MediaFormat inputVideoFormat, String key, int defaultValue) {
         if (inputVideoFormat.containsKey(key)) return inputVideoFormat.getInteger(key);
         else return defaultValue;
+    }
+
+    // ----- builder -----
+    public static class Builder {
+        private List<GLDrawable> drawableList = new ArrayList<>();
+        private int inputResId = -1;
+        private String inputFilePath = null;
+        private String outputFilePath = null;
+
+        public Builder addDrawer(GLDrawable drawer) {
+            drawableList.add(drawer);
+            return this;
+        }
+
+        public Builder setInputResId(int inputResId) {
+            this.inputResId = inputResId;
+            this.inputFilePath = null;
+            return this;
+        }
+
+        public Builder setInputFilePath(String inputFilePath) {
+            this.inputResId = -1;
+            this.inputFilePath = inputFilePath;
+            return this;
+        }
+
+        public Builder setOutputPath(String outputFilePath) {
+            this.outputFilePath = outputFilePath;
+            return this;
+        }
+
+        public VideoProcessor build(Context context) throws IOException {
+            VideoProcessor processor = new VideoProcessor();
+            processor.drawerList = drawableList;
+
+            if (inputResId != -1) {
+                processor.videoExtractor = Extractor.createExtractor(context, inputResId);
+                processor.audioExtractor = Extractor.createExtractor(context, inputResId);
+            } else if (inputFilePath != null) {
+                processor.videoExtractor = Extractor.createExtractor(inputFilePath);
+                processor.audioExtractor = Extractor.createExtractor(inputFilePath);
+            } else {
+                throw new IllegalStateException("No input specified");
+            }
+
+            if (outputFilePath != null) {
+                processor.outputPath = outputFilePath;
+            } else {
+                throw new IllegalStateException("No output specified");
+
+            }
+
+            return processor;
+        }
     }
 }

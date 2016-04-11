@@ -2,7 +2,9 @@ package com.mobiusbobs.videoprocessing.sample;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.Context;
 import android.content.pm.PackageManager;
+import android.graphics.Point;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -10,12 +12,19 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.Display;
 import android.view.View;
 
+import com.mobiusbobs.videoprocessing.core.CoordConverter;
+import com.mobiusbobs.videoprocessing.core.GifDrawer;
+import com.mobiusbobs.videoprocessing.core.ProcessorRunner;
+import com.mobiusbobs.videoprocessing.core.StickerDrawer;
 import com.mobiusbobs.videoprocessing.core.Timer;
-import com.mobiusbobs.videoprocessing.core.Util;
-import com.mobiusbobs.videoprocessing.core.CodecManager;
 import com.mobiusbobs.videoprocessing.core.TryLibrary;
+import com.mobiusbobs.videoprocessing.core.VideoProcessor;
+import com.mobiusbobs.videoprocessing.core.gif.GifDecoder;
+
+import java.io.IOException;
 
 /*
  * Sample:
@@ -26,17 +35,17 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG = "TEST";
 
     // File Path
-    public static final String FILE_INPUT_MP4 = "/sdcard/Download/tmp2.mp4";
-    public static final String FILE_INPUT_AVC = "/sdcard/Download/TestAVC.mp4";
-    public static final String FILE_INPUT_AAC = "/sdcard/Download/TestAAC.aac";
-    public static final String FILE_INPUT_RAW = "/sdcard/Download/TestRAW.mp4";
-    public static final String FILE_INPUT_WAV = "/sdcard/Download/TestWAV.wav";
-    public static final String FILE_OUTPUT_RAW = "/sdcard/Download/TestRAW.mp4";
-    public static final String FILE_OUTPUT_AAC = "/sdcard/Download/TestAAC.aac";
-    public static final String FILE_OUTPUT_WATERMARK = "/sdcard/Download/Watermark7.mp4";
+//    public static final String FILE_INPUT_MP4 = "/sdcard/Download/tmp2.mp4";
+//    public static final String FILE_INPUT_AVC = "/sdcard/Download/TestAVC.mp4";
+//    public static final String FILE_INPUT_AAC = "/sdcard/Download/TestAAC.aac";
+//    public static final String FILE_INPUT_RAW = "/sdcard/Download/TestRAW.mp4";
+//    public static final String FILE_INPUT_WAV = "/sdcard/Download/TestWAV.wav";
+//    public static final String FILE_OUTPUT_RAW = "/sdcard/Download/TestRAW.mp4";
+//    public static final String FILE_OUTPUT_AAC = "/sdcard/Download/TestAAC.aac";
+//    public static final String FILE_OUTPUT_WATERMARK = "/sdcard/Download/Watermark7.mp4";
     public static final String FILE_OUTPUT_MP4 = "/sdcard/Download/TestCodec3.mp4";
-    public static final String FILE_OUTPUT_WAV = "/sdcard/Download/TestWAV.wav";
-    public static final String FILE_OUTPUT_PCM = "/sdcard/Download/audioRaw.pcm";
+//    public static final String FILE_OUTPUT_WAV = "/sdcard/Download/TestWAV.wav";
+//    public static final String FILE_OUTPUT_PCM = "/sdcard/Download/audioRaw.pcm";
 
     // Storage Permissions
     private static final int REQUEST_EXTERNAL_STORAGE = 1;
@@ -89,41 +98,86 @@ public class MainActivity extends AppCompatActivity {
 
         resultCounter = 0;
 
-        try {
-      /*
-      CodecManager codec = new CodecManager(this, false, Util.getScreenDimen(this));
-      codec.setOnMuxerDone(new CodecManager.OnMuxerDone() {
-        @Override
-        public void onDone() {
-          timer.endTimer("mux(no watermark) is done");
-          resultCounter++;
-          if(resultCounter==2) Log.d(TAG, "result done! call callback!!!");
-        }
-      });
-      CodecManager.ExtractDecodeEditEncodeMuxWrapper.run(codec, FILE_OUTPUT_MP4, R.raw.test_21);
-      */
+//        CodecManager codec = new CodecManager(this, false, Util.getScreenDimen(this));
+//        codec.setOnMuxerDone(new CodecManager.OnMuxerDone() {
+//          @Override
+//          public void onDone() {
+//            timer.endTimer("mux(no watermark) is done");
+//            resultCounter++;
+//            if(resultCounter==2) Log.d(TAG, "result done! call callback!!!");
+//          }
+//        });
+//        CodecManager.ExtractDecodeEditEncodeMuxWrapper.run(codec, FILE_OUTPUT_MP4, R.raw.test_21);
 
-            CodecManager codecWatermark = new CodecManager(this, true, Util.getScreenDimen(this));
-            codecWatermark.setOnMuxerDone(new CodecManager.OnMuxerDone() {
+        Context context = getApplicationContext();
+        Display display = getWindowManager().getDefaultDisplay();
+        Point point = new Point();
+        display.getSize(point);
+        int screenWidth = point.x;
+        int screenHeight = point.y;
+        CoordConverter coordConverter = new CoordConverter(context, screenWidth, screenHeight);
+
+        // --- setup gif drawer ---
+        int gifId = R.raw.gif_funny;
+        GifDecoder gifDecoder = GifDrawer.createGifDecoder(context, gifId);
+        float[] gifVertices = coordConverter.getAlignCenterVertices(gifId);
+        GifDrawer gifDrawer = new GifDrawer(context, gifDecoder, gifVertices);
+
+        // --- setup watermark ---
+        int watermarkId = R.drawable.logo_watermark;
+        StickerDrawer logoDrawer = new StickerDrawer(
+                context,
+                watermarkId,
+                coordConverter.getAlignBtmRightVertices(watermarkId, 30)
+        );
+
+        try {
+            VideoProcessor videoProcessor = new VideoProcessor.Builder()
+                    .setInputResId(R.raw.test_21)
+                    .addDrawer(gifDrawer)
+                    .addDrawer(logoDrawer)
+                    .setOutputPath(FILE_OUTPUT_MP4)
+                    .build(context);
+
+            ProcessorRunner.run(videoProcessor, "Add Gif And Logo", new ProcessorRunner.ProcessorRunnerCallback() {
                 @Override
-                public void onDone() {
+                public void onCompleted() {
                     timerW.endTimer("mux(with watermark) is done");
-                    resultCounter++;
-                    if(resultCounter==2) Log.d(TAG, "result done! call callback!!!");
+//                    resultCounter++;
+//                    if (resultCounter==2) Log.d(TAG, "result done! call callback!!!");
+                }
+
+                @Override
+                public void onError(Throwable e) {
+                    Log.e(TAG, "Video Processing failed");
+                    Log.e(TAG, e.getMessage());
+                    e.printStackTrace();
                 }
             });
-            CodecManager.ExtractDecodeEditEncodeMuxWrapper.run(codecWatermark, FILE_OUTPUT_WATERMARK, R.raw.test_21);
-        } catch (Throwable throwable) {
-            throwable.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
+
+        // --- setup sticker ----
+//        int stickerDrawableId = R.drawable.frames_hungry;
+//        stickerDrawer = new StickerDrawer(
+//                context,
+//                stickerDrawableId,
+//                coordConverter.getAlignCenterVertices(stickerDrawableId)
+//        );
+//
+//        if (stickerUrl!= null)
+//            stickerDrawer = new StickerDrawer(
+//                    context,
+//                    stickerUrl,
+//                    coordConverter.getAlignCenterVertices(stickerUrl)
+//            );
     }
 
     /**
      * Checks if the app has permission to write to device storage
      *
      * If the app does not has permission then the user will be prompted to grant permissions
-     *
-     * @param activity
      */
     public static void verifyStoragePermissions(Activity activity) {
         // Check if we have write permission
