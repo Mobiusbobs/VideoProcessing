@@ -19,6 +19,7 @@ import com.mobiusbobs.videoprocessing.core.CoordConverter;
 import com.mobiusbobs.videoprocessing.core.GifDrawer;
 import com.mobiusbobs.videoprocessing.core.ProcessorRunner;
 import com.mobiusbobs.videoprocessing.core.StickerDrawer;
+import com.mobiusbobs.videoprocessing.core.TextDrawer;
 import com.mobiusbobs.videoprocessing.core.Timer;
 import com.mobiusbobs.videoprocessing.core.VideoProcessor;
 import com.mobiusbobs.videoprocessing.core.gif.GifDecoder;
@@ -104,6 +105,16 @@ public class MainActivity extends AppCompatActivity {
         int screenHeight = point.y;
         CoordConverter coordConverter = new CoordConverter(context, screenWidth, screenHeight);
 
+        // --- setup text drawer ---
+        int pawId = R.drawable.icon_paw;
+        TextDrawer textDrawer = new TextDrawer(
+                context,
+                coordConverter,
+                screenWidth,
+                "Tiger",
+                pawId
+        );
+
         // --- setup gif drawer ---
         int gifId = R.raw.gif_funny;
         GifDecoder gifDecoder = GifDrawer.createGifDecoder(context, gifId);
@@ -123,6 +134,7 @@ public class MainActivity extends AppCompatActivity {
                     .setInputResId(R.raw.test_21)
                     .addDrawer(gifDrawer)
                     .addDrawer(logoDrawer)
+                    .addDrawer(textDrawer)
                     .setOutputPath(FILE_OUTPUT_MP4)
                     .build(context);
 
