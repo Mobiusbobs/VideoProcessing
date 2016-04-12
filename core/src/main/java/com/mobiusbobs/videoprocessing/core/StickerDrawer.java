@@ -31,8 +31,6 @@ import java.nio.FloatBuffer;
 public class StickerDrawer implements GLDrawable {
     private static final String TAG = "StickerDrawer";
 
-    private Context context;
-
     /** Store our model data in a float buffer. */
     protected float[] verticesPositionData = {
         // X, Y, Z,
@@ -123,22 +121,20 @@ public class StickerDrawer implements GLDrawable {
 
     protected int shaderProgramHandle;
 
-    private int imageResId = -1;
-    private String imageFilePath = null;
+    private Bitmap bitmap;
 
-    public StickerDrawer(Context context, int resId, float[] verticesPositionData) {
-        this.context = context;
-        this.imageResId = resId;
+    public StickerDrawer()  {
+
+    }
+
+    public StickerDrawer(float[] verticesPositionData)  {
         this.verticesPositionData = verticesPositionData;
     }
 
-    public StickerDrawer(Context context, String filePath, float[] verticesPositionData)
-      throws IOException {
-        this.context = context;
-        this.imageFilePath = filePath;
+    public StickerDrawer(Bitmap bitmap, float[] verticesPositionData)  {
         this.verticesPositionData = verticesPositionData;
+        this.bitmap = bitmap;
     }
-
 
     public void init() throws IOException {
         initCoordinateBuffer();
@@ -151,24 +147,15 @@ public class StickerDrawer implements GLDrawable {
         setupShader();
         bindTexture();
 
-        if (imageResId != -1) {
-            Bitmap bitmap = generateBitmap(imageResId);
+        if(bitmap != null)
             loadTexture(bitmap, 1);
-            bitmap.recycle();
-        }
-
-        if (imageFilePath != null) {
-            Bitmap bitmap = generateBitmap(imageFilePath);
-            loadTexture(bitmap, 1);
-            bitmap.recycle();
-        }
     }
 
-    private Bitmap generateBitmap(int resId) {
+    public static Bitmap generateBitmap(Context context, int resId) {
         return BitmapFactory.decodeResource(context.getResources(), resId);
     }
 
-    private Bitmap generateBitmap(String fileUrl) throws IOException {
+    public static Bitmap generateBitmap(String fileUrl) throws IOException {
         // get bitmap
         File imageFile = new File(fileUrl);
         BitmapFactory.Options bmOptions = new BitmapFactory.Options();
@@ -178,25 +165,21 @@ public class StickerDrawer implements GLDrawable {
 
         InputStream is = new URL(fileUrl).openStream();
         bitmap = BitmapFactory.decodeStream(is);
-        Log.d(TAG, "generateBitmap: bitmap = " + bitmap);
-        Log.d(TAG, "generateBitmap: bitmap.width=" + bitmap.getWidth() + ", bitmap.height=" + bitmap.getHeight());
 
         return bitmap;
     }
 
-    public StickerDrawer(Context context, float[] verticesPositionData)  {
-        this.verticesPositionData = verticesPositionData;
-        this.context = context;
-    }
-
-    public StickerDrawer(Context context)  {
-        this.context = context;
+    public void setBitmap(Bitmap bitmap) {
+        this.bitmap = bitmap;
+        loadTexture(bitmap, 1);
     }
 
     public void setVerticesCoordinate(float[] verticesPositionData) {
         this.verticesPositionData = verticesPositionData;
-        verticesPosition.clear();
-        verticesPosition.put(verticesPositionData).position(0);
+        if (verticesPosition != null) {
+            verticesPosition.clear();
+            verticesPosition.put(verticesPositionData).position(0);
+        }
     }
 
     protected void initCoordinateBuffer() {
@@ -257,7 +240,7 @@ public class StickerDrawer implements GLDrawable {
         GLES20.glGenTextures(textureCount, textureHandle, 0);
     }
 
-    public void loadTexture(Bitmap bitmap, int textureCount) {
+    private void loadTexture(Bitmap bitmap, int textureCount) {
         setTextureHandleSize(textureCount);
         loadBitmapToTexture(bitmap, 0);
     }
@@ -283,7 +266,6 @@ public class StickerDrawer implements GLDrawable {
     protected int compileShader(int shaderType, String shaderProgram) {
         // Load in the vertex shader.
         int shaderHandle = GLES20.glCreateShader(shaderType);
-        //Log.d(TAG, "shaderType = " + shaderType + ", shaderProgram = " + shaderProgram);
 
         if (shaderHandle != 0)
         {

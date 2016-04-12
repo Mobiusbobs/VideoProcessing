@@ -35,18 +35,14 @@ public class TextDrawer implements GLDrawable {
     this.text = text;
     this.resId = resId;
 
-    stickerDrawer = new StickerDrawer(context);
+    stickerDrawer = new StickerDrawer();
   }
 
   public void init() throws IOException {
-    stickerDrawer.init();
-    loadTexture();
-  }
-
-  private void loadTexture() {
     Bitmap bitmap = generateBitmap(text, resId);
     stickerDrawer.setVerticesCoordinate(converter.getAlignTopVertices(bitmap, 56));
-    stickerDrawer.loadTexture(bitmap, 1);
+    stickerDrawer.setBitmap(bitmap);
+    stickerDrawer.init();
     bitmap.recycle();
   }
 

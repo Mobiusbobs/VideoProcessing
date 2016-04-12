@@ -28,12 +28,12 @@ public class GifDrawer implements GLDrawable {
   private long gifLastFrameTime;
 
   public GifDrawer(Context context, GifDecoder gifDecoder) {
-    stickerDrawer = new StickerDrawer(context);
+    stickerDrawer = new StickerDrawer();
     this.gifDecoder = gifDecoder;
   }
 
   public GifDrawer(Context context, GifDecoder gifDecoder, float[] verticesPositionData) {
-    stickerDrawer = new StickerDrawer(context, verticesPositionData);
+    stickerDrawer = new StickerDrawer(verticesPositionData);
     stickerDrawer.verticesPositionData = verticesPositionData;
     this.gifDecoder = gifDecoder;
   }

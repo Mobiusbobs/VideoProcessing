@@ -4,6 +4,7 @@ import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
 import android.graphics.Point;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
@@ -123,11 +124,12 @@ public class MainActivity extends AppCompatActivity {
 
         // --- setup watermark ---
         int watermarkId = R.drawable.logo_watermark;
+        Bitmap bitmap = StickerDrawer.generateBitmap(this, watermarkId);
         StickerDrawer logoDrawer = new StickerDrawer(
-                context,
-                watermarkId,
+                bitmap,
                 coordConverter.getAlignBtmRightVertices(watermarkId, 30)
         );
+        //bitmap.recycle();
 
         try {
             VideoProcessor videoProcessor = new VideoProcessor.Builder()
