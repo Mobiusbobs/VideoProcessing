@@ -34,17 +34,21 @@ public class TextDrawer implements GLDrawable {
     this.converter = converter;
     this.text = text;
     this.resId = resId;
+
+    stickerDrawer = new StickerDrawer(context);
   }
 
   public void init() throws IOException {
-    Bitmap bitmap = generateBitmap(text, resId);
-    stickerDrawer = new StickerDrawer(context);
-    stickerDrawer.setVerticesCoordinate(converter.getAlignTopVertices(bitmap, 56));
     stickerDrawer.init();
+    loadTexture();
+  }
+
+  private void loadTexture() {
+    Bitmap bitmap = generateBitmap(text, resId);
+    stickerDrawer.setVerticesCoordinate(converter.getAlignTopVertices(bitmap, 56));
     stickerDrawer.loadTexture(bitmap, 1);
     bitmap.recycle();
   }
-
 
   public Bitmap generateBitmap(String text, int resId) {
     float rightMargin = 15;
@@ -73,11 +77,16 @@ public class TextDrawer implements GLDrawable {
     // draw text
     float textLength = textBounds.width();
     float textHeight = textBounds.height();
-    canvas.drawText(text, screenWidth - (textLength + rightMargin), (containerHeight + textHeight) / 2 - textShift, textPaint);
+    canvas.drawText(
+        text,
+        screenWidth - (textLength + rightMargin),
+        (containerHeight + textHeight) / 2 - textShift,
+        textPaint
+    );
 
     // draw paw image
     float left = screenWidth - (icon.getWidth() + textLength + rightMargin);
-    canvas.drawBitmap(icon, left, (containerHeight-icon.getHeight())/2, null);
+    canvas.drawBitmap(icon, left, (containerHeight - icon.getHeight()) / 2, null);
 
     return bitmap;
   }

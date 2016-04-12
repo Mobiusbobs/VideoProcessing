@@ -195,6 +195,8 @@ public class StickerDrawer implements GLDrawable {
 
     public void setVerticesCoordinate(float[] verticesPositionData) {
         this.verticesPositionData = verticesPositionData;
+        verticesPosition.clear();
+        verticesPosition.put(verticesPositionData).position(0);
     }
 
     protected void initCoordinateBuffer() {
