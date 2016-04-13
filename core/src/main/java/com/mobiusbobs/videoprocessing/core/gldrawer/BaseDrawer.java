@@ -23,8 +23,8 @@ import java.nio.FloatBuffer;
  * Created by rayshih on 3/22/16.
  * Copyright (c) 2016 MobiusBobs Inc. All rights reserved.
  */
-public class StickerDrawer implements GLDrawable {
-    private static final String TAG = "StickerDrawer";
+public class BaseDrawer implements GLDrawable {
+    private static final String TAG = "BaseDrawer";
 
     /** Store our model data in a float buffer. */
     protected float[] verticesPositionData = {
@@ -116,12 +116,13 @@ public class StickerDrawer implements GLDrawable {
 
     protected int shaderProgramHandle;
 
-    public StickerDrawer()  {}
+    public BaseDrawer()  {}
 
-    public StickerDrawer(float[] verticesPositionData)  {
+    public BaseDrawer(float[] verticesPositionData)  {
         this.verticesPositionData = verticesPositionData;
     }
 
+    @Override
     public void init() throws IOException {
         initCoordinateBuffer();
 
@@ -307,6 +308,7 @@ public class StickerDrawer implements GLDrawable {
         mTextureCoordinateHandle = GLES20.glGetAttribLocation(shaderProgramHandle, "a_TexCoordinate");
     }
 
+    @Override
     public void draw(long timeMs) {
         draw(0);
     }

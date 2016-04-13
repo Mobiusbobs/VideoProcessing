@@ -21,7 +21,7 @@ public class TextDrawer implements GLDrawable {
   private static final String TAG = "TextDrawer";
 
   // composition
-  private StickerDrawer stickerDrawer;
+  private BaseDrawer stickerDrawer;
 
   private Context context;
   private int screenWidth;
@@ -37,7 +37,7 @@ public class TextDrawer implements GLDrawable {
     this.text = text;
     this.resId = resId;
 
-    stickerDrawer = new StickerDrawer();
+    stickerDrawer = new BaseDrawer();
   }
 
   public void init() throws IOException {

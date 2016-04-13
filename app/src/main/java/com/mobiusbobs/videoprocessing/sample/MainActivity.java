@@ -4,7 +4,6 @@ import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
 import android.graphics.Point;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
@@ -19,15 +18,12 @@ import android.view.View;
 import com.mobiusbobs.videoprocessing.core.CoordConverter;
 import com.mobiusbobs.videoprocessing.core.gldrawer.GifDrawer;
 import com.mobiusbobs.videoprocessing.core.ProcessorRunner;
-import com.mobiusbobs.videoprocessing.core.gldrawer.StickerDrawer;
 import com.mobiusbobs.videoprocessing.core.gldrawer.TextDrawer;
 import com.mobiusbobs.videoprocessing.core.util.Timer;
 import com.mobiusbobs.videoprocessing.core.VideoProcessor;
 import com.mobiusbobs.videoprocessing.core.gif.GifDecoder;
 
 import java.io.IOException;
-
-import com.mobiusbobs.videoprocessing.core.util.BitmapHelper;
 
 /*
  * Sample:
@@ -158,7 +154,7 @@ public class MainActivity extends AppCompatActivity {
         // --- setup sticker ----
         // TODO create another example for this
 //        int stickerDrawableId = R.drawable.frames_hungry;
-//        stickerDrawer = new StickerDrawer(
+//        stickerDrawer = new BaseDrawer(
 //                context,
 //                stickerDrawableId,
 //                coordConverter.getAlignCenterVertices(stickerDrawableId)
