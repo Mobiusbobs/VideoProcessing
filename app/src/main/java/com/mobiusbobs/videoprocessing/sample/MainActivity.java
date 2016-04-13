@@ -121,6 +121,7 @@ public class MainActivity extends AppCompatActivity {
         try {
             VideoProcessor videoProcessor = new VideoProcessor.Builder()
                     .setInputResId(R.raw.test_21)
+                    .setBackgroundMusic(R.raw.classic1)
                     .addDrawer(gifDrawer)
                     .addDrawer(logoDrawer)
                     .setOutputPath(FILE_OUTPUT_MP4)
