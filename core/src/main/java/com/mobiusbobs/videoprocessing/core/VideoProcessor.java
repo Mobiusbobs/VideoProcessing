@@ -138,14 +138,11 @@ public class VideoProcessor {
 
         MediaFormat inputVideoFormat = videoExtractor.getTrackFormat(videoTrackIndex);
         long videoDuration = inputVideoFormat.getLong(MediaFormat.KEY_DURATION);
-        Log.d(TAG, "inputVideoFormat: videoDuration = " + videoDuration);
         // fix config problem: http://stackoverflow.com/questions/15105843/mediacodec-jelly-bean
         inputVideoFormat.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, 0);
 
         MediaFormat inputAudioFormat = audioExtractor.getTrackFormat(audioTrackIndex);
-        Log.d(TAG, "inputAudioFormat = " + inputAudioFormat);
         long audioDuration = inputAudioFormat.getLong(MediaFormat.KEY_DURATION);
-        Log.d(TAG, "audioDuration: audioDuration = " + audioDuration);
 
         // ----- mediacodec -----
         // --- video encoder ---
@@ -387,9 +384,6 @@ public class VideoProcessor {
         return videoExtractorDone;
     }
 
-    // TODO: If it is a mp3 Audio, check for video duration to determine if we gonna
-    // TODO:  1. stop extract since video is done.
-    // TODO:  2. extract again since video is still extracting.
     private boolean extractAudioData(
             MediaExtractor audioExtractor,
             MediaCodec audioDecoder,
@@ -902,10 +896,9 @@ public class VideoProcessor {
             if (inputResId != -1) {
                 processor.videoExtractor = Extractor.createExtractor(context, inputResId);
 
-                if (musicResId != -1) {
+                if (musicResId != -1)
                     processor.audioExtractor = Extractor.createExtractor(context, musicResId);
-                    Log.d(TAG, "musicResId = " + musicResId + ", audioExtractor created for musicResId");
-                } else
+                else
                     processor.audioExtractor = Extractor.createExtractor(context, inputResId);
             } else if (inputFilePath != null) {
                 processor.videoExtractor = Extractor.createExtractor(inputFilePath);
