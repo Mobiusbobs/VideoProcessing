@@ -141,7 +141,11 @@ public class VideoProcessor {
         Log.d(TAG, "inputVideoFormat: videoDuration = " + videoDuration);
         // fix config problem: http://stackoverflow.com/questions/15105843/mediacodec-jelly-bean
         inputVideoFormat.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, 0);
+
         MediaFormat inputAudioFormat = audioExtractor.getTrackFormat(audioTrackIndex);
+        Log.d(TAG, "inputAudioFormat = " + inputAudioFormat);
+        long audioDuration = inputAudioFormat.getLong(MediaFormat.KEY_DURATION);
+        Log.d(TAG, "audioDuration: audioDuration = " + audioDuration);
 
         // ----- mediacodec -----
         // --- video encoder ---
@@ -185,7 +189,8 @@ public class VideoProcessor {
             muxer,
             inputSurface,
             outputSurface,
-            videoDuration);
+            videoDuration,
+            audioDuration);
 
     }
 
@@ -199,7 +204,8 @@ public class VideoProcessor {
         MediaMuxer muxer,
         InputSurface inputSurface,
         OutputSurface outputSurface,
-        long videoDuration
+        long videoDuration,
+        long audioDuration
     ) {
         prepareBuffers(
                 videoDecoder, audioDecoder,
@@ -217,6 +223,9 @@ public class VideoProcessor {
         boolean audioEncoderDone = false;
 
         boolean muxing = false;
+
+        int musicLoopCount = 0;
+        long audioPTimeOffset = audioDuration * musicLoopCount;
 
         while (!videoEncoderDone || !audioEncoderDone) {
             // --- extract video from extractor ---
@@ -236,6 +245,15 @@ public class VideoProcessor {
                         audioDecoderInputBuffers,
                         videoDuration
                 );
+
+                long sampleTime = audioExtractor.getSampleTime();
+                if (sampleTime == -1) {
+                    videoDuration -= audioDuration;
+                    musicLoopCount++;
+                    audioPTimeOffset = audioDuration * musicLoopCount;
+                    audioExtractor.seekTo(0, MediaExtractor.SEEK_TO_NEXT_SYNC);
+                    audioDecoder.flush();
+                }
             }
 
             // --- pull output frames from video decoder and feed it to encoder ---
@@ -266,7 +284,7 @@ public class VideoProcessor {
             // Feed the pending decoded audio buffer to the audio encoder.
             // TODO check to see if I can implement this into audio Decoder...
             if (pendingAudioDecoderOutputBufferIndex != -1) {
-                audioDecoderDone = pipeAudioStream(audioDecoder, audioEncoder);
+                audioDecoderDone = pipeAudioStream(audioDecoder, audioEncoder, audioPTimeOffset);
             }
 
             // --- mux video ---
@@ -376,7 +394,7 @@ public class VideoProcessor {
             MediaExtractor audioExtractor,
             MediaCodec audioDecoder,
             ByteBuffer[] audioDecoderInputBuffers,
-            long videoDuration
+            Long videoDuration
     ) {
         // 1.) get the index of next buffer to be filled
         int decoderInputBufferIndex = audioDecoder.dequeueInputBuffer(TIMEOUT_USEC);
@@ -385,7 +403,7 @@ public class VideoProcessor {
             return false;
         }
 
-        // 1.5) check if sampleTime exceed duration
+        // 1.5) check if audio sampleTime exceed duration
         long sampleTime = audioExtractor.getSampleTime();
         if (sampleTime > videoDuration) {
             Log.d(TAG, "FLAG: reach videoDuration: duration=" + videoDuration + ", sampleTime=" + sampleTime);
@@ -544,7 +562,7 @@ public class VideoProcessor {
      * @param audioEncoder The audio encoder to
      * @return audioDecoderDone
      */
-    private boolean pipeAudioStream(MediaCodec audioDecoder, MediaCodec audioEncoder) {
+    private boolean pipeAudioStream(MediaCodec audioDecoder, MediaCodec audioEncoder, long pTimeOffset) {
         int encoderInputBufferIndex = audioEncoder.dequeueInputBuffer(TIMEOUT_USEC);
         if (encoderInputBufferIndex < 0) {
             Log.e(TAG, "audioEncoder.dequeueInputBuffer: no audio encoder input buffer");
@@ -553,7 +571,7 @@ public class VideoProcessor {
 
         ByteBuffer encoderInputBuffer = audioEncoderInputBuffers[encoderInputBufferIndex];
         int size = audioDecoderOutputBufferInfo.size;
-        long presentationTime = audioDecoderOutputBufferInfo.presentationTimeUs;
+        long presentationTime = audioDecoderOutputBufferInfo.presentationTimeUs + pTimeOffset;
 
         if (size >= 0) {
             ByteBuffer decoderOutputBuffer =

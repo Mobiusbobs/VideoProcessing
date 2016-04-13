@@ -34,7 +34,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG = "TEST";
 
     // File Path
-    public static final String FILE_OUTPUT_MP4 = "/sdcard/Download/TestCodec3.mp4";
+    public static final String FILE_OUTPUT_MP4 = "/sdcard/Download/TestCodec4.mp4";
 
     // Storage Permissions
     private static final int REQUEST_EXTERNAL_STORAGE = 1;
@@ -121,7 +121,7 @@ public class MainActivity extends AppCompatActivity {
         try {
             VideoProcessor videoProcessor = new VideoProcessor.Builder()
                     .setInputResId(R.raw.test_21)
-                    .setBackgroundMusic(R.raw.classic1)
+                    .setBackgroundMusic(R.raw.short1)
                     .addDrawer(gifDrawer)
                     .addDrawer(logoDrawer)
                     .setOutputPath(FILE_OUTPUT_MP4)
