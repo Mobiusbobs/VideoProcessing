@@ -17,15 +17,17 @@ import android.view.Display;
 import android.view.View;
 
 import com.mobiusbobs.videoprocessing.core.CoordConverter;
-import com.mobiusbobs.videoprocessing.core.GifDrawer;
+import com.mobiusbobs.videoprocessing.core.gldrawer.GifDrawer;
 import com.mobiusbobs.videoprocessing.core.ProcessorRunner;
-import com.mobiusbobs.videoprocessing.core.StickerDrawer;
-import com.mobiusbobs.videoprocessing.core.TextDrawer;
-import com.mobiusbobs.videoprocessing.core.Timer;
+import com.mobiusbobs.videoprocessing.core.gldrawer.StickerDrawer;
+import com.mobiusbobs.videoprocessing.core.gldrawer.TextDrawer;
+import com.mobiusbobs.videoprocessing.core.util.Timer;
 import com.mobiusbobs.videoprocessing.core.VideoProcessor;
 import com.mobiusbobs.videoprocessing.core.gif.GifDecoder;
 
 import java.io.IOException;
+
+import com.mobiusbobs.videoprocessing.core.util.BitmapHelper;
 
 /*
  * Sample:
@@ -68,8 +70,8 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void onClick(View view) {
 
-                    testAddGifAndWatermark();
-                    Snackbar.make(view, "Run test of adding gif and watermark", Snackbar.LENGTH_LONG)
+                    runVideoProcess();
+                    Snackbar.make(view, "Run test of adding gif, watermark and text", Snackbar.LENGTH_LONG)
                             .setAction("Action", null).show();
                 }
             });
@@ -78,7 +80,7 @@ public class MainActivity extends AppCompatActivity {
 
     // TODO two output from shared middle production
     private int resultCounter = 0;
-    private void testAddGifAndWatermark() {
+    private void runVideoProcess() {
 
         final Timer timer = new Timer();
         final Timer timerW = new Timer();
@@ -106,6 +108,15 @@ public class MainActivity extends AppCompatActivity {
         int screenHeight = point.y;
         CoordConverter coordConverter = new CoordConverter(context, screenWidth, screenHeight);
 
+        // --- setup gif drawer ---
+        int gifId = R.raw.gif_funny;
+        GifDecoder gifDecoder = GifDrawer.createGifDecoder(context, gifId);
+        float[] gifVertices = coordConverter.getAlignCenterVertices(gifId);
+        GifDrawer gifDrawer = new GifDrawer(context, gifDecoder, gifVertices);
+
+        // --- setup watermark ---
+        WatermarkDrawer watermarkDrawer = new WatermarkDrawer(context, coordConverter);
+
         // --- setup text drawer ---
         int pawId = R.drawable.icon_paw;
         TextDrawer textDrawer = new TextDrawer(
@@ -116,26 +127,11 @@ public class MainActivity extends AppCompatActivity {
                 pawId
         );
 
-        // --- setup gif drawer ---
-        int gifId = R.raw.gif_funny;
-        GifDecoder gifDecoder = GifDrawer.createGifDecoder(context, gifId);
-        float[] gifVertices = coordConverter.getAlignCenterVertices(gifId);
-        GifDrawer gifDrawer = new GifDrawer(context, gifDecoder, gifVertices);
-
-        // --- setup watermark ---
-        int watermarkId = R.drawable.logo_watermark;
-        Bitmap bitmap = StickerDrawer.generateBitmap(this, watermarkId);
-        StickerDrawer logoDrawer = new StickerDrawer(
-                bitmap,
-                coordConverter.getAlignBtmRightVertices(watermarkId, 30)
-        );
-        //bitmap.recycle();
-
         try {
             VideoProcessor videoProcessor = new VideoProcessor.Builder()
                     .setInputResId(R.raw.test_21)
                     .addDrawer(gifDrawer)
-                    .addDrawer(logoDrawer)
+                    .addDrawer(watermarkDrawer)
                     .addDrawer(textDrawer)
                     .setOutputPath(FILE_OUTPUT_MP4)
                     .build(context);

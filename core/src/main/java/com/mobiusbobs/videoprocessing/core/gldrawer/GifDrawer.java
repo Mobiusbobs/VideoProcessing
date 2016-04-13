@@ -1,4 +1,4 @@
-package com.mobiusbobs.videoprocessing.core;
+package com.mobiusbobs.videoprocessing.core.gldrawer;
 
 import android.content.Context;
 import android.graphics.Bitmap;

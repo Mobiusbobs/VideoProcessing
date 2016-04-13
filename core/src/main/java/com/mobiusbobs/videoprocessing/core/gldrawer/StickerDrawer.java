@@ -1,17 +1,12 @@
-package com.mobiusbobs.videoprocessing.core;
+package com.mobiusbobs.videoprocessing.core.gldrawer;
 
-import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.opengl.GLES20;
 import android.opengl.GLUtils;
 import android.opengl.Matrix;
 import android.util.Log;
 
-import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
@@ -121,19 +116,10 @@ public class StickerDrawer implements GLDrawable {
 
     protected int shaderProgramHandle;
 
-    private Bitmap bitmap;
-
-    public StickerDrawer()  {
-
-    }
+    public StickerDrawer()  {}
 
     public StickerDrawer(float[] verticesPositionData)  {
         this.verticesPositionData = verticesPositionData;
-    }
-
-    public StickerDrawer(Bitmap bitmap, float[] verticesPositionData)  {
-        this.verticesPositionData = verticesPositionData;
-        this.bitmap = bitmap;
     }
 
     public void init() throws IOException {
@@ -146,31 +132,15 @@ public class StickerDrawer implements GLDrawable {
 
         setupShader();
         bindTexture();
-
-        if(bitmap != null)
-            loadTexture(bitmap, 1);
     }
 
-    public static Bitmap generateBitmap(Context context, int resId) {
-        return BitmapFactory.decodeResource(context.getResources(), resId);
+    public void init(Bitmap bitmap, float[] verticesPositionData) throws IOException {
+        setVerticesCoordinate(verticesPositionData);
+        init(bitmap);
     }
 
-    public static Bitmap generateBitmap(String fileUrl) throws IOException {
-        // get bitmap
-        File imageFile = new File(fileUrl);
-        BitmapFactory.Options bmOptions = new BitmapFactory.Options();
-        Bitmap bitmap = BitmapFactory.decodeFile(imageFile.getAbsolutePath(), bmOptions);
-
-        if (bitmap != null) return bitmap;
-
-        InputStream is = new URL(fileUrl).openStream();
-        bitmap = BitmapFactory.decodeStream(is);
-
-        return bitmap;
-    }
-
-    public void setBitmap(Bitmap bitmap) {
-        this.bitmap = bitmap;
+    public void init(Bitmap bitmap) throws IOException {
+        init();
         loadTexture(bitmap, 1);
     }
 
