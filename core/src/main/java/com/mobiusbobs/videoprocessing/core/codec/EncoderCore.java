@@ -42,7 +42,7 @@ public class EncoderCore {
     /**
      * Configures encoder and muxer state, and prepares the input Surface.
      */
-    public EncoderCore(MuxerWrapper muxer)    {
+    public EncoderCore(MuxerWrapper muxer) {
         bufferInfo = new MediaCodec.BufferInfo();
         trackIndex = -1;
         muxerStarted = false;
@@ -111,8 +111,13 @@ public class EncoderCore {
      * We're just using the muxer to get a .mp4 file (instead of a raw H.264 stream).  We're
      * not recording audio.
      */
-    public void drainEncoder(boolean endOfStream) {
+    public void drainEncoder(boolean isSurfaceInput, boolean endOfStream) {
         if (VERBOSE) Log.d(TAG, "drainEncoder(" + endOfStream + ")");
+
+        if (isSurfaceInput && endOfStream) {
+            if (VERBOSE) Log.d(TAG, "sending EOS to encoder");
+            encoder.signalEndOfInputStream();
+        }
 
         ByteBuffer[] encoderOutputBuffers = encoder.getOutputBuffers();
         while (true) {

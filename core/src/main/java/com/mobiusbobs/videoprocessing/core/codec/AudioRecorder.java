@@ -91,7 +91,8 @@ public class AudioRecorder {
       for (short audioFormat : new short[]{AudioFormat.ENCODING_PCM_16BIT, AudioFormat.ENCODING_PCM_8BIT}) {
         for (short channelConfig : new short[]{AudioFormat.CHANNEL_IN_MONO, AudioFormat.CHANNEL_IN_STEREO}) {
           try {
-            Log.d(TAG, "Attempting rate " + rate + "Hz, bits: " + audioFormat + ", channel: " + channelConfig);
+            Log.d(TAG, "Attempting rate " + rate + "Hz, bits: " + audioFormat + ", channel: "
+              + channelConfig);
 
             int minBufferSize = AudioRecord.getMinBufferSize(rate, channelConfig, audioFormat);
             if (bufferSize < minBufferSize)
@@ -153,7 +154,7 @@ public class AudioRecorder {
                 audioEncoderCore.encode(buf, readBytes, ptHelper.getPTSUsWithOffset(), false);
                 printFlag("encode done");
 
-                audioEncoderCore.drainEncoder(false);
+                audioEncoderCore.drainEncoder();
                 printFlag("drain done");
               }
             }

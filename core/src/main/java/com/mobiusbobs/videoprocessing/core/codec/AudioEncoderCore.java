@@ -40,4 +40,8 @@ public class AudioEncoderCore extends EncoderCore {
     encoder.start();
   }
 
+  public void drainEncoder() {
+    drainEncoder(false, false);
+  }
+
 }

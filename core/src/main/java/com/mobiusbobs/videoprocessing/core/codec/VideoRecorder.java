@@ -27,6 +27,13 @@ public class VideoRecorder {
   private AudioRecorder audioRecorder;
   private TextureMovieEncoder textureMovieEncoder;
 
+  // flag
+  private boolean isCapturing = false;
+  private boolean isRecording = false;
+
+  // File
+  private File outputFile;
+
   // constructor
   public VideoRecorder(File outputFile) throws IOException {
     resetRecorder(outputFile);
@@ -53,7 +60,8 @@ public class VideoRecorder {
   }
 
   public void startRecord(GLSurfaceView glView) {
-    startRecording = true;
+    isCapturing = true;
+    isRecording = true;
 
     // audioRecorder
     audioRecorder.startRecord();
@@ -74,34 +82,48 @@ public class VideoRecorder {
 
   }
 
-  public void resumeRecord() {
-    audioRecorder.resumeRecord();
-    textureMovieEncoder.resumeRecording();
+  public void resumeRecord(GLSurfaceView glView) {
+    if (!isCapturing) {
+      startRecord(glView);
+    } else {
+      isRecording = true;
+      audioRecorder.resumeRecord();
+      textureMovieEncoder.resumeRecording();
+    }
   }
 
   public void pauseRecord() {
+    isRecording = false;
     audioRecorder.pauseRecrod();
     textureMovieEncoder.pauseRecording();
   }
 
   public void stopRecord() {
-    startRecording = false;
+    isCapturing = false;
+    isRecording = false;
     audioRecorder.stopRecord();
     textureMovieEncoder.stopRecording();
     release();
   }
 
   private void release() {
-    if (audioRecorder != null)
+    if (audioRecorder != null) {
       audioRecorder.release();
+    }
   }
 
-  public boolean isStartRecording()  {
-    return startRecording;
+  public boolean isRecording() {
+    return isRecording;
+  }
+
+  public File getOutputFile() {
+    return outputFile;
   }
 
   // ----- textureMovieEncoder related function -----
   public void onVideoFrameAvailable(int mTextureId, SurfaceTexture surfaceTexture) {
+    if (!isRecording) return;
+
     textureMovieEncoder.setTextureId(mTextureId); // thanks to google suck code
     textureMovieEncoder.frameAvailable(surfaceTexture);
   }

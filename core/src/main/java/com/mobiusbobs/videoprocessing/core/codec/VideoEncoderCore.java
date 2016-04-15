@@ -75,11 +75,6 @@ public class VideoEncoderCore extends EncoderCore {
     }
 
     public void drainEncoder(boolean endOfStream) {
-        if (endOfStream) {
-            if (VERBOSE) Log.d(TAG, "sending EOS to encoder");
-            encoder.signalEndOfInputStream();
-        }
-
-        super.drainEncoder(endOfStream);
+        drainEncoder(true, endOfStream);
     }
 }
