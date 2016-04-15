@@ -1,4 +1,4 @@
-package com.mobiusbobs.videoprocessing.core.gles;
+package com.mobiusbobs.videoprocessing.core.hardware_control;
 
 import android.hardware.Camera;
 

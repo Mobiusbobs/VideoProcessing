@@ -4,7 +4,6 @@ import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
 import android.util.Log;
 
-import com.mobiusbobs.videoprocessing.core.gles.CameraInstanceManager;
 import com.mobiusbobs.videoprocessing.core.util.CameraUtils;
 
 import java.io.IOException;
