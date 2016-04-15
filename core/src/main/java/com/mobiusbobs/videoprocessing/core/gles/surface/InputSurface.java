@@ -1,4 +1,4 @@
-package com.mobiusbobs.videoprocessing.core.surface;
+package com.mobiusbobs.videoprocessing.core.gles.surface;
 
 /*
  * Copyright (C) 2013 The Android Open Source Project

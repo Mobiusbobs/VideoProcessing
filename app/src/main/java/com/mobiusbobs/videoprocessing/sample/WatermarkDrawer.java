@@ -3,7 +3,7 @@ package com.mobiusbobs.videoprocessing.sample;
 import android.content.Context;
 import android.graphics.Bitmap;
 
-import com.mobiusbobs.videoprocessing.core.CoordConverter;
+import com.mobiusbobs.videoprocessing.core.util.CoordConverter;
 import com.mobiusbobs.videoprocessing.core.gldrawer.GLDrawable;
 import com.mobiusbobs.videoprocessing.core.gldrawer.BaseDrawer;
 import com.mobiusbobs.videoprocessing.core.util.BitmapHelper;

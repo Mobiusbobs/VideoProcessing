@@ -10,9 +10,10 @@ import android.media.MediaMuxer;
 import android.util.Log;
 import android.view.Surface;
 
+import com.mobiusbobs.videoprocessing.core.codec.Extractor;
 import com.mobiusbobs.videoprocessing.core.gldrawer.GLDrawable;
-import com.mobiusbobs.videoprocessing.core.surface.InputSurface;
-import com.mobiusbobs.videoprocessing.core.surface.OutputSurface;
+import com.mobiusbobs.videoprocessing.core.gles.surface.InputSurface;
+import com.mobiusbobs.videoprocessing.core.gles.surface.OutputSurface;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
