@@ -76,14 +76,18 @@ public class CameraView
 
     @Override
     public void onPause() {
-        cameraController.releaseCamera();
+        if (cameraController != null) {
+            cameraController.releaseCamera();
+        }
         super.onPause();
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        cameraController.openCamera(width, height, "FRONT");
+        if (cameraController != null) {
+            cameraController.openCamera(width, height, "FRONT");
+        }
     }
 
     public void onDestory() {

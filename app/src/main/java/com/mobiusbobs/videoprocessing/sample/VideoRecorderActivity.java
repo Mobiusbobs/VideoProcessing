@@ -1,18 +1,12 @@
 package com.mobiusbobs.videoprocessing.sample;
 
-import android.Manifest;
-import android.app.Activity;
-import android.content.pm.PackageManager;
 import android.graphics.SurfaceTexture;
 import android.opengl.EGL14;
 import android.os.Bundle;
 import android.os.Environment;
-import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
-import android.widget.Toast;
 
 import com.mobiusbobs.videoprocessing.core.CameraView;
 import com.mobiusbobs.videoprocessing.core.codec.VideoRecorder;
@@ -50,47 +44,17 @@ public class VideoRecorderActivity extends AppCompatActivity implements CameraVi
     // output file
     private File outputFile;
 
-    // check permission
-    private boolean functionDisabled = true;
-
-    // activity permissions
-    private static boolean permissionGranted = false;
-    private static final int REQUEST_PERMISSION_CODE = 1;
-    private static String[] PERMISSIONS = {
-      Manifest.permission.READ_EXTERNAL_STORAGE,
-      Manifest.permission.WRITE_EXTERNAL_STORAGE,
-      Manifest.permission.RECORD_AUDIO,
-      Manifest.permission.CAMERA
-    };
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // set permission
-        permissionGranted = verifyPermissions(this);
+        initVideoRecorder(new File(getOutputFilePath()));
 
         // set views
         setContentView(R.layout.activity_video_recorder);
         cameraView = (CameraView)findViewById(R.id.gl_view);
-        cameraView.init(cameraController, this);
+        cameraView.init(cameraController, this); // must init right after onCreate
         setupButtons();
-
-        initPermissionRequiredComponent();
-    }
-
-    private void initPermissionRequiredComponent() {
-        if (permissionGranted) {
-            // videorecorder
-            outputFile = new File(getOutputFilePath());
-            initVideoRecorder(outputFile);
-
-            functionDisabled = false;
-        }   else {
-            Log.e(TAG, "permission not granted");
-
-            functionDisabled = true;
-        }
     }
 
     private void initVideoRecorder(File outputFile) {
@@ -112,11 +76,6 @@ public class VideoRecorderActivity extends AppCompatActivity implements CameraVi
         recordBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (functionDisabled) {
-                    printFunctionDisable();
-                    return;
-                }
-
                 isRecording = !isRecording;
                 notifyRecorder();
                 updateControls();
@@ -129,11 +88,6 @@ public class VideoRecorderActivity extends AppCompatActivity implements CameraVi
         switchBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (functionDisabled) {
-                    printFunctionDisable();
-                    return;
-                }
-
                 cameraController.switchCamera();
             }
         });
@@ -144,14 +98,10 @@ public class VideoRecorderActivity extends AppCompatActivity implements CameraVi
         publishBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (functionDisabled) {
-                    printFunctionDisable();
-                    return;
-                }
-
                 videoRecorder.stopRecord();
                 isRecording = false;
                 isNewRecordSession = true;
+                updateControls();
             }
         });
     }
@@ -189,15 +139,9 @@ public class VideoRecorderActivity extends AppCompatActivity implements CameraVi
         }
     }
 
-    private void printFunctionDisable() {
-        String msg = "permission is not granted. Function is disabled";
-        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
-    }
-
     @Override
     protected void onResume() {
         super.onResume();
-        if (functionDisabled) return;
         cameraView.onResume();
     }
 
@@ -231,48 +175,5 @@ public class VideoRecorderActivity extends AppCompatActivity implements CameraVi
     private String getOutputFilePath() {
         File outpuFileDir = getExternalFilesDir(Environment.DIRECTORY_MOVIES);
         return outpuFileDir.getAbsolutePath() + FILE_OUTPUT_NAME;
-    }
-
-
-    // ----- permssion related for 6.0+ -----
-    @Override
-    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == REQUEST_PERMISSION_CODE) {
-            for (int i = 0; i < permissions.length; i++) {
-                String permission = permissions[i];
-                int grantResult = grantResults[i];
-                Log.d(TAG, "permission = " + permission + ", grantResults = " + grantResult);
-                // permission denied
-                if (grantResult != PackageManager.PERMISSION_GRANTED) {
-                    permissionGranted = false;
-                    return;
-                }
-            }
-            permissionGranted = true;
-            initPermissionRequiredComponent();
-        }
-    }
-
-    /**
-     * Checks if the app has permission
-     *
-     * If the app does not has permission then the user will be prompted to grant permissions
-     *
-     * @param activity
-     */
-    private boolean verifyPermissions(Activity activity) {
-        // Check if we have write permission
-        int permission = ActivityCompat.checkSelfPermission(activity, Manifest.permission.WRITE_EXTERNAL_STORAGE);
-        if (permission != PackageManager.PERMISSION_GRANTED) {
-            // We don't have permission so prompt the user
-            ActivityCompat.requestPermissions(
-              activity,
-              PERMISSIONS,
-              REQUEST_PERMISSION_CODE
-            );
-            return false;
-        }
-        return true;
     }
 }
