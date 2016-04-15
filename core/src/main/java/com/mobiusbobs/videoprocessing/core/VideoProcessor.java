@@ -221,8 +221,7 @@ public class VideoProcessor {
 
         boolean muxing = false;
 
-        int musicLoopCount = 0;
-        long audioPTimeOffset = audioDuration * musicLoopCount;
+        long audioPTimeOffset = 0;
 
         while (!videoEncoderDone || !audioEncoderDone) {
             // --- extract video from extractor ---
@@ -246,8 +245,7 @@ public class VideoProcessor {
                 long sampleTime = audioExtractor.getSampleTime();
                 if (sampleTime == -1) {
                     videoDuration -= audioDuration;
-                    musicLoopCount++;
-                    audioPTimeOffset = audioDuration * musicLoopCount;
+                    audioPTimeOffset += audioDuration;
                     audioExtractor.seekTo(0, MediaExtractor.SEEK_TO_NEXT_SYNC);
                     audioDecoder.flush();
                 }
@@ -388,7 +386,7 @@ public class VideoProcessor {
             MediaExtractor audioExtractor,
             MediaCodec audioDecoder,
             ByteBuffer[] audioDecoderInputBuffers,
-            Long videoDuration
+            Long maxTime
     ) {
         // 1.) get the index of next buffer to be filled
         int decoderInputBufferIndex = audioDecoder.dequeueInputBuffer(TIMEOUT_USEC);
@@ -399,8 +397,8 @@ public class VideoProcessor {
 
         // 1.5) check if audio sampleTime exceed duration
         long sampleTime = audioExtractor.getSampleTime();
-        if (sampleTime > videoDuration) {
-            Log.d(TAG, "FLAG: reach videoDuration: duration=" + videoDuration + ", sampleTime=" + sampleTime);
+        if (sampleTime > maxTime) {
+            Log.d(TAG, "FLAG: reach videoDuration: duration=" + maxTime + ", sampleTime=" + sampleTime);
             audioDecoder.queueInputBuffer(
               decoderInputBufferIndex,
               0,
@@ -889,33 +887,35 @@ public class VideoProcessor {
             return this;
         }
 
+        private MediaExtractor createAudioExtractor(Context context) throws IOException{
+            if (musicResId != -1)
+                return Extractor.createExtractor(context, musicResId);
+            else if (inputResId != -1)
+                return Extractor.createExtractor(context, inputResId);
+            else if (inputFilePath != null)
+                return Extractor.createExtractor(inputFilePath);
+            else
+                throw new IllegalStateException("No input specified");
+        }
+
         public VideoProcessor build(Context context) throws IOException {
             VideoProcessor processor = new VideoProcessor();
             processor.drawerList = drawableList;
 
             if (inputResId != -1) {
                 processor.videoExtractor = Extractor.createExtractor(context, inputResId);
-
-                if (musicResId != -1)
-                    processor.audioExtractor = Extractor.createExtractor(context, musicResId);
-                else
-                    processor.audioExtractor = Extractor.createExtractor(context, inputResId);
             } else if (inputFilePath != null) {
                 processor.videoExtractor = Extractor.createExtractor(inputFilePath);
-
-                if (musicResId != -1)
-                    processor.audioExtractor = Extractor.createExtractor(context, musicResId);
-                else
-                    processor.audioExtractor = Extractor.createExtractor(inputFilePath);
             } else {
                 throw new IllegalStateException("No input specified");
             }
+
+            processor.audioExtractor = createAudioExtractor(context);
 
             if (outputFilePath != null) {
                 processor.outputPath = outputFilePath;
             } else {
                 throw new IllegalStateException("No output specified");
-
             }
 
             return processor;
