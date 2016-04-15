@@ -10,6 +10,7 @@ import android.media.MediaMuxer;
 import android.util.Log;
 import android.view.Surface;
 
+import com.mobiusbobs.videoprocessing.core.gldrawer.GLDrawable;
 import com.mobiusbobs.videoprocessing.core.surface.InputSurface;
 import com.mobiusbobs.videoprocessing.core.surface.OutputSurface;
 
