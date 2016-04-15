@@ -19,7 +19,6 @@ import com.mobiusbobs.videoprocessing.core.CoordConverter;
 import com.mobiusbobs.videoprocessing.core.gldrawer.GifDrawer;
 import com.mobiusbobs.videoprocessing.core.ProcessorRunner;
 import com.mobiusbobs.videoprocessing.core.gldrawer.TextDrawer;
-import com.mobiusbobs.videoprocessing.core.gldrawer.WatermarkDrawer;
 import com.mobiusbobs.videoprocessing.core.util.Timer;
 import com.mobiusbobs.videoprocessing.core.VideoProcessor;
 import com.mobiusbobs.videoprocessing.core.gif.GifDecoder;
