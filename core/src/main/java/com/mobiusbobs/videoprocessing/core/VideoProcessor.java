@@ -66,7 +66,7 @@ public class VideoProcessor {
     private static final int OUTPUT_AUDIO_AAC_PROFILE =
       MediaCodecInfo.CodecProfileLevel.AACObjectLC;     // AACObjectHE
     private static final int OUTPUT_AUDIO_SAMPLE_RATE_HZ = 44100; // Must match the input stream.
-    private static final int OUTPUT_AUDIO_MAX_INPUT_SIZE = 0;
+    private static final int OUTPUT_AUDIO_MAX_INPUT_SIZE = 4096 * 2;
 
     // ----- other parameters -----
 
@@ -139,9 +139,12 @@ public class VideoProcessor {
         int audioTrackIndex = Extractor.getAndSelectAudioTrackIndex(audioExtractor);
 
         MediaFormat inputVideoFormat = videoExtractor.getTrackFormat(videoTrackIndex);
+        long videoDuration = inputVideoFormat.getLong(MediaFormat.KEY_DURATION);
         // fix config problem: http://stackoverflow.com/questions/15105843/mediacodec-jelly-bean
         inputVideoFormat.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, 0);
+
         MediaFormat inputAudioFormat = audioExtractor.getTrackFormat(audioTrackIndex);
+        long audioDuration = inputAudioFormat.getLong(MediaFormat.KEY_DURATION);
 
         // ----- mediacodec -----
         // --- video encoder ---
@@ -184,7 +187,9 @@ public class VideoProcessor {
             audioEncoder,
             muxer,
             inputSurface,
-            outputSurface);
+            outputSurface,
+            videoDuration,
+            audioDuration);
 
     }
 
@@ -197,7 +202,9 @@ public class VideoProcessor {
         MediaCodec audioEncoder,
         MediaMuxer muxer,
         InputSurface inputSurface,
-        OutputSurface outputSurface
+        OutputSurface outputSurface,
+        long videoDuration,
+        long audioDuration
     ) {
         prepareBuffers(
                 videoDecoder, audioDecoder,
@@ -216,6 +223,8 @@ public class VideoProcessor {
 
         boolean muxing = false;
 
+        long audioPTimeOffset = 0;
+
         while (!videoEncoderDone || !audioEncoderDone) {
             // --- extract video from extractor ---
             if (!videoExtractorDone && (encoderOutputVideoFormat == null || muxing)) {
@@ -231,8 +240,17 @@ public class VideoProcessor {
                 audioExtractorDone = extractAudioData(
                         audioExtractor,
                         audioDecoder,
-                        audioDecoderInputBuffers
+                        audioDecoderInputBuffers,
+                        videoDuration
                 );
+
+                long sampleTime = audioExtractor.getSampleTime();
+                if (sampleTime == -1) {
+                    videoDuration -= audioDuration;
+                    audioPTimeOffset += audioDuration;
+                    audioExtractor.seekTo(0, MediaExtractor.SEEK_TO_NEXT_SYNC);
+                    audioDecoder.flush();
+                }
             }
 
             // --- pull output frames from video decoder and feed it to encoder ---
@@ -263,7 +281,7 @@ public class VideoProcessor {
             // Feed the pending decoded audio buffer to the audio encoder.
             // TODO check to see if I can implement this into audio Decoder...
             if (pendingAudioDecoderOutputBufferIndex != -1) {
-                audioDecoderDone = pipeAudioStream(audioDecoder, audioEncoder);
+                audioDecoderDone = pipeAudioStream(audioDecoder, audioEncoder, audioPTimeOffset);
             }
 
             // --- mux video ---
@@ -369,13 +387,27 @@ public class VideoProcessor {
     private boolean extractAudioData(
             MediaExtractor audioExtractor,
             MediaCodec audioDecoder,
-            ByteBuffer[] audioDecoderInputBuffers
+            ByteBuffer[] audioDecoderInputBuffers,
+            Long maxTime
     ) {
         // 1.) get the index of next buffer to be filled
         int decoderInputBufferIndex = audioDecoder.dequeueInputBuffer(TIMEOUT_USEC);
         if (decoderInputBufferIndex == MediaCodec.INFO_TRY_AGAIN_LATER) {
             Log.e(TAG, "audioDecoder.dequeueInputBuffer: no audio decoder input buffer");
             return false;
+        }
+
+        // 1.5) check if audio sampleTime exceed duration
+        long sampleTime = audioExtractor.getSampleTime();
+        if (sampleTime > maxTime) {
+            Log.d(TAG, "FLAG: reach videoDuration: duration=" + maxTime + ", sampleTime=" + sampleTime);
+            audioDecoder.queueInputBuffer(
+              decoderInputBufferIndex,
+              0,
+              0,
+              0,
+              MediaCodec.BUFFER_FLAG_END_OF_STREAM);
+            return true;
         }
 
         // 2.) get the byte buffer from index
@@ -394,6 +426,7 @@ public class VideoProcessor {
                     presentationTime,
                     audioExtractor.getSampleFlags());
         }
+
         boolean audioExtractorDone = !audioExtractor.advance();
         if (audioExtractorDone) {
             Log.d(TAG, "FLAG: audioExtractorDone!!!");
@@ -523,7 +556,7 @@ public class VideoProcessor {
      * @param audioEncoder The audio encoder to
      * @return audioDecoderDone
      */
-    private boolean pipeAudioStream(MediaCodec audioDecoder, MediaCodec audioEncoder) {
+    private boolean pipeAudioStream(MediaCodec audioDecoder, MediaCodec audioEncoder, long pTimeOffset) {
         int encoderInputBufferIndex = audioEncoder.dequeueInputBuffer(TIMEOUT_USEC);
         if (encoderInputBufferIndex < 0) {
             Log.e(TAG, "audioEncoder.dequeueInputBuffer: no audio encoder input buffer");
@@ -532,7 +565,7 @@ public class VideoProcessor {
 
         ByteBuffer encoderInputBuffer = audioEncoderInputBuffers[encoderInputBufferIndex];
         int size = audioDecoderOutputBufferInfo.size;
-        long presentationTime = audioDecoderOutputBufferInfo.presentationTimeUs;
+        long presentationTime = audioDecoderOutputBufferInfo.presentationTimeUs + pTimeOffset;
 
         if (size >= 0) {
             ByteBuffer decoderOutputBuffer =
@@ -825,6 +858,7 @@ public class VideoProcessor {
     public static class Builder {
         private List<GLDrawable> drawableList = new ArrayList<>();
         private int inputResId = -1;
+        private int musicResId = -1;
         private String inputFilePath = null;
         private String outputFilePath = null;
 
@@ -850,25 +884,40 @@ public class VideoProcessor {
             return this;
         }
 
+        public Builder setBackgroundMusic(int musicResId) {
+            this.musicResId = musicResId;
+            return this;
+        }
+
+        private MediaExtractor createAudioExtractor(Context context) throws IOException{
+            if (musicResId != -1)
+                return Extractor.createExtractor(context, musicResId);
+            else if (inputResId != -1)
+                return Extractor.createExtractor(context, inputResId);
+            else if (inputFilePath != null)
+                return Extractor.createExtractor(inputFilePath);
+            else
+                throw new IllegalStateException("No input specified");
+        }
+
         public VideoProcessor build(Context context) throws IOException {
             VideoProcessor processor = new VideoProcessor();
             processor.drawerList = drawableList;
 
             if (inputResId != -1) {
                 processor.videoExtractor = Extractor.createExtractor(context, inputResId);
-                processor.audioExtractor = Extractor.createExtractor(context, inputResId);
             } else if (inputFilePath != null) {
                 processor.videoExtractor = Extractor.createExtractor(inputFilePath);
-                processor.audioExtractor = Extractor.createExtractor(inputFilePath);
             } else {
                 throw new IllegalStateException("No input specified");
             }
+
+            processor.audioExtractor = createAudioExtractor(context);
 
             if (outputFilePath != null) {
                 processor.outputPath = outputFilePath;
             } else {
                 throw new IllegalStateException("No output specified");
-
             }
 
             return processor;

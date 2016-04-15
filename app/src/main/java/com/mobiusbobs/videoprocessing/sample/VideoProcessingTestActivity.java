@@ -29,7 +29,7 @@ public class VideoProcessingTestActivity extends AppCompatActivity {
     private static final String TAG = "TEST";
 
     // File Path
-    public static final String FILE_OUTPUT_MP4 = "/sdcard/Download/TestCodec3.mp4";
+    public static final String FILE_OUTPUT_MP4 = "/sdcard/Download/TestCodec4.mp4";
 
     // MainComponent
 
@@ -56,7 +56,7 @@ public class VideoProcessingTestActivity extends AppCompatActivity {
     }
 
     // TODO two output from shared middle production
-//    private int resultCounter = 0;
+    // private int resultCounter = 0;
     private void runVideoProcess() {
 
         final Timer timer = new Timer();
@@ -64,7 +64,7 @@ public class VideoProcessingTestActivity extends AppCompatActivity {
         timer.startTimer();
         timerW.startTimer();
 
-//        resultCounter = 0;
+        // resultCounter = 0;
 
 //        CodecManager codec = new CodecManager(this, false, Util.getScreenDimen(this));
 //        codec.setOnMuxerDone(new CodecManager.OnMuxerDone() {
@@ -107,6 +107,7 @@ public class VideoProcessingTestActivity extends AppCompatActivity {
         try {
             VideoProcessor videoProcessor = new VideoProcessor.Builder()
                     .setInputResId(R.raw.test_21)
+                    .setBackgroundMusic(R.raw.short1)
                     .addDrawer(gifDrawer)
                     .addDrawer(watermarkDrawer)
                     .addDrawer(textDrawer)
