@@ -36,6 +36,7 @@ public class VideoRecorder {
 
   // constructor
   public VideoRecorder(File outputFile) throws IOException {
+    this.outputFile = outputFile;
     resetRecorder(outputFile);
   }
 
