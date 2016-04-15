@@ -1,4 +1,4 @@
-package com.mobiusbobs.videoprocessing.core;
+package com.mobiusbobs.videoprocessing.core.gldrawer;
 
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -22,18 +22,18 @@ public class GifDrawer implements GLDrawable {
   private static final String TAG = "GifDrawer";
 
   // composition
-  private StickerDrawer stickerDrawer;
+  private BaseDrawer stickerDrawer;
 
   private GifDecoder gifDecoder;
   private long gifLastFrameTime;
 
   public GifDrawer(Context context, GifDecoder gifDecoder) {
-    stickerDrawer = new StickerDrawer(context);
+    stickerDrawer = new BaseDrawer();
     this.gifDecoder = gifDecoder;
   }
 
   public GifDrawer(Context context, GifDecoder gifDecoder, float[] verticesPositionData) {
-    stickerDrawer = new StickerDrawer(context, verticesPositionData);
+    stickerDrawer = new BaseDrawer(verticesPositionData);
     stickerDrawer.verticesPositionData = verticesPositionData;
     this.gifDecoder = gifDecoder;
   }

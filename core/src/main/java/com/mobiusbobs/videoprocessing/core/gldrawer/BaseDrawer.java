@@ -1,17 +1,12 @@
-package com.mobiusbobs.videoprocessing.core;
+package com.mobiusbobs.videoprocessing.core.gldrawer;
 
-import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.opengl.GLES20;
 import android.opengl.GLUtils;
 import android.opengl.Matrix;
 import android.util.Log;
 
-import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
@@ -28,10 +23,8 @@ import java.nio.FloatBuffer;
  * Created by rayshih on 3/22/16.
  * Copyright (c) 2016 MobiusBobs Inc. All rights reserved.
  */
-public class StickerDrawer implements GLDrawable {
-    private static final String TAG = "StickerDrawer";
-
-    private Context context;
+public class BaseDrawer implements GLDrawable {
+    private static final String TAG = "BaseDrawer";
 
     /** Store our model data in a float buffer. */
     protected float[] verticesPositionData = {
@@ -123,22 +116,13 @@ public class StickerDrawer implements GLDrawable {
 
     protected int shaderProgramHandle;
 
-    private int imageResId = -1;
-    private String imageFilePath = null;
+    public BaseDrawer()  {}
 
-    public StickerDrawer(Context context, int resId, float[] verticesPositionData) {
-        this.context = context;
-        this.imageResId = resId;
+    public BaseDrawer(float[] verticesPositionData)  {
         this.verticesPositionData = verticesPositionData;
     }
 
-    public StickerDrawer(Context context, String filePath, float[] verticesPositionData)
-      throws IOException {
-        this.context = context;
-        this.imageFilePath = filePath;
-        this.verticesPositionData = verticesPositionData;
-    }
-
+    @Override
     public void init() throws IOException {
         initCoordinateBuffer();
 
@@ -149,47 +133,24 @@ public class StickerDrawer implements GLDrawable {
 
         setupShader();
         bindTexture();
-
-        if (imageResId != -1) {
-            Bitmap bitmap = generateBitmap(imageResId);
-            loadTexture(bitmap, 1);
-            bitmap.recycle();
-        }
-
-        if (imageFilePath != null) {
-            Bitmap bitmap = generateBitmap(imageFilePath);
-            loadTexture(bitmap, 1);
-            bitmap.recycle();
-        }
     }
 
-    private Bitmap generateBitmap(int resId) {
-        return BitmapFactory.decodeResource(context.getResources(), resId);
+    public void init(Bitmap bitmap, float[] verticesPositionData) throws IOException {
+        setVerticesCoordinate(verticesPositionData);
+        init(bitmap);
     }
 
-    private Bitmap generateBitmap(String fileUrl) throws IOException {
-        // get bitmap
-        File imageFile = new File(fileUrl);
-        BitmapFactory.Options bmOptions = new BitmapFactory.Options();
-        Bitmap bitmap = BitmapFactory.decodeFile(imageFile.getAbsolutePath(), bmOptions);
-
-        if (bitmap != null) return bitmap;
-
-        InputStream is = new URL(fileUrl).openStream();
-        bitmap = BitmapFactory.decodeStream(is);
-        Log.d(TAG, "generateBitmap: bitmap = " + bitmap);
-        Log.d(TAG, "generateBitmap: bitmap.width=" + bitmap.getWidth() + ", bitmap.height=" + bitmap.getHeight());
-
-        return bitmap;
+    public void init(Bitmap bitmap) throws IOException {
+        init();
+        loadTexture(bitmap, 1);
     }
 
-    public StickerDrawer(Context context, float[] verticesPositionData)  {
+    public void setVerticesCoordinate(float[] verticesPositionData) {
         this.verticesPositionData = verticesPositionData;
-        this.context = context;
-    }
-
-    public StickerDrawer(Context context)  {
-        this.context = context;
+        if (verticesPosition != null) {
+            verticesPosition.clear();
+            verticesPosition.put(verticesPositionData).position(0);
+        }
     }
 
     protected void initCoordinateBuffer() {
@@ -276,7 +237,6 @@ public class StickerDrawer implements GLDrawable {
     protected int compileShader(int shaderType, String shaderProgram) {
         // Load in the vertex shader.
         int shaderHandle = GLES20.glCreateShader(shaderType);
-        //Log.d(TAG, "shaderType = " + shaderType + ", shaderProgram = " + shaderProgram);
 
         if (shaderHandle != 0)
         {
@@ -348,6 +308,7 @@ public class StickerDrawer implements GLDrawable {
         mTextureCoordinateHandle = GLES20.glGetAttribLocation(shaderProgramHandle, "a_TexCoordinate");
     }
 
+    @Override
     public void draw(long timeMs) {
         draw(0);
     }
