@@ -1,4 +1,4 @@
-package com.mobiusbobs.videoprocessing.core;
+package com.mobiusbobs.videoprocessing.core.gldrawer;
 
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -6,6 +6,8 @@ import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Rect;
+
+import com.mobiusbobs.videoprocessing.core.CoordConverter;
 
 import java.io.IOException;
 
@@ -19,7 +21,7 @@ public class TextDrawer implements GLDrawable {
   private static final String TAG = "TextDrawer";
 
   // composition
-  private StickerDrawer stickerDrawer;
+  private BaseDrawer stickerDrawer;
 
   private Context context;
   private int screenWidth;
@@ -35,14 +37,13 @@ public class TextDrawer implements GLDrawable {
     this.text = text;
     this.resId = resId;
 
-    stickerDrawer = new StickerDrawer();
+    stickerDrawer = new BaseDrawer();
   }
 
   public void init() throws IOException {
     Bitmap bitmap = generateBitmap(text, resId);
     stickerDrawer.setVerticesCoordinate(converter.getAlignTopVertices(bitmap, 56));
-    stickerDrawer.setBitmap(bitmap);
-    stickerDrawer.init();
+    stickerDrawer.init(bitmap);
     bitmap.recycle();
   }
 
