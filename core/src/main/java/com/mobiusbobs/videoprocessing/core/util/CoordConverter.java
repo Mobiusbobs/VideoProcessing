@@ -1,4 +1,4 @@
-package com.mobiusbobs.videoprocessing.core;
+package com.mobiusbobs.videoprocessing.core.util;
 
 import android.content.Context;
 import android.graphics.Bitmap;

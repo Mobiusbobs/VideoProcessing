@@ -2,182 +2,154 @@ package com.mobiusbobs.videoprocessing.sample;
 
 import android.Manifest;
 import android.app.Activity;
-import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.graphics.Point;
 import android.os.Bundle;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
+import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
-import android.view.Display;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
+import android.widget.Toast;
 
-import com.mobiusbobs.videoprocessing.core.CoordConverter;
-import com.mobiusbobs.videoprocessing.core.gldrawer.GifDrawer;
-import com.mobiusbobs.videoprocessing.core.ProcessorRunner;
-import com.mobiusbobs.videoprocessing.core.gldrawer.TextDrawer;
-import com.mobiusbobs.videoprocessing.core.util.Timer;
-import com.mobiusbobs.videoprocessing.core.VideoProcessor;
-import com.mobiusbobs.videoprocessing.core.gif.GifDecoder;
-
-import java.io.IOException;
-
-/*
- * Sample:
- * https://android.googlesource.com/platform/cts/+/jb-mr2-release/tests/tests/media/src/android/media/cts/ExtractDecodeEditEncodeMuxTest.java
- *
- */
 public class MainActivity extends AppCompatActivity {
-    private static final String TAG = "TEST";
+    public static String TAG = "MainActivity";
 
-    // File Path
-    public static final String FILE_OUTPUT_MP4 = "/sdcard/Download/TestCodec4.mp4";
-
-    // Storage Permissions
-    private static final int REQUEST_EXTERNAL_STORAGE = 1;
-    private static String[] PERMISSIONS_STORAGE = {
+    private static final int REQUEST_PERMISSION_CODE = 1;
+    private static String[] PERMISSIONS = {
             Manifest.permission.READ_EXTERNAL_STORAGE,
             Manifest.permission.WRITE_EXTERNAL_STORAGE,
-            Manifest.permission.RECORD_AUDIO
+            Manifest.permission.RECORD_AUDIO,
+            Manifest.permission.CAMERA
     };
 
-    // MainComponent
+    private boolean permissionGranted = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        verifyStoragePermissions(this);
-
-        initView();
-    }
-
-    private void initView() {
+        // toolbar
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        if (fab != null) {
-            fab.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
+        setupListView();
 
-                    runVideoProcess();
-                    Snackbar.make(view, "Run test of adding gif, watermark and text", Snackbar.LENGTH_LONG)
-                            .setAction("Action", null).show();
+        permissionGranted = verifyPermissions(this);
+    }
+
+    private void setupListView() {
+        String[] list = {
+                "Test Record from SurfaceView",
+                "Test Video Processing"
+        };
+
+        ListView listView = (ListView)findViewById(R.id.list_view);
+        ArrayAdapter<String> listAdapter = new ArrayAdapter<>(this,android.R.layout.simple_list_item_1,list);
+        listView.setAdapter(listAdapter);
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                switch (position) {
+                    case 0: {
+                        startActivity(VideoRecorderActivity.class);
+                        break;
+                    }
+                    case 1: {
+                        startActivity(VideoProcessingTestActivity.class);
+                        break;
+                    }
                 }
-            });
+            }
+        });
+    }
+
+    private void startActivity(Class<?> klass) {
+        if (permissionGranted) {
+            Intent intent = new Intent(MainActivity.this, klass);
+            startActivity(intent);
+        } else {
+            printFunctionDisable();
         }
     }
 
-    // TODO two output from shared middle production
-    private int resultCounter = 0;
-    private void runVideoProcess() {
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.menu_main, menu);
+        return true;
+    }
 
-        final Timer timer = new Timer();
-        final Timer timerW = new Timer();
-        timer.startTimer();
-        timerW.startTimer();
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // Handle action bar item clicks here. The action bar will
+        // automatically handle clicks on the Home/Up button, so long
+        // as you specify a parent activity in AndroidManifest.xml.
+        int id = item.getItemId();
 
-        resultCounter = 0;
-
-//        CodecManager codec = new CodecManager(this, false, Util.getScreenDimen(this));
-//        codec.setOnMuxerDone(new CodecManager.OnMuxerDone() {
-//          @Override
-//          public void onDone() {
-//            timer.endTimer("mux(no watermark) is done");
-//            resultCounter++;
-//            if(resultCounter==2) Log.d(TAG, "result done! call callback!!!");
-//          }
-//        });
-//        CodecManager.ExtractDecodeEditEncodeMuxWrapper.run(codec, FILE_OUTPUT_MP4, R.raw.test_21);
-
-        Context context = getApplicationContext();
-        Display display = getWindowManager().getDefaultDisplay();
-        Point point = new Point();
-        display.getSize(point);
-        int screenWidth = point.x;
-        int screenHeight = point.y;
-        CoordConverter coordConverter = new CoordConverter(context, screenWidth, screenHeight);
-
-        // --- setup gif drawer ---
-        int gifId = R.raw.gif_funny;
-        GifDecoder gifDecoder = GifDrawer.createGifDecoder(context, gifId);
-        float[] gifVertices = coordConverter.getAlignCenterVertices(gifId);
-        GifDrawer gifDrawer = new GifDrawer(context, gifDecoder, gifVertices);
-
-        // --- setup watermark ---
-        WatermarkDrawer watermarkDrawer = new WatermarkDrawer(context, coordConverter);
-
-        // --- setup text drawer ---
-        int pawId = R.drawable.icon_paw;
-        TextDrawer textDrawer = new TextDrawer(
-                context,
-                coordConverter,
-                screenWidth,
-                "Tiger",
-                pawId
-        );
-
-        try {
-            VideoProcessor videoProcessor = new VideoProcessor.Builder()
-                    .setInputResId(R.raw.test_21)
-                    .setBackgroundMusic(R.raw.short1)
-                    .addDrawer(gifDrawer)
-                    .addDrawer(watermarkDrawer)
-                    .addDrawer(textDrawer)
-                    .setOutputPath(FILE_OUTPUT_MP4)
-                    .build(context);
-
-            ProcessorRunner.run(videoProcessor, "Add Gif And Logo", new ProcessorRunner.ProcessorRunnerCallback() {
-                @Override
-                public void onCompleted() {
-                    timerW.endTimer("mux(with watermark) is done");
-//                    resultCounter++;
-//                    if (resultCounter==2) Log.d(TAG, "result done! call callback!!!");
-                }
-
-                @Override
-                public void onError(Throwable e) {
-                    Log.e(TAG, "Video Processing failed");
-                    Log.e(TAG, e.getMessage());
-                    e.printStackTrace();
-                }
-            });
-        } catch (IOException e) {
-            e.printStackTrace();
+        //noinspection SimplifiableIfStatement
+        if (id == R.id.action_settings) {
+            return true;
         }
 
-        // --- setup sticker ----
-        // TODO create another example for this
-//        int stickerDrawableId = R.drawable.frames_hungry;
-//        stickerDrawer = new BaseDrawer(
-//                context,
-//                stickerDrawableId,
-//                coordConverter.getAlignCenterVertices(stickerDrawableId)
-//        );
+        return super.onOptionsItemSelected(item);
     }
 
     /**
-     * Checks if the app has permission to write to device storage
+     * Checks if the app has permission
      *
      * If the app does not has permission then the user will be prompted to grant permissions
+     *
+     * @param activity current activity
      */
-    public static void verifyStoragePermissions(Activity activity) {
+    private boolean verifyPermissions(Activity activity) {
         // Check if we have write permission
         int permission = ActivityCompat.checkSelfPermission(activity, Manifest.permission.WRITE_EXTERNAL_STORAGE);
-
         if (permission != PackageManager.PERMISSION_GRANTED) {
             // We don't have permission so prompt the user
             ActivityCompat.requestPermissions(
                     activity,
-                    PERMISSIONS_STORAGE,
-                    REQUEST_EXTERNAL_STORAGE
+                    PERMISSIONS,
+                    REQUEST_PERMISSION_CODE
             );
+            return false;
         }
+        return true;
+    }
+
+    @Override
+    public void onRequestPermissionsResult(
+            int requestCode,
+            @NonNull String[] permissions,
+            @NonNull int[] grantResults
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == REQUEST_PERMISSION_CODE) {
+            for (int i = 0; i < permissions.length; i++) {
+                String permission = permissions[i];
+                int grantResult = grantResults[i];
+                Log.d(TAG, "permission = " + permission + ", grantResults = " + grantResult);
+
+                // permission denied
+                if (grantResult != PackageManager.PERMISSION_GRANTED) {
+                    permissionGranted = false;
+                    return;
+                }
+            }
+            permissionGranted = true;
+        }
+    }
+
+    private void printFunctionDisable() {
+        String msg = "permission is not granted. Function is disabled";
+        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
     }
 }

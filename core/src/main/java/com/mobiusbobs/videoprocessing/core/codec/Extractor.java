@@ -1,4 +1,4 @@
-package com.mobiusbobs.videoprocessing.core;
+package com.mobiusbobs.videoprocessing.core.codec;
 
 import android.content.Context;
 import android.content.res.AssetFileDescriptor;

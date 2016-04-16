@@ -7,7 +7,7 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Rect;
 
-import com.mobiusbobs.videoprocessing.core.CoordConverter;
+import com.mobiusbobs.videoprocessing.core.util.CoordConverter;
 
 import java.io.IOException;
 
