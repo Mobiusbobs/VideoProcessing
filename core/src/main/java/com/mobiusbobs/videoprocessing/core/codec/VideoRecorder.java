@@ -40,9 +40,6 @@ public class VideoRecorder {
     resetRecorder(outputFile);
   }
 
-  // boolean
-  private boolean startRecording = false;
-
   public void resetRecorder(File outputFile) throws IOException {
     // create muxer
     MediaMuxer muxer = new MediaMuxer(
@@ -130,6 +127,8 @@ public class VideoRecorder {
   }
 
   public void updateSharedContext(EGLContext sharedContext) {
+    if (!isRecording) return;
+
     textureMovieEncoder.updateSharedContext(sharedContext);
   }
 

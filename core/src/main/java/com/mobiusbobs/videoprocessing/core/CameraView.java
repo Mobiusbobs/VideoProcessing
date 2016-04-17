@@ -99,6 +99,10 @@ public class CameraView
         super.onSizeChanged(w, h, oldw, oldh);
         width = w;
         height = h;
+
+        if (cameraController != null) {
+            cameraController.openCamera(w, h, "FRONT");
+        }
     }
 
     // ----- gl related function -----
