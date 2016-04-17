@@ -128,7 +128,7 @@ public class VideoRecorderActivity extends AppCompatActivity implements CameraVi
         }
 
         // isRecoding and not new session
-        videoRecorder.resumeRecord();
+        videoRecorder.resumeRecord(cameraView);
     }
 
     private void updateControls() {
@@ -160,8 +160,9 @@ public class VideoRecorderActivity extends AppCompatActivity implements CameraVi
     // ----- camera view callbacks -----
     @Override
     public void onSurfaceCreated() {
-        if (videoRecorder.isStartRecording())
+        if (isRecording) {
             videoRecorder.updateSharedContext(EGL14.eglGetCurrentContext());
+        }
     }
 
     @Override

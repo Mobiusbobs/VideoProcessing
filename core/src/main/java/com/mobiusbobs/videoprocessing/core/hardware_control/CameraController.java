@@ -78,17 +78,15 @@ public class CameraController {
         return mCamera;
     }
 
-    public Camera switchCamera() {
-        if  (frontCamera) {
-            frontCamera = false;
-            openCamera(mCameraWidth, mCameraHeight, "BACK");
-        }   else {
-            frontCamera = true;
-            openCamera(mCameraWidth, mCameraHeight, "FRONT");
-        }
-
+    public Camera switchCamera(boolean front) {
+        frontCamera = front;
+        openCamera(mCameraWidth, mCameraHeight, front ? "FRONT" : "BACK");
         restartPreview();
         return mCamera;
+    }
+
+    public Camera switchCamera() {
+        return switchCamera(!frontCamera);
     }
 
     /**
