@@ -68,7 +68,7 @@ public class TextDrawer implements GLDrawable {
     Paint textPaint = new Paint();
     textPaint.setTextSize(50);
     textPaint.setAntiAlias(true);
-    textPaint.setARGB(0x7C, 0x00, 0x00, 0x00);
+    textPaint.setARGB(0xFF, 0xFF, 0xFF, 0xFF);
     textPaint.getTextBounds(text, 0, text.length(), textBounds);
 
     // draw text
