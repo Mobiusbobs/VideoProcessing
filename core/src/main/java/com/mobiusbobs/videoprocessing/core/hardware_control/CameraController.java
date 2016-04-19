@@ -48,6 +48,11 @@ public class CameraController {
         Camera.Parameters parms = mCamera.getParameters();
         CameraUtils.choosePreviewSize(parms, desiredWidth, desiredHeight);
 
+        // set auto-focus
+        if (parms.getSupportedFocusModes().contains(Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO)) {
+            parms.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO);
+        }
+
         // Give the camera a hint that we're recording video.  This can have a big
         // impact on frame rate.
         parms.setRecordingHint(true);
