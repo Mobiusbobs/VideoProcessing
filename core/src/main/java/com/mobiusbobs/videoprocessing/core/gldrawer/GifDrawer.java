@@ -11,6 +11,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 
 /**
  * android
@@ -56,7 +57,7 @@ public class GifDrawer implements GLDrawable {
 
   public static GifDecoder createGifDecoder(String filePath) {
     try {
-      File gifFile = new File(filePath);
+      File gifFile = new File(URI.create(filePath));
       InputStream inputStream = new FileInputStream(gifFile);
 
       GifDecoder gifDecoder = new GifDecoder();
