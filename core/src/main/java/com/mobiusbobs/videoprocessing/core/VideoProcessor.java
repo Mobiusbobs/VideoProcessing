@@ -890,7 +890,7 @@ public class VideoProcessor {
         }
 
         private MediaExtractor createAudioExtractor(Context context) throws IOException{
-            if (musicResId != -1)
+            if (musicResId > 0)
                 return Extractor.createExtractor(context, musicResId);
             else if (inputResId != -1)
                 return Extractor.createExtractor(context, inputResId);
