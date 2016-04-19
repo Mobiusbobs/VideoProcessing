@@ -34,7 +34,6 @@ public class GifDrawer implements GLDrawable {
 
   public GifDrawer(Context context, GifDecoder gifDecoder, float[] verticesPositionData) {
     stickerDrawer = new BaseDrawer(verticesPositionData);
-    stickerDrawer.verticesPositionData = verticesPositionData;
     this.gifDecoder = gifDecoder;
   }
 
