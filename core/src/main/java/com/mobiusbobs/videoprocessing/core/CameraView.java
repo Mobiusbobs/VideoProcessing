@@ -87,6 +87,7 @@ public class CameraView
         super.onResume();
         if (cameraController != null) {
             cameraController.openCamera(width, height, "FRONT");
+            notifyPreviewChanged();
         }
     }
 
@@ -102,7 +103,15 @@ public class CameraView
 
         if (cameraController != null) {
             cameraController.openCamera(w, h, "FRONT");
+            notifyPreviewChanged();
         }
+    }
+
+    private void notifyPreviewChanged() {
+        callback.onPreviewSizeChanged(
+                cameraController.getPreviewWidth(),
+                cameraController.getPreviewHeight()
+        );
     }
 
     // ----- gl related function -----
@@ -202,6 +211,7 @@ public class CameraView
     // ----- callback -----
     public interface Callback {
         void onSurfaceCreated();
+        void onPreviewSizeChanged(int w, int h);
         void onFrameAvailable(int textureId, SurfaceTexture surfaceTexture);
     }
 }

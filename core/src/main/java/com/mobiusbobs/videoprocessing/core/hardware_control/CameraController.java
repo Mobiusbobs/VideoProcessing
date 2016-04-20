@@ -94,6 +94,16 @@ public class CameraController {
         return switchCamera(!frontCamera);
     }
 
+    // because rotate 90
+    public int getPreviewWidth() {
+        return mCameraHeight;
+    }
+
+    public int getPreviewHeight() {
+        return mCameraWidth;
+    }
+
+
     /**
      * Stops camera preview, and releases the camera to the system.
      */
