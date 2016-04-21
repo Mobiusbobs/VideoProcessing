@@ -117,6 +117,9 @@ public class VideoProcessor {
     int outputVideoTrack = -1;
     int outputAudioTrack = -1;
 
+    // for audio hotfix
+    long lastAudioPresentationTime = 0;
+
     // Constructor
     private VideoProcessor() {}
 
@@ -402,11 +405,11 @@ public class VideoProcessor {
         if (sampleTime > maxTime) {
             Log.d(TAG, "FLAG: reach videoDuration: duration=" + maxTime + ", sampleTime=" + sampleTime);
             audioDecoder.queueInputBuffer(
-              decoderInputBufferIndex,
-              0,
-              0,
-              0,
-              MediaCodec.BUFFER_FLAG_END_OF_STREAM);
+                    decoderInputBufferIndex,
+                    0,
+                    0,
+                    0,
+                    MediaCodec.BUFFER_FLAG_END_OF_STREAM);
             return true;
         }
 
@@ -566,6 +569,10 @@ public class VideoProcessor {
         ByteBuffer encoderInputBuffer = audioEncoderInputBuffers[encoderInputBufferIndex];
         int size = audioDecoderOutputBufferInfo.size;
         long presentationTime = audioDecoderOutputBufferInfo.presentationTimeUs + pTimeOffset;
+        if (presentationTime < lastAudioPresentationTime) {
+            presentationTime = lastAudioPresentationTime + 1;
+        }
+        lastAudioPresentationTime = presentationTime;
 
         if (size >= 0) {
             ByteBuffer decoderOutputBuffer =
