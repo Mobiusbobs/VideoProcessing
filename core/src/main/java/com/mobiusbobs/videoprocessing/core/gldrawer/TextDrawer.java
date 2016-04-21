@@ -82,8 +82,10 @@ public class TextDrawer implements GLDrawable {
     );
 
     // draw paw image
-    float left = screenWidth - (icon.getWidth() + textLength + rightMargin);
-    canvas.drawBitmap(icon, left, (containerHeight - icon.getHeight()) / 2, null);
+    if (text.length() > 0) {
+      float left = screenWidth - (icon.getWidth() + textLength + rightMargin);
+      canvas.drawBitmap(icon, left, (containerHeight - icon.getHeight()) / 2, null);
+    }
 
     return bitmap;
   }
