@@ -28,6 +28,7 @@ public class CameraView
         SurfaceTexture.OnFrameAvailableListener
 {
     public static String TAG = "CameraView";
+    public static String DEFAULT_FACING = "BACK";
 
     // Camera
     private CameraController cameraController;
@@ -86,7 +87,7 @@ public class CameraView
     public void onResume() {
         super.onResume();
         if (cameraController != null) {
-            cameraController.openCamera(width, height, "FRONT");
+            cameraController.openCamera(width, height, DEFAULT_FACING);
             notifyPreviewChanged();
         }
     }
@@ -102,7 +103,7 @@ public class CameraView
         height = h;
 
         if (cameraController != null) {
-            cameraController.openCamera(w, h, "FRONT");
+            cameraController.openCamera(w, h, DEFAULT_FACING);
             notifyPreviewChanged();
         }
     }
