@@ -86,10 +86,7 @@ public class CameraView
     @Override
     public void onResume() {
         super.onResume();
-        if (cameraController != null) {
-            cameraController.openCamera(width, height, DEFAULT_FACING);
-            notifyPreviewChanged();
-        }
+        openCameraIfNeeded();
     }
 
     public void onDestory() {
@@ -102,17 +99,13 @@ public class CameraView
         width = w;
         height = h;
 
-        if (cameraController != null) {
-            cameraController.openCamera(w, h, DEFAULT_FACING);
-            notifyPreviewChanged();
-        }
+        openCameraIfNeeded();
     }
 
-    private void notifyPreviewChanged() {
-        callback.onPreviewSizeChanged(
-                cameraController.getPreviewWidth(),
-                cameraController.getPreviewHeight()
-        );
+    private void openCameraIfNeeded() {
+        if (!cameraController.isCameraOpened()) {
+            cameraController.openCamera(width, height, DEFAULT_FACING);
+        }
     }
 
     // ----- gl related function -----
@@ -212,7 +205,6 @@ public class CameraView
     // ----- callback -----
     public interface Callback {
         void onSurfaceCreated();
-        void onPreviewSizeChanged(int w, int h);
         void onFrameAvailable(int textureId, SurfaceTexture surfaceTexture);
     }
 }

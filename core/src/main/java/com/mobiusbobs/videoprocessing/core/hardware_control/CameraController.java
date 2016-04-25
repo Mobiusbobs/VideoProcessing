@@ -19,6 +19,7 @@ public class CameraController {
 
     public static String TAG = "CameraController";
 
+    private Callback callback;
     private CameraInstanceManager cameraInstanceManager = new CameraInstanceManager();
     private boolean frontCamera = true;
     private Camera mCamera;
@@ -27,6 +28,10 @@ public class CameraController {
     private int mCameraHeight;
 
     private SurfaceTexture surfaceTexture;
+
+    public CameraController(Callback callback) {
+        this.callback = callback;
+    }
 
     /**
      * Opens a camera, and attempts to establish preview mode at the specified width and height.
@@ -80,6 +85,8 @@ public class CameraController {
         mCameraWidth = mCameraPreviewSize.width;
         mCameraHeight = mCameraPreviewSize.height;
 
+        notifyPreviewChanged();
+
         return mCamera;
     }
 
@@ -90,19 +97,10 @@ public class CameraController {
         return mCamera;
     }
 
+    @SuppressWarnings("unused")
     public Camera switchCamera() {
         return switchCamera(!frontCamera);
     }
-
-    // because rotate 90
-    public int getPreviewWidth() {
-        return mCameraHeight;
-    }
-
-    public int getPreviewHeight() {
-        return mCameraWidth;
-    }
-
 
     /**
      * Stops camera preview, and releases the camera to the system.
@@ -114,6 +112,10 @@ public class CameraController {
             mCamera = null;
             Log.d(TAG, "releaseCamera -- done");
         }
+    }
+
+    public boolean isCameraOpened() {
+        return mCamera != null;
     }
 
     // ----- preview -----
@@ -141,6 +143,16 @@ public class CameraController {
         if (mCamera != null)
             mCamera.stopPreview();
         startPreview(st);
+    }
+
+    private void notifyPreviewChanged() {
+        // because rotate 90
+        //noinspection SuspiciousNameCombination
+        callback.onPreviewSizeChanged(mCameraHeight, mCameraWidth);
+    }
+
+    public interface Callback {
+        void onPreviewSizeChanged(int width, int height);
     }
 
 }
