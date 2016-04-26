@@ -24,15 +24,15 @@ public class TextDrawer implements GLDrawable {
   private BaseDrawer stickerDrawer;
 
   private Context context;
-  private int screenWidth;
+  private int videoWidth;
   private CoordConverter converter;
   private String text;
   private int resId;
 
   // Constructor
-  public TextDrawer(Context context, CoordConverter converter, int screenWidth, String text, int resId) {
+  public TextDrawer(Context context, CoordConverter converter, int videoWidth, String text, int resId) {
     this.context = context;
-    this.screenWidth = screenWidth;
+    this.videoWidth = videoWidth;
     this.converter = converter;
     this.text = text;
     this.resId = resId;
@@ -42,7 +42,7 @@ public class TextDrawer implements GLDrawable {
 
   public void init() throws IOException {
     Bitmap bitmap = generateBitmap(text, resId);
-    stickerDrawer.setVerticesCoordinate(converter.getAlignTopVertices(bitmap, 56));
+    stickerDrawer.setVerticesCoordinate(converter.getAlignTopRightVertices(bitmap));
     stickerDrawer.init(bitmap);
     bitmap.recycle();
   }
@@ -57,7 +57,7 @@ public class TextDrawer implements GLDrawable {
     // create the bitmap to draw on
     int iconHeight = icon.getHeight();
     int containerHeight = iconHeight * 2;
-    Bitmap bitmap = Bitmap.createBitmap(screenWidth, containerHeight, Bitmap.Config.ARGB_4444);
+    Bitmap bitmap = Bitmap.createBitmap(videoWidth, containerHeight, Bitmap.Config.ARGB_4444);
 
     // get a canvas to paint over the bitmap
     Canvas canvas = new Canvas(bitmap);
@@ -76,14 +76,14 @@ public class TextDrawer implements GLDrawable {
     float textHeight = textBounds.height();
     canvas.drawText(
         text,
-        screenWidth - (textLength + rightMargin),
+        videoWidth - (textLength + rightMargin),
         (containerHeight + textHeight) / 2 - textShift,
         textPaint
     );
 
     // draw paw image
     if (text.length() > 0) {
-      float left = screenWidth - (icon.getWidth() + textLength + rightMargin);
+      float left = videoWidth - (icon.getWidth() + textLength + rightMargin);
       canvas.drawBitmap(icon, left, (containerHeight - icon.getHeight()) / 2, null);
     }
 
