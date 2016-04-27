@@ -163,7 +163,8 @@ public class VideoProcessor {
         inputSurface = new InputSurface(inputSurfaceReference.get());
         inputSurface.makeCurrent();
 
-        // --- video decoder --- (this must after inputSurface.makeCurrent())
+        // --- video decoder ---
+        // to create OutputSurface object, it must be after inputSurface.makeCurrent()
         outputSurface = new OutputSurface(getOutputSurfaceRenderVerticesData(inputVideoFormat));
         videoDecoder = createVideoDecoder(inputVideoFormat, outputSurface.getSurface());
 
