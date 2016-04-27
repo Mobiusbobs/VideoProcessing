@@ -14,12 +14,15 @@ import com.mobiusbobs.videoprocessing.core.codec.Extractor;
 import com.mobiusbobs.videoprocessing.core.gldrawer.GLDrawable;
 import com.mobiusbobs.videoprocessing.core.gles.surface.InputSurface;
 import com.mobiusbobs.videoprocessing.core.gles.surface.OutputSurface;
+import com.mobiusbobs.videoprocessing.core.util.CoordConverter;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+
+import static com.mobiusbobs.videoprocessing.core.util.CoordConverter.rectCoordToGLCoord;
 
 /**
  * VideoProcessor
@@ -137,19 +140,20 @@ public class VideoProcessor {
         MediaCodecInfo videoCodecInfo = selectCodec(OUTPUT_VIDEO_MIME_TYPE);    // for video encoder
         MediaCodecInfo audioCodecInfo = selectCodec(OUTPUT_AUDIO_MIME_TYPE);    // for audio encoder
 
-        // --- setup extractors ---
+        // --- setup extract ---
         int videoTrackIndex = Extractor.getAndSelectVideoTrackIndex(videoExtractor);
         int audioTrackIndex = Extractor.getAndSelectAudioTrackIndex(audioExtractor);
 
+        // input video format
         MediaFormat inputVideoFormat = videoExtractor.getTrackFormat(videoTrackIndex);
         long videoDuration = inputVideoFormat.getLong(MediaFormat.KEY_DURATION);
         // fix config problem: http://stackoverflow.com/questions/15105843/mediacodec-jelly-bean
         inputVideoFormat.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, 0);
 
+        // input audio format
         MediaFormat inputAudioFormat = audioExtractor.getTrackFormat(audioTrackIndex);
         long audioDuration = inputAudioFormat.getLong(MediaFormat.KEY_DURATION);
 
-        // ----- mediacodec -----
         // --- video encoder ---
         // Create a MediaCodec for the desired codec, then configure it as an encoder with
         // our desired properties. Request a Surface to use for input.
@@ -160,7 +164,8 @@ public class VideoProcessor {
         inputSurface.makeCurrent();
 
         // --- video decoder ---
-        outputSurface = new OutputSurface();
+        // to create OutputSurface object, it must be after inputSurface.makeCurrent()
+        outputSurface = new OutputSurface(getOutputSurfaceRenderVerticesData(inputVideoFormat));
         videoDecoder = createVideoDecoder(inputVideoFormat, outputSurface.getSurface());
 
         // setup drawers
@@ -793,34 +798,25 @@ public class VideoProcessor {
     }
 
     private MediaFormat createOutputVideoFormat(MediaFormat inputVideoFormat) {
-        int videoWidth = getMediaDataOrDefault(
-                inputVideoFormat,
-                MediaFormat.KEY_WIDTH,
-                OUTPUT_VIDEO_WIDTH
-        );
-        int videoHeight = getMediaDataOrDefault(
-                inputVideoFormat,
-                MediaFormat.KEY_HEIGHT,
-                OUTPUT_VIDEO_HEIGHT
-        );
         int videoFrameRate = getMediaDataOrDefault(
                 inputVideoFormat,
                 MediaFormat.KEY_FRAME_RATE,
                 OUTPUT_VIDEO_FRAME_RATE
         );
+
         int videoMaxInputSize = getMediaDataOrDefault(
                 inputVideoFormat,
                 MediaFormat.KEY_MAX_INPUT_SIZE,
                 OUTPUT_VIDEO_MAX_INPUT_SIZE
         );
 
-        Log.d(TAG, "createOutputVideoFormat: width = " + videoWidth);
-        Log.d(TAG, "createOutputVideoFormat: height = " + videoHeight);
+        Log.d(TAG, "createOutputVideoFormat: width = " + OUTPUT_VIDEO_WIDTH);
+        Log.d(TAG, "createOutputVideoFormat: height = " + OUTPUT_VIDEO_HEIGHT);
 
         MediaFormat outputVideoFormat = MediaFormat.createVideoFormat(
                 OUTPUT_VIDEO_MIME_TYPE,
-                videoWidth,
-                videoHeight
+                OUTPUT_VIDEO_WIDTH,
+                OUTPUT_VIDEO_HEIGHT
         );
         outputVideoFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT, OUTPUT_VIDEO_COLOR_FORMAT);
         outputVideoFormat.setInteger(MediaFormat.KEY_BIT_RATE, OUTPUT_VIDEO_BIT_RATE);
@@ -859,6 +855,41 @@ public class VideoProcessor {
     private int getMediaDataOrDefault(MediaFormat inputVideoFormat, String key, int defaultValue) {
         if (inputVideoFormat.containsKey(key)) return inputVideoFormat.getInteger(key);
         else return defaultValue;
+    }
+
+    private float[] getOutputSurfaceRenderVerticesData(MediaFormat inputVideoFormat) {
+        float outputRatio = (float)OUTPUT_VIDEO_HEIGHT / OUTPUT_VIDEO_WIDTH;
+
+        int inputVideoWidth = getMediaDataOrDefault(
+                inputVideoFormat, MediaFormat.KEY_WIDTH, OUTPUT_VIDEO_WIDTH);
+        int inputVideoHeight = getMediaDataOrDefault(
+                inputVideoFormat, MediaFormat.KEY_HEIGHT, OUTPUT_VIDEO_HEIGHT);
+
+        float width = inputVideoWidth;
+        float height = inputVideoHeight;
+        float ratio = height / width;
+
+        if (ratio > outputRatio) {
+            width = OUTPUT_VIDEO_HEIGHT / ratio;
+            height = OUTPUT_VIDEO_HEIGHT;
+        } else {
+            width = OUTPUT_VIDEO_WIDTH;
+            height = OUTPUT_VIDEO_WIDTH * ratio;
+        }
+
+        // horizontal
+        float hDiff = OUTPUT_VIDEO_WIDTH - width;
+        int hOffset = (int)hDiff / 2;
+
+        // vertical
+        float vDiff = OUTPUT_VIDEO_HEIGHT - height;
+        int vOffset = (int)vDiff / 2;
+
+        float x1 = rectCoordToGLCoord(hOffset, OUTPUT_VIDEO_WIDTH);
+        float x2 = rectCoordToGLCoord(OUTPUT_VIDEO_WIDTH - hOffset, OUTPUT_VIDEO_WIDTH);
+        float y1 = rectCoordToGLCoord(vOffset, OUTPUT_VIDEO_HEIGHT);
+        float y2 = rectCoordToGLCoord(OUTPUT_VIDEO_HEIGHT - vOffset, OUTPUT_VIDEO_HEIGHT);
+        return CoordConverter.getTriangleVerticesData(x1, y1, x2, y2);
     }
 
     // ----- builder -----

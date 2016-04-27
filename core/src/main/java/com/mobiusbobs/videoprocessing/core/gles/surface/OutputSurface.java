@@ -67,23 +67,23 @@ public class OutputSurface implements SurfaceTexture.OnFrameAvailableListener {
         }
         eglSetup(width, height);
         makeCurrent();
-        setup();
+        setup(null);
     }
 
     /**
      * Creates an OutputSurface using the current EGL context.  Creates a Surface that can be
      * passed to MediaCodec.configure().
      */
-    public OutputSurface() {
-        setup();
+    public OutputSurface(float[] renderVerticesData) {
+        setup(renderVerticesData);
     }
 
     /**
      * Creates instances of TextureRender and SurfaceTexture, and a Surface associated
      * with the SurfaceTexture.
      */
-    private void setup() {
-        mTextureRender = new TextureRender();
+    private void setup(float[] renderVerticesData) {
+        mTextureRender = new TextureRender(renderVerticesData);
         mTextureRender.surfaceCreated();
         // Even if we don't access the SurfaceTexture after the constructor returns, we
         // still need to keep a reference to it.  The Surface doesn't retain a reference

@@ -44,6 +44,10 @@ public class CoordConverter {
     Log.d(TAG, "screenWidth="+screenWidth + ", screenHeight="+screenHeight);
   }
 
+  public float[] getAlignTopRightVertices(Bitmap bitmap) {
+    return getAlignTopVertices(bitmap, 0);
+  }
+
   public float[] getAlignTopVertices(Bitmap bitmap, int marginTop) {
     int height = bitmap.getHeight();
 
@@ -123,15 +127,33 @@ public class CoordConverter {
   public static float[] getVerticesCoord(float x1, float y1, float x2, float y2) {
     float z = 0.0f;
     return new float[]{
-      x1, y1, z,  //BL
-      x2, y1, z,  //BR
-      x2, y2, z,  //TR
+      x1, y1, z,  // BL
+      x2, y1, z,  // BR
+      x2, y2, z,  // TR
 
-      x1, y1, z,  //BL
-      x2, y2, z,  //TR
-      x1, y2, z   //TL
+      x1, y1, z,  // BL
+      x2, y2, z,  // TR
+      x1, y2, z   // TL
     };
   }
+
+    // For TextureRender
+    // (x1, y1) bottom-left
+    // (x2, y2) top-right
+    public static float[] getTriangleVerticesData(float x1, float y1, float x2, float y2) {
+        float z = 0.0f;
+
+        // bottom-left
+        // bottom-right
+        // top-left
+        // top-right
+        return new float[]{
+                x1, y1, 0, 0, 0,
+                x2, y1, 0, 1, 0,
+                x1, y2, 0, 0, 1,
+                x2, y2, 0, 1, 1,
+        };
+    }
 
   private int[] getImageDimen(int drawableId) {
     Drawable d = context.getResources().getDrawable(drawableId);
