@@ -90,6 +90,9 @@ public class CameraView
     }
 
     public void onDestory() {
+        if (cameraController != null) {
+            cameraController.releaseCamera();
+        }
         mCameraHandler.invalidateHandler();
     }
 
