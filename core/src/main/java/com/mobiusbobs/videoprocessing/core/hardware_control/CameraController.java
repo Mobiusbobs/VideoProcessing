@@ -120,7 +120,12 @@ public class CameraController {
 
     // ----- preview -----
     public void startPreview(SurfaceTexture st) {
+        if (mCamera == null) {
+            return;
+        }
+
         surfaceTexture = st;
+        mCamera.stopPreview();
 
         try {
             mCamera.setPreviewTexture(st);
@@ -136,13 +141,7 @@ public class CameraController {
             return;
         }
 
-        restartPreview(surfaceTexture);
-    }
-
-    public void restartPreview(SurfaceTexture st) {
-        if (mCamera != null)
-            mCamera.stopPreview();
-        startPreview(st);
+        startPreview(surfaceTexture);
     }
 
     private void notifyPreviewChanged() {
