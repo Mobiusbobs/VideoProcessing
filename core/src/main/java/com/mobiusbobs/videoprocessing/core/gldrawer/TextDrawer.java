@@ -69,11 +69,11 @@ public class TextDrawer implements GLDrawable {
     // create the bitmap to draw on
     int iconHeight = icon.getHeight();
     int containerHeight = iconHeight * 2;
-    Bitmap container = Bitmap.createBitmap(videoWidth, containerHeight, Bitmap.Config.ARGB_4444);
+    Bitmap bitmap = Bitmap.createBitmap(videoWidth, containerHeight, Bitmap.Config.ARGB_4444);
 
     // get a canvas to paint over the bitmap
-    Canvas canvas = new Canvas(container);
-    container.eraseColor(0);
+    Canvas canvas = new Canvas(bitmap);
+    bitmap.eraseColor(0);
 
     // setup paint
     Rect textBounds = new Rect();
@@ -99,7 +99,7 @@ public class TextDrawer implements GLDrawable {
       canvas.drawBitmap(icon, left, (containerHeight - icon.getHeight()) / 2, null);
     }
 
-    return container;
+    return bitmap;
   }
 
   public void draw(long timeMs) {
