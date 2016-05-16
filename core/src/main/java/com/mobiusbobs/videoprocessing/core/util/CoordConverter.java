@@ -44,10 +44,6 @@ public class CoordConverter {
     Log.d(TAG, "screenWidth="+screenWidth + ", screenHeight="+screenHeight);
   }
 
-  public float[] getAlignTopRightVertices(Bitmap bitmap) {
-    return getAlignTopVertices(bitmap, 0);
-  }
-
   public float[] getAlignTopVertices(Bitmap bitmap, int marginTop) {
     int height = bitmap.getHeight();
 

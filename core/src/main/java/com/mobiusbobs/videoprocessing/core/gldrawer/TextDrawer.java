@@ -4,8 +4,10 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.util.Log;
 
 import com.mobiusbobs.videoprocessing.core.util.CoordConverter;
 
@@ -28,6 +30,7 @@ public class TextDrawer implements GLDrawable {
   private CoordConverter converter;
   private String text;
   private int resId;
+  private float scale;
 
   // Constructor
   public TextDrawer(Context context, CoordConverter converter, int videoWidth, String text, int resId) {
@@ -37,19 +40,28 @@ public class TextDrawer implements GLDrawable {
     this.text = text;
     this.resId = resId;
 
+    scale = context.getResources().getDisplayMetrics().density;
     stickerDrawer = new BaseDrawer();
   }
 
   public void init() throws IOException {
+    int marginTop = (int) (10 * scale);
+
     Bitmap bitmap = generateBitmap(text, resId);
-    stickerDrawer.setVerticesCoordinate(converter.getAlignTopRightVertices(bitmap));
+    stickerDrawer.setVerticesCoordinate(converter.getAlignTopVertices(bitmap, marginTop));
     stickerDrawer.init(bitmap);
     bitmap.recycle();
   }
 
   public Bitmap generateBitmap(String text, int resId) {
-    float rightMargin = 15;
-    int textShift = 5;
+    float spaceRightMargin = 10.0f;
+    float iconRightMargin = 2.0f;
+    float textFontSize = 13.0f;
+
+    // convert dp to pixel
+    int spaceRightMarginPx = (int) (spaceRightMargin * scale + 0.5f);
+    int iconRightMarginPx = (int) (iconRightMargin * scale + 0.5f);
+    int textSizeInPixel = (int) (textFontSize * scale + 0.5f);
 
     // create paw bitmap
     Bitmap icon = BitmapFactory.decodeResource(context.getResources(), resId);
@@ -66,7 +78,7 @@ public class TextDrawer implements GLDrawable {
     // setup paint
     Rect textBounds = new Rect();
     Paint textPaint = new Paint();
-    textPaint.setTextSize(50);
+    textPaint.setTextSize(textSizeInPixel);
     textPaint.setAntiAlias(true);
     textPaint.setARGB(0xFF, 0xFF, 0xFF, 0xFF);
     textPaint.getTextBounds(text, 0, text.length(), textBounds);
@@ -76,14 +88,14 @@ public class TextDrawer implements GLDrawable {
     float textHeight = textBounds.height();
     canvas.drawText(
         text,
-        videoWidth - (textLength + rightMargin),
-        (containerHeight + textHeight) / 2 - textShift,
+        videoWidth - (textLength + spaceRightMarginPx),
+        (containerHeight + textHeight) / 2,
         textPaint
     );
 
     // draw paw image
     if (text.length() > 0) {
-      float left = videoWidth - (icon.getWidth() + textLength + rightMargin);
+      float left = videoWidth - (icon.getWidth() + textLength + spaceRightMarginPx + iconRightMarginPx);
       canvas.drawBitmap(icon, left, (containerHeight - icon.getHeight()) / 2, null);
     }
 
