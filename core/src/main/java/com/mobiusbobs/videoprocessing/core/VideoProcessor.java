@@ -897,6 +897,7 @@ public class VideoProcessor {
         private List<GLDrawable> drawableList = new ArrayList<>();
         private int inputResId = -1;
         private int musicResId = -1;
+        private String musicFilePath = null;
         private String inputFilePath = null;
         private String outputFilePath = null;
 
@@ -927,8 +928,15 @@ public class VideoProcessor {
             return this;
         }
 
+        public Builder setBackgroundMusic(String musicFilePath) {
+            this.musicFilePath = musicFilePath;
+            return this;
+        }
+
         private MediaExtractor createAudioExtractor(Context context) throws IOException{
-            if (musicResId > 0)
+            if (musicFilePath != null)
+                return Extractor.createExtractor(musicFilePath);
+            else if (musicResId > 0)
                 return Extractor.createExtractor(context, musicResId);
             else if (inputResId != -1)
                 return Extractor.createExtractor(context, inputResId);
