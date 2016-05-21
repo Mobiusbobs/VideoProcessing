@@ -47,6 +47,8 @@ public class VideoProcessor {
     private MediaExtractor videoExtractor;
     private MediaExtractor audioExtractor;
 
+    private OnProgressListener onProgressListener;
+
     public String outputPath;
 
     // ----- format parameters -----
@@ -232,6 +234,7 @@ public class VideoProcessor {
         boolean muxing = false;
 
         long audioPTimeOffset = 0;
+        long audioMaxTime = videoDuration;
 
         while (!videoEncoderDone || !audioEncoderDone) {
             // --- extract video from extractor ---
@@ -249,12 +252,12 @@ public class VideoProcessor {
                         audioExtractor,
                         audioDecoder,
                         audioDecoderInputBuffers,
-                        videoDuration
+                        audioMaxTime
                 );
 
                 long sampleTime = audioExtractor.getSampleTime();
                 if (sampleTime == -1) {
-                    videoDuration -= audioDuration;
+                    audioMaxTime -= audioDuration;
                     audioPTimeOffset += audioDuration;
                     audioExtractor.seekTo(0, MediaExtractor.SEEK_TO_NEXT_SYNC);
                     audioDecoder.flush();
@@ -315,6 +318,15 @@ public class VideoProcessor {
                 Log.d(TAG, "muxer: starting");
                 muxer.start();
                 muxing = true;
+            }
+
+            if (onProgressListener != null) {
+                long currentVideoSampleTime = videoExtractor.getSampleTime();
+                float percentage = (float) currentVideoSampleTime / videoDuration;
+                if (percentage < 0 || percentage > 1) {
+                    percentage = 1.0f;
+                }
+                onProgressListener.onProgress(percentage);
             }
         }
 
@@ -892,6 +904,11 @@ public class VideoProcessor {
         return CoordConverter.getTriangleVerticesData(x1, y1, x2, y2);
     }
 
+    // ----- listener -----
+    public interface OnProgressListener {
+        void onProgress(float percentage);
+    }
+
     // ----- builder -----
     public static class Builder {
         private List<GLDrawable> drawableList = new ArrayList<>();
@@ -900,6 +917,7 @@ public class VideoProcessor {
         private String musicFilePath = null;
         private String inputFilePath = null;
         private String outputFilePath = null;
+        private OnProgressListener onProgressListener = null;
 
         public Builder addDrawer(GLDrawable drawer) {
             drawableList.add(drawer);
@@ -930,6 +948,11 @@ public class VideoProcessor {
 
         public Builder setBackgroundMusic(String musicFilePath) {
             this.musicFilePath = musicFilePath;
+            return this;
+        }
+
+        public Builder setOnProcessListener(OnProgressListener listener) {
+            this.onProgressListener = listener;
             return this;
         }
 
@@ -965,6 +988,8 @@ public class VideoProcessor {
             } else {
                 throw new IllegalStateException("No output specified");
             }
+
+            processor.onProgressListener = this.onProgressListener;
 
             return processor;
         }
