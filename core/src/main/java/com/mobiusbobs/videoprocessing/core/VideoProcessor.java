@@ -161,6 +161,7 @@ public class VideoProcessor {
         // our desired properties. Request a Surface to use for input.
         MediaFormat outputVideoFormat = createOutputVideoFormat(inputVideoFormat);
         AtomicReference<Surface> inputSurfaceReference = new AtomicReference<>();
+        outputVideoFormat.setLong(MediaFormat.KEY_DURATION, 0); // videoDuration + 5 * 1000 * 1000); // TODO
         videoEncoder = createVideoEncoder(videoCodecInfo, outputVideoFormat, inputSurfaceReference);
         inputSurface = new InputSurface(inputSurfaceReference.get());
         inputSurface.makeCurrent();
@@ -234,7 +235,12 @@ public class VideoProcessor {
         boolean muxing = false;
 
         long audioPTimeOffset = 0;
-        long audioMaxTime = videoDuration;
+
+        long videoTotalDuration = videoDuration + 5 * 1000 * 1000; // TODO
+        long lastPTimeUs = 0;
+        boolean hasVideoEncoderEndSignalSent = false;
+
+        long audioMaxTime = videoTotalDuration;
 
         while (!videoEncoderDone || !audioEncoderDone) {
             // --- extract video from extractor ---
@@ -265,22 +271,36 @@ public class VideoProcessor {
             }
 
             // --- pull output frames from video decoder and feed it to encoder ---
-            if (!videoDecoderDone && (encoderOutputVideoFormat == null || muxing)) {
-
-                boolean frameAvailable = checkVideoDecodeState(videoDecoder, videoDecoderOutputBufferInfo);
-
-                if ((videoDecoderOutputBufferInfo.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
-                    Log.d(TAG, "FLAG: videoDecoderDone!!! video decoder: EOS");
-                    videoDecoderDone = true;
-                }
-
-                if (frameAvailable) {
-                    videoDecodedFrameCount++;
-                    render(outputSurface, videoDecoderOutputBufferInfo, inputSurface);
-                }
-
+            if (encoderOutputVideoFormat == null || muxing) {
                 if (videoDecoderDone) {
-                    videoEncoder.signalEndOfInputStream();
+                    if (lastPTimeUs >= videoTotalDuration) {
+                        if (!hasVideoEncoderEndSignalSent) {
+                            Log.d(TAG, "-----signal end of input stream");
+                            videoEncoder.signalEndOfInputStream();
+                            hasVideoEncoderEndSignalSent = true;
+                        }
+                    } else {
+                        long timeUs = lastPTimeUs + 20 * 1000;
+                        Log.d(TAG, "-----render extended video timeUs: " + timeUs);
+                        render(outputSurface, inputSurface, timeUs);
+                        lastPTimeUs = timeUs;
+                    }
+                } else {
+                    boolean frameAvailable = checkVideoDecodeState(videoDecoder, videoDecoderOutputBufferInfo);
+
+                    if (frameAvailable) {
+                        videoDecodedFrameCount++;
+                        long timeUs = videoDecoderOutputBufferInfo.presentationTimeUs;
+
+                        outputSurface.awaitNewImage();
+                        render(outputSurface, inputSurface, timeUs);
+                        lastPTimeUs = timeUs;
+                    }
+
+                    if ((videoDecoderOutputBufferInfo.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
+                        Log.d(TAG, "FLAG: videoDecoderDone!!! video decoder: EOS");
+                        videoDecoderDone = true;
+                    }
                 }
             }
 
@@ -512,21 +532,21 @@ public class VideoProcessor {
     private void render(
             // surface from decoder
             OutputSurface outputSurface,
-            MediaCodec.BufferInfo videoDecoderOutputBufferInfo,
 
             // surface to encoder
-            InputSurface inputSurface
+            InputSurface inputSurface,
+
+            // presentation time in microsecond (10^-6s)
+            long timeUs
     ) {
-        // fetch frame
-        outputSurface.awaitNewImage();
         outputSurface.drawImage();
 
-        long timeMs = videoDecoderOutputBufferInfo.presentationTimeUs / 1000;
+        long timeMs = timeUs / 1000;
         for (GLDrawable drawer : drawerList) {
             drawer.draw(timeMs);
         }
 
-        inputSurface.setPresentationTime(videoDecoderOutputBufferInfo.presentationTimeUs * 1000);
+        inputSurface.setPresentationTime(timeUs * 1000);
 
         Log.d(TAG, "input surface: swap buffers");
         inputSurface.swapBuffers();
@@ -633,6 +653,7 @@ public class VideoProcessor {
             videoEncoderOutputBuffers = videoEncoder.getOutputBuffers();
             return false;
         }
+
         if (encoderOutputBufferIndex == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
             Log.e(TAG, "video encoder: output format changed");
             if (outputVideoTrack >= 0) {
@@ -642,8 +663,8 @@ public class VideoProcessor {
             return false;
         }
 
-        ByteBuffer encoderOutputBuffer =
-                videoEncoderOutputBuffers[encoderOutputBufferIndex];
+        ByteBuffer encoderOutputBuffer = videoEncoderOutputBuffers[encoderOutputBufferIndex];
+
         if ((videoEncoderOutputBufferInfo.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0) {
             Log.d(TAG, "video encoder: codec config buffer");
             // Simply ignore codec config buffers.
@@ -652,12 +673,18 @@ public class VideoProcessor {
         }
 
         if (videoEncoderOutputBufferInfo.size != 0) {
-            muxer.writeSampleData(outputVideoTrack, encoderOutputBuffer, videoEncoderOutputBufferInfo);
+            muxer.writeSampleData(
+                    outputVideoTrack,
+                    encoderOutputBuffer,
+                    videoEncoderOutputBufferInfo
+            );
         }
+
         if ((videoEncoderOutputBufferInfo.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
             Log.d(TAG, "FLAG: videoEncoderDone!!! video encoder: EOS");
             return true;
         }
+
         videoEncoder.releaseOutputBuffer(encoderOutputBufferIndex, false);
         videoEncodedFrameCount++;
         return false;
