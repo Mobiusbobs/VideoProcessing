@@ -236,7 +236,8 @@ public class VideoProcessor {
 
         long audioPTimeOffset = 0;
 
-        long videoTotalDuration = videoDuration + 5 * 1000 * 1000; // TODO
+        long animationTime = 5 * 1000 * 1000;    // TODO
+        long videoTotalDuration = videoDuration + animationTime; // TODO
         long lastPTimeUs = 0;
         boolean hasVideoEncoderEndSignalSent = false;
 
@@ -263,6 +264,7 @@ public class VideoProcessor {
 
                 long sampleTime = audioExtractor.getSampleTime();
                 if (sampleTime == -1) {
+                    Log.d("WATER", "audioExtractor: sampleTime reached! Loop!!!");
                     audioMaxTime -= audioDuration;
                     audioPTimeOffset += audioDuration;
                     audioExtractor.seekTo(0, MediaExtractor.SEEK_TO_NEXT_SYNC);
@@ -285,6 +287,9 @@ public class VideoProcessor {
                         render(outputSurface, inputSurface, timeUs);
                         lastPTimeUs = timeUs;
                     }
+
+                    Log.d("WATER", "Video(extended) timeStamp=" + lastPTimeUs + ", duration=" + videoTotalDuration);
+
                 } else {
                     boolean frameAvailable = checkVideoDecodeState(videoDecoder, videoDecoderOutputBufferInfo);
 
@@ -312,7 +317,7 @@ public class VideoProcessor {
             // Feed the pending decoded audio buffer to the audio encoder.
             // TODO check to see if I can implement this into audio Decoder...
             if (pendingAudioDecoderOutputBufferIndex != -1) {
-                audioDecoderDone = pipeAudioStream(audioDecoder, audioEncoder, audioPTimeOffset);
+                audioDecoderDone = pipeAudioStream(audioDecoder, audioEncoder, audioPTimeOffset, videoDuration);
             }
 
             // --- mux video ---
@@ -442,11 +447,11 @@ public class VideoProcessor {
         if (sampleTime > maxTime) {
             Log.d(TAG, "FLAG: reach videoDuration: duration=" + maxTime + ", sampleTime=" + sampleTime);
             audioDecoder.queueInputBuffer(
-                    decoderInputBufferIndex,
-                    0,
-                    0,
-                    0,
-                    MediaCodec.BUFFER_FLAG_END_OF_STREAM);
+              decoderInputBufferIndex,
+              0,
+              0,
+              0,
+              MediaCodec.BUFFER_FLAG_END_OF_STREAM);
             return true;
         }
 
@@ -494,7 +499,7 @@ public class VideoProcessor {
             MediaCodec.BufferInfo videoDecoderOutputBufferInfo
     ) {
         int decoderOutputBufferIndex = videoDecoder.dequeueOutputBuffer(
-                videoDecoderOutputBufferInfo, TIMEOUT_USEC);
+          videoDecoderOutputBufferInfo, TIMEOUT_USEC);
 
         if (decoderOutputBufferIndex == MediaCodec.INFO_TRY_AGAIN_LATER) {
             Log.d(TAG, "no video decoder output buffer");
@@ -596,7 +601,7 @@ public class VideoProcessor {
      * @param audioEncoder The audio encoder to
      * @return audioDecoderDone
      */
-    private boolean pipeAudioStream(MediaCodec audioDecoder, MediaCodec audioEncoder, long pTimeOffset) {
+    private boolean pipeAudioStream(MediaCodec audioDecoder, MediaCodec audioEncoder, long pTimeOffset, long thresholdTime) {
         int encoderInputBufferIndex = audioEncoder.dequeueInputBuffer(TIMEOUT_USEC);
         if (encoderInputBufferIndex < 0) {
             Log.e(TAG, "audioEncoder.dequeueInputBuffer: no audio encoder input buffer");
@@ -616,14 +621,28 @@ public class VideoProcessor {
                     audioDecoderOutputBuffers[pendingAudioDecoderOutputBufferIndex].duplicate();
             decoderOutputBuffer.position(audioDecoderOutputBufferInfo.offset);
             decoderOutputBuffer.limit(audioDecoderOutputBufferInfo.offset + size);
+
             encoderInputBuffer.position(0);
-            encoderInputBuffer.put(decoderOutputBuffer);
+            if (presentationTime >= thresholdTime) {
+                Log.d("WATER", "MediaCodec,BufferInfo: encoderInputBufferIndex = " + encoderInputBufferIndex);
+                Log.d("WATER", "MediaCodec,BufferInfo: size = " + audioDecoderOutputBufferInfo.size);
+                Log.d("WATER", "MediaCodec,BufferInfo: presentationTimeUs with offset... = " + presentationTime);
+                Log.d("WATER", "MediaCodec,BufferInfo: flags = " + audioDecoderOutputBufferInfo.flags);
+                Log.d("WATER", "-------------------------------------------------------------------------------------");
+                byte[] bytes = new byte[size];
+                ByteBuffer emptyBuffer = ByteBuffer.wrap(bytes);
+                encoderInputBuffer.put(emptyBuffer);
+            } else {
+                encoderInputBuffer.put(decoderOutputBuffer);
+            }
+
             audioEncoder.queueInputBuffer(
                     encoderInputBufferIndex,
                     0,
                     size,
                     presentationTime,
                     audioDecoderOutputBufferInfo.flags);
+
         }
         audioDecoder.releaseOutputBuffer(pendingAudioDecoderOutputBufferIndex, false);
         pendingAudioDecoderOutputBufferIndex = -1;
