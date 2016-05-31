@@ -18,6 +18,8 @@ import com.mobiusbobs.videoprocessing.core.util.CoordConverter;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.ShortBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -623,25 +625,52 @@ public class VideoProcessor {
             decoderOutputBuffer.limit(audioDecoderOutputBufferInfo.offset + size);
 
             encoderInputBuffer.position(0);
+
+            // handle extra frame
             if (presentationTime >= thresholdTime) {
                 Log.d("WATER", "MediaCodec,BufferInfo: encoderInputBufferIndex = " + encoderInputBufferIndex);
                 Log.d("WATER", "MediaCodec,BufferInfo: size = " + audioDecoderOutputBufferInfo.size);
                 Log.d("WATER", "MediaCodec,BufferInfo: presentationTimeUs with offset... = " + presentationTime);
                 Log.d("WATER", "MediaCodec,BufferInfo: flags = " + audioDecoderOutputBufferInfo.flags);
-                Log.d("WATER", "-------------------------------------------------------------------------------------");
+
+
+                // empty
                 byte[] bytes = new byte[size];
                 ByteBuffer emptyBuffer = ByteBuffer.wrap(bytes);
-                encoderInputBuffer.put(emptyBuffer);
+                emptyBuffer.position(0);
+
+                // fade
+                byte[] fadeArray = new byte[size];
+                for(int i=0; i < fadeArray.length/2; i++) {
+                    int index = i*2;
+                    ByteBuffer bb = ByteBuffer.allocate(2);
+                    bb.order(ByteOrder.LITTLE_ENDIAN);
+                    bb.put(decoderOutputBuffer.get(index));
+                    bb.put(decoderOutputBuffer.get(index + 1));
+                    short tmp = (short)(bb.getShort(0) / 8);    //cut the volume in half
+
+                    bb.putShort(0, tmp);
+                    fadeArray[index] = bb.get(0);
+                    fadeArray[index + 1] = bb.get(1);
+                }
+                ByteBuffer fadeBuffer = ByteBuffer.wrap(fadeArray);
+                fadeBuffer.position(0);
+
+
+                emptyBuffer.position(0);
+                encoderInputBuffer.put(fadeBuffer);
+
+            // normal case
             } else {
                 encoderInputBuffer.put(decoderOutputBuffer);
             }
 
             audioEncoder.queueInputBuffer(
-                    encoderInputBufferIndex,
-                    0,
-                    size,
-                    presentationTime,
-                    audioDecoderOutputBufferInfo.flags);
+              encoderInputBufferIndex,
+              0,
+              size,
+              presentationTime,
+              audioDecoderOutputBufferInfo.flags);
 
         }
         audioDecoder.releaseOutputBuffer(pendingAudioDecoderOutputBufferIndex, false);
@@ -848,6 +877,7 @@ public class VideoProcessor {
                 audioChannelCount
         );
 
+        Log.d("WATER", "audioChannelCount = " + audioChannelCount);
         outputAudioFormat.setInteger(MediaFormat.KEY_BIT_RATE, OUTPUT_AUDIO_BIT_RATE);
         outputAudioFormat.setInteger(MediaFormat.KEY_AAC_PROFILE, OUTPUT_AUDIO_AAC_PROFILE);
         outputAudioFormat.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, audioMaxInputSize);
