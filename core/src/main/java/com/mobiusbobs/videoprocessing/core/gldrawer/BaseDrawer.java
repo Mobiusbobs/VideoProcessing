@@ -26,6 +26,9 @@ import java.nio.FloatBuffer;
 public class BaseDrawer implements GLDrawable {
     private static final String TAG = "BaseDrawer";
 
+    public static final float OPAQUE = 1.0f;
+    public static final float TRANSPARENT = 0.0f;
+
     /** Store our model data in a float buffer. */
     protected float[] verticesPositionData = {
         // X, Y, Z,
@@ -82,6 +85,8 @@ public class BaseDrawer implements GLDrawable {
     protected int mTextureCoordinateHandle;
     /** This will be used to pass in the position coordinate of the sticker. */
     protected int mPositionHandle;
+    /** This will be used to pass in the opcaity of the sticker. */
+    protected int mOpacity;
 
     /** This is a handle to our texture data. */
     private int[] textureHandle;
@@ -106,12 +111,14 @@ public class BaseDrawer implements GLDrawable {
             "precision mediump float;       \n"     // Set the default precision to medium. We don't need as high of a
                     // precision in the fragment shader.
             + "uniform sampler2D u_Texture;   \n"
+            + "uniform float u_Opacity;       \n"
             + "varying vec2 v_TexCoordinate;  \n"
             // triangle per fragment.
             + "void main()                    \n"     // The entry point for our fragment shader.
             + "{                              \n"
             //+ "   gl_FragColor = vec4(1.0,0.0,0.0,1.0); \n"   // FOR DEBUG PURPOSE
             + "   gl_FragColor = texture2D(u_Texture, v_TexCoordinate);     \n"     // Pass the color directly through the pipeline.
+            + "   gl_FragColor *= u_Opacity;  \n"
             + "}                              \n";
 
     protected int shaderProgramHandle;
@@ -304,16 +311,17 @@ public class BaseDrawer implements GLDrawable {
         // Set program handles. These will later be used to pass in values to the program.
         mMVPMatrixHandle = GLES20.glGetUniformLocation(shaderProgramHandle, "u_MVPMatrix");
         mTextureUniformHandle = GLES20.glGetUniformLocation(shaderProgramHandle, "u_Texture");
+        mOpacity = GLES20.glGetUniformLocation(shaderProgramHandle, "u_Opacity");
         mPositionHandle = GLES20.glGetAttribLocation(shaderProgramHandle, "a_Position");
         mTextureCoordinateHandle = GLES20.glGetAttribLocation(shaderProgramHandle, "a_TexCoordinate");
     }
 
     @Override
     public void draw(long timeMs) {
-        draw(0);
+        draw(0, 1);
     }
 
-    public void draw(int textureIndex) {
+    public void draw(int textureIndex, float opacity) {
         GLES20.glUseProgram(shaderProgramHandle);
 
         // Set the active texture unit to texture unit 0.
@@ -334,6 +342,9 @@ public class BaseDrawer implements GLDrawable {
         GLES20.glVertexAttribPointer(mTextureCoordinateHandle, TEXTURE_COORD_DATASIZE, GLES20.GL_FLOAT, false,
           0, texturePosition);
         GLES20.glEnableVertexAttribArray(mTextureCoordinateHandle);
+
+        // Pass in the opacity information
+        GLES20.glUniform1f(mOpacity, opacity);
 
         // blend
         GLES20.glEnable(GLES20.GL_BLEND);

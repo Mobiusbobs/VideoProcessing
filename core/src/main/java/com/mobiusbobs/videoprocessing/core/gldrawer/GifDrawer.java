@@ -108,7 +108,9 @@ public class GifDrawer implements GLDrawable {
 
   public void draw(long timeMs) {
     int textureIndex = updateFrameIndex(timeMs);
-    stickerDrawer.draw(textureIndex);
+    stickerDrawer.draw(textureIndex, BaseDrawer.OPAQUE);
   }
+
+
 
 }

@@ -76,32 +76,27 @@ public class CoordConverter {
   }
 
   // returns vertices that is centered, and scale to match width while keeping aspect ratio
-  public float[] getAlignCenterVertices(int drawableId) {
+  public float[] getAlignCenterVertices(int drawableId, int margin) {
     // image [width, height]
     int[] imgDimen = getImageDimen(drawableId);
-    return calcAlignCenterVertices(imgDimen[0], imgDimen[1]);
+    return calcAlignCenterVertices(imgDimen[0], imgDimen[1], margin);
   }
 
-  public float[] getAlignCenterVertices(String imgPath) {
+  public float[] getAlignCenterVertices(String imgPath, int margin) {
     // image [width, height]
     int[] imgDimen = getImageDimen(imgPath);
-    return calcAlignCenterVertices(imgDimen[0], imgDimen[1]);
+    return calcAlignCenterVertices(imgDimen[0], imgDimen[1], margin);
   }
 
   // align center with width stretch to side while maintain aspect ratio
-  private float[] calcAlignCenterVertices(int imageWidth, int imageHeight) {
-    // init height coordinate in GL coordinate
-    float initHeightCoordinate = (float)imageHeight / screenHeight;
+  private float[] calcAlignCenterVertices(int imageWidth, int imageHeight, int margin) {
+    // screen width to image width ratio
+    float imgScreenWidthRatio = (float)(screenWidth - 2 * margin) / imageWidth;
 
-    // screen width to image width ratio  //measure the amount of width we need to shrink/stretch
-    float imgScreenWidthRatio = (float)screenWidth / imageWidth;
-
-    Log.d(TAG, "imgScreenWidthRatio="+imgScreenWidthRatio+", initHeightCoordinate="+initHeightCoordinate);
-
-    float x1 = -1.0f;  // left
-    float x2 = 1.0f;  // right
-    float y1 = -1.0f * initHeightCoordinate * imgScreenWidthRatio;  // bottom
-    float y2 = 1.0f * initHeightCoordinate * imgScreenWidthRatio;   // top
+    float x1 = rectCoordToGLCoord(margin, screenWidth); // L
+    float x2 = rectCoordToGLCoord(screenWidth - margin, screenWidth); // R
+    float y1 = rectCoordToGLCoord((int)((screenHeight - imageHeight * imgScreenWidthRatio)/ 2), screenHeight); //B
+    float y2 = rectCoordToGLCoord((int)((screenHeight + imageHeight * imgScreenWidthRatio)/ 2), screenHeight); //T
 
     float[] verticesCoord = getVerticesCoord(x1,y1,x2,y2);
     printVertices(verticesCoord);

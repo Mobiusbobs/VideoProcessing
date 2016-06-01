@@ -45,6 +45,8 @@ public class VideoProcessor {
     /** How long to wait for the next buffer to become available. */
     private static final int TIMEOUT_USEC = 10000;
 
+    public static final long animationTime = 5 * 1000 * 1000;
+
     // ----- input & output -----
     private MediaExtractor videoExtractor;
     private MediaExtractor audioExtractor;
@@ -238,7 +240,7 @@ public class VideoProcessor {
 
         long audioPTimeOffset = 0;
 
-        long animationTime = 5 * 1000 * 1000;    // TODO
+        //long animationTime = 5 * 1000 * 1000;    // TODO
         long videoTotalDuration = videoDuration + animationTime; // TODO
         long lastPTimeUs = 0;
         boolean hasVideoEncoderEndSignalSent = false;
@@ -319,7 +321,7 @@ public class VideoProcessor {
             // Feed the pending decoded audio buffer to the audio encoder.
             // TODO check to see if I can implement this into audio Decoder...
             if (pendingAudioDecoderOutputBufferIndex != -1) {
-                audioDecoderDone = pipeAudioStream(audioDecoder, audioEncoder, audioPTimeOffset, videoDuration);
+                audioDecoderDone = pipeAudioStream(audioDecoder, audioEncoder, audioPTimeOffset, videoDuration, animationTime);
             }
 
             // --- mux video ---
@@ -603,7 +605,7 @@ public class VideoProcessor {
      * @param audioEncoder The audio encoder to
      * @return audioDecoderDone
      */
-    private boolean pipeAudioStream(MediaCodec audioDecoder, MediaCodec audioEncoder, long pTimeOffset, long thresholdTime) {
+    private boolean pipeAudioStream(MediaCodec audioDecoder, MediaCodec audioEncoder, long pTimeOffset, long thresholdTime, long animationTime) {
         int encoderInputBufferIndex = audioEncoder.dequeueInputBuffer(TIMEOUT_USEC);
         if (encoderInputBufferIndex < 0) {
             Log.e(TAG, "audioEncoder.dequeueInputBuffer: no audio encoder input buffer");
@@ -628,6 +630,10 @@ public class VideoProcessor {
 
             // handle extra frame
             if (presentationTime >= thresholdTime) {
+                double timeInFadeOut = (double)presentationTime - thresholdTime;
+                double fadeOutRatio = 1 - timeInFadeOut / animationTime;      //Linear fadeout
+
+                Log.d("WATER", "fadeOutRatio = " + fadeOutRatio);
                 Log.d("WATER", "MediaCodec,BufferInfo: encoderInputBufferIndex = " + encoderInputBufferIndex);
                 Log.d("WATER", "MediaCodec,BufferInfo: size = " + audioDecoderOutputBufferInfo.size);
                 Log.d("WATER", "MediaCodec,BufferInfo: presentationTimeUs with offset... = " + presentationTime);
@@ -647,7 +653,7 @@ public class VideoProcessor {
                     bb.order(ByteOrder.LITTLE_ENDIAN);
                     bb.put(decoderOutputBuffer.get(index));
                     bb.put(decoderOutputBuffer.get(index + 1));
-                    short tmp = (short)(bb.getShort(0) / 8);    //cut the volume in half
+                    short tmp = (short)(bb.getShort(0) * fadeOutRatio);
 
                     bb.putShort(0, tmp);
                     fadeArray[index] = bb.get(0);
