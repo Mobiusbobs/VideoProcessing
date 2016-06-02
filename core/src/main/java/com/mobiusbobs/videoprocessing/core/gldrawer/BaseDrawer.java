@@ -1,10 +1,14 @@
 package com.mobiusbobs.videoprocessing.core.gldrawer;
 
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.opengl.GLES20;
 import android.opengl.GLUtils;
 import android.opengl.Matrix;
-import android.util.Log;
+
+import com.mobiusbobs.videoprocessing.core.R;
+import com.mobiusbobs.videoprocessing.core.gles.GlUtil;
+import com.mobiusbobs.videoprocessing.core.gles.RawResourceReader;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -91,41 +95,15 @@ public class BaseDrawer implements GLDrawable {
     /** This is a handle to our texture data. */
     private int[] textureHandle;
 
-    // shader
-    final String vertexShader =
-            "uniform mat4 u_MVPMatrix;      \n"     // A constant representing the combined model/view/projection matrix.
-            + "attribute vec4 a_Position;     \n"     // Per-vertex position information we will pass in.
-            + "attribute vec2 a_TexCoordinate; \n"
-
-            + "varying vec2 v_TexCoordinate;  \n"
-
-            + "void main()                    \n"     // The entry point for our vertex shader.
-            + "{                              \n"
-            + "   v_TexCoordinate = a_TexCoordinate; \n"
-            // It will be interpolated across the triangle.
-            + "   gl_Position = u_MVPMatrix   \n"     // gl_Position is a special variable used to store the final position.
-            + "               * a_Position;   \n"     // Multiply the vertex by the matrix to get the final point in
-            + "}                              \n";    // normalized screen coordinates.
-
-    final String fragmentShader =
-            "precision mediump float;       \n"     // Set the default precision to medium. We don't need as high of a
-                    // precision in the fragment shader.
-            + "uniform sampler2D u_Texture;   \n"
-            + "uniform float u_Opacity;       \n"
-            + "varying vec2 v_TexCoordinate;  \n"
-            // triangle per fragment.
-            + "void main()                    \n"     // The entry point for our fragment shader.
-            + "{                              \n"
-            //+ "   gl_FragColor = vec4(1.0,0.0,0.0,1.0); \n"   // FOR DEBUG PURPOSE
-            + "   gl_FragColor = texture2D(u_Texture, v_TexCoordinate);     \n"     // Pass the color directly through the pipeline.
-            + "   gl_FragColor *= u_Opacity;  \n"
-            + "}                              \n";
-
     protected int shaderProgramHandle;
+    private Context context;
 
-    public BaseDrawer()  {}
+    public BaseDrawer(Context context)  {
+        this.context = context;
+    }
 
-    public BaseDrawer(float[] verticesPositionData)  {
+    public BaseDrawer(Context context, float[] verticesPositionData)  {
+        this.context = context;
         this.verticesPositionData = verticesPositionData;
     }
 
@@ -138,8 +116,8 @@ public class BaseDrawer implements GLDrawable {
         setupViewMatrix();
         calculateMVPMatrix();
 
-        setupShader();
-        bindTexture();
+        compileShaderProgram();
+        getVariableLocation();
     }
 
     public void init(Bitmap bitmap, float[] verticesPositionData) throws IOException {
@@ -147,8 +125,7 @@ public class BaseDrawer implements GLDrawable {
         init(bitmap);
     }
 
-    public void init(Bitmap bitmap) throws IOException {
-        init();
+    public void init(Bitmap bitmap) throws IOException {init();
         loadTexture(bitmap, 1);
     }
 
@@ -234,84 +211,25 @@ public class BaseDrawer implements GLDrawable {
         GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, bitmap, 0);
     }
 
-    // TODO shader compile flow should be reused
-    protected void setupShader() {
-        int vertexShaderHandle = compileShader(GLES20.GL_VERTEX_SHADER, vertexShader);
-        int fragmentShaderHandle = compileShader(GLES20.GL_FRAGMENT_SHADER, fragmentShader);
-        shaderProgramHandle = createShaderProgram(vertexShaderHandle, fragmentShaderHandle);
+    protected void compileShaderProgram() {
+        String vertexShader = RawResourceReader.readTextFileFromRawResource(
+            context,
+            R.raw.basedrawer_vertex_shader
+        );
+        String fragmentShader = RawResourceReader.readTextFileFromRawResource(
+            context,
+            R.raw.basedrawer_fragment_shader
+        );
+        shaderProgramHandle = GlUtil.createProgram(vertexShader, fragmentShader);
     }
 
-    protected int compileShader(int shaderType, String shaderProgram) {
-        // Load in the vertex shader.
-        int shaderHandle = GLES20.glCreateShader(shaderType);
-
-        if (shaderHandle != 0)
-        {
-            // Pass in the shader source.
-            GLES20.glShaderSource(shaderHandle, shaderProgram);
-
-            // Compile the shader.
-            GLES20.glCompileShader(shaderHandle);
-
-            // Get the compilation status.
-            final int[] compileStatus = new int[1];
-            GLES20.glGetShaderiv(shaderHandle, GLES20.GL_COMPILE_STATUS, compileStatus, 0);
-
-            // If the compilation failed, delete the shader.
-            if (compileStatus[0] == 0)
-            {
-                Log.e(TAG, "compile status: " + GLES20.glGetShaderInfoLog(shaderHandle));
-                GLES20.glDeleteShader(shaderHandle);
-                shaderHandle = 0;
-            }
-        }
-
-        if (shaderHandle == 0)
-        {
-            throw new RuntimeException("Error creating vertex shader.");
-        }
-
-        return shaderHandle;
-    }
-
-    protected int createShaderProgram(int vertexShaderHandle, int fragmentShaderHandle) {
-        // Create a program object and store the handle to it.
-        int programHandle = GLES20.glCreateProgram();
-
-        if (programHandle != 0)
-        {
-            // bind shader to program
-            GLES20.glAttachShader(programHandle, vertexShaderHandle);
-            GLES20.glAttachShader(programHandle, fragmentShaderHandle);
-
-            // link the two shades together into program
-            GLES20.glLinkProgram(programHandle);
-
-            // Get the link status.
-            final int[] linkStatus = new int[1];
-            GLES20.glGetProgramiv(programHandle, GLES20.GL_LINK_STATUS, linkStatus, 0);
-
-            // If the link failed, delete the program.
-            if (linkStatus[0] == 0)
-            {
-                GLES20.glDeleteProgram(programHandle);
-                programHandle = 0;
-            }
-        }
-
-        if (programHandle == 0)
-        {
-            throw new RuntimeException("Error creating program.");
-        }
-
-        return programHandle;
-    }
-
-    protected void bindTexture() {
-        // Set program handles. These will later be used to pass in values to the program.
+    protected void getVariableLocation() {
+        // uniform
         mMVPMatrixHandle = GLES20.glGetUniformLocation(shaderProgramHandle, "u_MVPMatrix");
         mTextureUniformHandle = GLES20.glGetUniformLocation(shaderProgramHandle, "u_Texture");
         mOpacity = GLES20.glGetUniformLocation(shaderProgramHandle, "u_Opacity");
+
+        // attribute
         mPositionHandle = GLES20.glGetAttribLocation(shaderProgramHandle, "a_Position");
         mTextureCoordinateHandle = GLES20.glGetAttribLocation(shaderProgramHandle, "a_TexCoordinate");
     }

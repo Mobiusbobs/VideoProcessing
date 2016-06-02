@@ -29,12 +29,12 @@ public class GifDrawer implements GLDrawable {
   private long gifLastFrameTime;
 
   public GifDrawer(Context context, GifDecoder gifDecoder) {
-    stickerDrawer = new BaseDrawer();
+    stickerDrawer = new BaseDrawer(context);
     this.gifDecoder = gifDecoder;
   }
 
   public GifDrawer(Context context, GifDecoder gifDecoder, float[] verticesPositionData) {
-    stickerDrawer = new BaseDrawer(verticesPositionData);
+    stickerDrawer = new BaseDrawer(context, verticesPositionData);
     this.gifDecoder = gifDecoder;
   }
 
@@ -110,7 +110,4 @@ public class GifDrawer implements GLDrawable {
     int textureIndex = updateFrameIndex(timeMs);
     stickerDrawer.draw(textureIndex, BaseDrawer.OPAQUE);
   }
-
-
-
 }

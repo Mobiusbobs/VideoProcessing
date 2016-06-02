@@ -62,7 +62,8 @@ public class TextureRender {
                     "varying vec2 vTextureCoord;\n" +
                     "uniform samplerExternalOES sTexture;\n" +
                     "void main() {\n" +
-                    "  gl_FragColor = texture2D(sTexture, vTextureCoord);\n" +
+                    "  vec4 texColor = texture2D(sTexture, vTextureCoord);\n" +
+                    "  gl_FragColor = texColor;\n" +
                     "}\n";
     private float[] mMVPMatrix = new float[16];
     private float[] mSTMatrix = new float[16];

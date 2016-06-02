@@ -1,5 +1,7 @@
 package com.mobiusbobs.videoprocessing.core.gldrawer;
 
+import android.content.Context;
+
 import java.io.IOException;
 
 /**
