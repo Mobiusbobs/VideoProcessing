@@ -204,10 +204,10 @@ public class OutputSurface implements SurfaceTexture.OnFrameAvailableListener {
     }
 
     /**
-     * Replaces the fragment shader.
+     * Replaces the shader.
      */
-    public void changeFragmentShader(String fragmentShader) {
-        mTextureRender.changeFragmentShader(fragmentShader);
+    public void changeShaderProgram(String vertexShader, String fragmentShader) {
+        mTextureRender.changeShaderProgram(vertexShader, fragmentShader);
     }
 
     /**
@@ -244,6 +244,10 @@ public class OutputSurface implements SurfaceTexture.OnFrameAvailableListener {
      */
     public void drawImage() {
         mTextureRender.drawFrame(mSurfaceTexture);
+    }
+
+    public void drawImage(long timeUs) {
+        mTextureRender.drawFrame(timeUs, mSurfaceTexture);
     }
 
     @Override

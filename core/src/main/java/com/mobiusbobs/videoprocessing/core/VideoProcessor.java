@@ -548,7 +548,7 @@ public class VideoProcessor {
             // presentation time in microsecond (10^-6s)
             long timeUs
     ) {
-        outputSurface.drawImage();
+        outputSurface.drawImage(timeUs);
 
         long timeMs = timeUs / 1000;
         for (GLDrawable drawer : drawerList) {

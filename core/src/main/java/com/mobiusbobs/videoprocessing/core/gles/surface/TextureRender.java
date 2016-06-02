@@ -48,23 +48,63 @@ public class TextureRender {
     private FloatBuffer mTriangleVertices;
     private static final String VERTEX_SHADER =
             "uniform mat4 uMVPMatrix;\n" +
-                    "uniform mat4 uSTMatrix;\n" +
-                    "attribute vec4 aPosition;\n" +
-                    "attribute vec4 aTextureCoord;\n" +
-                    "varying vec2 vTextureCoord;\n" +
-                    "void main() {\n" +
-                    "  gl_Position = uMVPMatrix * aPosition;\n" +
-                    "  vTextureCoord = (uSTMatrix * aTextureCoord).xy;\n" +
-                    "}\n";
+            "uniform mat4 uSTMatrix;\n" +
+            "uniform float u_Blur;\n" +
+              
+            "attribute vec4 a_Position;\n" +
+            "attribute vec4 a_TexCoord;\n" +
+              
+            "varying vec2 v_TexCoord;\n" +
+            "varying vec2 v_BlurTexCoords[14];\n" +
+              
+            "void main() {\n" +
+            "  gl_Position = uMVPMatrix * a_Position;\n" +
+            "  v_TexCoord = (uSTMatrix * a_TexCoord).xy;" +
+            "  v_BlurTexCoords[ 0] = v_TexCoord + vec2(-0.028*u_Blur, 0.0);\n" + 
+            "  v_BlurTexCoords[ 1] = v_TexCoord + vec2(-0.024*u_Blur, 0.0);\n" +
+            "  v_BlurTexCoords[ 2] = v_TexCoord + vec2(-0.020*u_Blur, 0.0);\n" +
+            "  v_BlurTexCoords[ 3] = v_TexCoord + vec2(-0.016*u_Blur, 0.0);\n" +
+            "  v_BlurTexCoords[ 4] = v_TexCoord + vec2(-0.012*u_Blur, 0.0);\n" +
+            "  v_BlurTexCoords[ 5] = v_TexCoord + vec2(-0.008*u_Blur, 0.0);\n" +
+            "  v_BlurTexCoords[ 6] = v_TexCoord + vec2(-0.004*u_Blur, 0.0);\n" +
+            "  v_BlurTexCoords[ 7] = v_TexCoord + vec2( 0.004*u_Blur, 0.0);\n" +
+            "  v_BlurTexCoords[ 8] = v_TexCoord + vec2( 0.008*u_Blur, 0.0);\n" +
+            "  v_BlurTexCoords[ 9] = v_TexCoord + vec2( 0.012*u_Blur, 0.0);\n" +
+            "  v_BlurTexCoords[10] = v_TexCoord + vec2( 0.016*u_Blur, 0.0);\n" +
+            "  v_BlurTexCoords[11] = v_TexCoord + vec2( 0.020*u_Blur, 0.0);\n" +
+            "  v_BlurTexCoords[12] = v_TexCoord + vec2( 0.024*u_Blur, 0.0);\n" +
+            "  v_BlurTexCoords[13] = v_TexCoord + vec2( 0.028*u_Blur, 0.0);\n" +
+            "}\n";
+    
     private static final String FRAGMENT_SHADER =
             "#extension GL_OES_EGL_image_external : require\n" +
-                    "precision mediump float;\n" +      // highp here doesn't seem to matter
-                    "varying vec2 vTextureCoord;\n" +
-                    "uniform samplerExternalOES sTexture;\n" +
-                    "void main() {\n" +
-                    "  vec4 texColor = texture2D(sTexture, vTextureCoord);\n" +
-                    "  gl_FragColor = texColor;\n" +
-                    "}\n";
+            "precision mediump float;\n" +      // highp here doesn't seem to matter
+              
+            "uniform samplerExternalOES sTexture;\n" +
+              
+            "varying vec2 v_TexCoord;\n" +
+            "varying vec2 v_BlurTexCoords[14];\n" +
+              
+            "void main() {\n" + 
+            "   gl_FragColor  = vec4(0.0);\n" +
+            "   gl_FragColor  += texture2D(sTexture, v_BlurTexCoords[ 0])*0.0044299121055113265;\n" +
+            "   gl_FragColor  += texture2D(sTexture, v_BlurTexCoords[ 1])*0.00895781211794;\n" +
+            "   gl_FragColor  += texture2D(sTexture, v_BlurTexCoords[ 2])*0.0215963866053;\n" +
+            "   gl_FragColor  += texture2D(sTexture, v_BlurTexCoords[ 3])*0.0443683338718;\n" +
+            "   gl_FragColor  += texture2D(sTexture, v_BlurTexCoords[ 4])*0.0776744219933;\n" +
+            "   gl_FragColor  += texture2D(sTexture, v_BlurTexCoords[ 5])*0.115876621105;\n" +
+            "   gl_FragColor  += texture2D(sTexture, v_BlurTexCoords[ 6])*0.147308056121;\n" +
+            "   gl_FragColor  += texture2D(sTexture, v_TexCoord         )*0.159576912161;\n" +
+            "   gl_FragColor  += texture2D(sTexture, v_BlurTexCoords[ 7])*0.147308056121;\n" +
+            "   gl_FragColor  += texture2D(sTexture, v_BlurTexCoords[ 8])*0.115876621105;\n" +
+            "   gl_FragColor  += texture2D(sTexture, v_BlurTexCoords[ 9])*0.0776744219933;\n" +
+            "   gl_FragColor  += texture2D(sTexture, v_BlurTexCoords[10])*0.0443683338718;\n" +
+            "   gl_FragColor  += texture2D(sTexture, v_BlurTexCoords[11])*0.0215963866053;\n" +
+            "   gl_FragColor  += texture2D(sTexture, v_BlurTexCoords[12])*0.00895781211794;\n" +
+            "   gl_FragColor  += texture2D(sTexture, v_BlurTexCoords[13])*0.0044299121055113265;\n" +
+            "}\n";
+
+    
     private float[] mMVPMatrix = new float[16];
     private float[] mSTMatrix = new float[16];
     private int mProgram;
@@ -73,6 +113,8 @@ public class TextureRender {
     private int muSTMatrixHandle;
     private int maPositionHandle;
     private int maTextureHandle;
+    private int mBlurHandle;
+
     public TextureRender(float[] triangleVerticesData) {
         if (triangleVerticesData != null) {
             mTriangleVerticesData = triangleVerticesData;
@@ -86,28 +128,85 @@ public class TextureRender {
     public int getTextureId() {
         return mTextureID;
     }
-    public void drawFrame(SurfaceTexture st) {
+
+  // TODO this is for blur TEST...
+  public void drawFrame(long timeUs, SurfaceTexture st) {
+    checkGlError("onDrawFrame start");
+    st.getTransformMatrix(mSTMatrix);
+
+    //long time = st.getTimestamp();
+    long timeMs = timeUs / 1000;
+    // 2 second
+    float blur = (float)((timeMs % 2000) / 500.0);
+    Log.d(TAG, "timeUs = " + timeUs + ", timeMs = " + timeMs + ", blur = " + blur);
+
+
+    GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    GLES20.glClear(GLES20.GL_DEPTH_BUFFER_BIT | GLES20.GL_COLOR_BUFFER_BIT);
+
+    GLES20.glUseProgram(mProgram);
+    checkGlError("glUseProgram");
+
+    GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+    GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, mTextureID);
+
+    mTriangleVertices.position(TRIANGLE_VERTICES_DATA_POS_OFFSET);
+    GLES20.glVertexAttribPointer(maPositionHandle, 3, GLES20.GL_FLOAT, false,
+      TRIANGLE_VERTICES_DATA_STRIDE_BYTES, mTriangleVertices);
+    checkGlError("glVertexAttribPointer maPosition");
+    GLES20.glEnableVertexAttribArray(maPositionHandle);
+    checkGlError("glEnableVertexAttribArray maPositionHandle");
+
+    mTriangleVertices.position(TRIANGLE_VERTICES_DATA_UV_OFFSET);
+    GLES20.glVertexAttribPointer(maTextureHandle, 2, GLES20.GL_FLOAT, false,
+      TRIANGLE_VERTICES_DATA_STRIDE_BYTES, mTriangleVertices);
+    checkGlError("glVertexAttribPointer maTextureHandle");
+    GLES20.glEnableVertexAttribArray(maTextureHandle);
+    checkGlError("glEnableVertexAttribArray maTextureHandle");
+
+    // Pass in the blur information
+    GLES20.glUniform1f(mBlurHandle, blur);
+
+    Matrix.setIdentityM(mMVPMatrix, 0);
+
+    GLES20.glUniformMatrix4fv(muMVPMatrixHandle, 1, false, mMVPMatrix, 0);
+    GLES20.glUniformMatrix4fv(muSTMatrixHandle, 1, false, mSTMatrix, 0);
+    GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
+    checkGlError("glDrawArrays");
+    GLES20.glFinish();
+  }
+
+
+  public void drawFrame(SurfaceTexture st) {
         checkGlError("onDrawFrame start");
         st.getTransformMatrix(mSTMatrix);
+
         GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         GLES20.glClear(GLES20.GL_DEPTH_BUFFER_BIT | GLES20.GL_COLOR_BUFFER_BIT);
+        
         GLES20.glUseProgram(mProgram);
         checkGlError("glUseProgram");
+
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
         GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, mTextureID);
+
         mTriangleVertices.position(TRIANGLE_VERTICES_DATA_POS_OFFSET);
         GLES20.glVertexAttribPointer(maPositionHandle, 3, GLES20.GL_FLOAT, false,
-                TRIANGLE_VERTICES_DATA_STRIDE_BYTES, mTriangleVertices);
+          TRIANGLE_VERTICES_DATA_STRIDE_BYTES, mTriangleVertices);
         checkGlError("glVertexAttribPointer maPosition");
         GLES20.glEnableVertexAttribArray(maPositionHandle);
         checkGlError("glEnableVertexAttribArray maPositionHandle");
+
         mTriangleVertices.position(TRIANGLE_VERTICES_DATA_UV_OFFSET);
         GLES20.glVertexAttribPointer(maTextureHandle, 2, GLES20.GL_FLOAT, false,
-                TRIANGLE_VERTICES_DATA_STRIDE_BYTES, mTriangleVertices);
+          TRIANGLE_VERTICES_DATA_STRIDE_BYTES, mTriangleVertices);
         checkGlError("glVertexAttribPointer maTextureHandle");
         GLES20.glEnableVertexAttribArray(maTextureHandle);
         checkGlError("glEnableVertexAttribArray maTextureHandle");
+
+
         Matrix.setIdentityM(mMVPMatrix, 0);
+
         GLES20.glUniformMatrix4fv(muMVPMatrixHandle, 1, false, mMVPMatrix, 0);
         GLES20.glUniformMatrix4fv(muSTMatrixHandle, 1, false, mSTMatrix, 0);
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
@@ -122,39 +221,50 @@ public class TextureRender {
         if (mProgram == 0) {
             throw new RuntimeException("failed creating program");
         }
-        maPositionHandle = GLES20.glGetAttribLocation(mProgram, "aPosition");
+        
+        maPositionHandle = GLES20.glGetAttribLocation(mProgram, "a_Position");
         checkGlError("glGetAttribLocation aPosition");
         if (maPositionHandle == -1) {
             throw new RuntimeException("Could not get attrib location for aPosition");
         }
-        maTextureHandle = GLES20.glGetAttribLocation(mProgram, "aTextureCoord");
+        
+        maTextureHandle = GLES20.glGetAttribLocation(mProgram, "a_TexCoord");
         checkGlError("glGetAttribLocation aTextureCoord");
         if (maTextureHandle == -1) {
             throw new RuntimeException("Could not get attrib location for aTextureCoord");
         }
+
+        mBlurHandle = GLES20.glGetUniformLocation(mProgram, "u_Blur");
+        checkGlError("glGetUniformLocation u_Blur");
+        if (mBlurHandle == -1) {
+            throw new RuntimeException("Could not get attrib location for u_Blur");
+        }
+        
         muMVPMatrixHandle = GLES20.glGetUniformLocation(mProgram, "uMVPMatrix");
         checkGlError("glGetUniformLocation uMVPMatrix");
         if (muMVPMatrixHandle == -1) {
             throw new RuntimeException("Could not get attrib location for uMVPMatrix");
         }
+        
         muSTMatrixHandle = GLES20.glGetUniformLocation(mProgram, "uSTMatrix");
         checkGlError("glGetUniformLocation uSTMatrix");
         if (muSTMatrixHandle == -1) {
             throw new RuntimeException("Could not get attrib location for uSTMatrix");
         }
+        
         int[] textures = new int[1];
         GLES20.glGenTextures(1, textures, 0);
         mTextureID = textures[0];
         GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, mTextureID);
         checkGlError("glBindTexture mTextureID");
         GLES20.glTexParameterf(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_MIN_FILTER,
-                GLES20.GL_NEAREST);
+          GLES20.GL_NEAREST);
         GLES20.glTexParameterf(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_MAG_FILTER,
-                GLES20.GL_LINEAR);
+          GLES20.GL_LINEAR);
         GLES20.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_WRAP_S,
-                GLES20.GL_CLAMP_TO_EDGE);
+          GLES20.GL_CLAMP_TO_EDGE);
         GLES20.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_WRAP_T,
-                GLES20.GL_CLAMP_TO_EDGE);
+          GLES20.GL_CLAMP_TO_EDGE);
         checkGlError("glTexParameter");
     }
     /**
@@ -167,6 +277,19 @@ public class TextureRender {
             throw new RuntimeException("failed creating program");
         }
     }
+
+    /**
+     * Replaces the fragment shader.
+     */
+    public void changeShaderProgram(String vertexShader, String fragmentShader) {
+        GLES20.glDeleteProgram(mProgram);
+        mProgram = createProgram(vertexShader, fragmentShader);
+        if (mProgram == 0) {
+            throw new RuntimeException("failed creating program");
+        }
+    }
+    
+    
     private int loadShader(int shaderType, String source) {
         int shader = GLES20.glCreateShader(shaderType);
         checkGlError("glCreateShader type=" + shaderType);
