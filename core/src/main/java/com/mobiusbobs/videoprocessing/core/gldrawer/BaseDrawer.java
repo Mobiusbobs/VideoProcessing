@@ -6,6 +6,8 @@ import android.opengl.GLUtils;
 import android.opengl.Matrix;
 import android.util.Log;
 
+import com.mobiusbobs.videoprocessing.core.program.ShaderProgram;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -88,38 +90,44 @@ public class BaseDrawer implements GLDrawable {
 
     // shader
     final String vertexShader =
-            "uniform mat4 u_MVPMatrix;      \n"     // A constant representing the combined model/view/projection matrix.
+            "uniform mat4 u_Matrix;      \n"     // A constant representing the combined model/view/projection matrix.
             + "attribute vec4 a_Position;     \n"     // Per-vertex position information we will pass in.
-            + "attribute vec2 a_TexCoordinate; \n"
+            + "attribute vec2 a_TextureCoordinates; \n"
 
             + "varying vec2 v_TexCoordinate;  \n"
 
             + "void main()                    \n"     // The entry point for our vertex shader.
             + "{                              \n"
-            + "   v_TexCoordinate = a_TexCoordinate; \n"
+            + "   v_TexCoordinate = a_TextureCoordinates; \n"
             // It will be interpolated across the triangle.
-            + "   gl_Position = u_MVPMatrix   \n"     // gl_Position is a special variable used to store the final position.
+            + "   gl_Position = u_Matrix   \n"     // gl_Position is a special variable used to store the final position.
             + "               * a_Position;   \n"     // Multiply the vertex by the matrix to get the final point in
             + "}                              \n";    // normalized screen coordinates.
 
     final String fragmentShader =
             "precision mediump float;       \n"     // Set the default precision to medium. We don't need as high of a
                     // precision in the fragment shader.
-            + "uniform sampler2D u_Texture;   \n"
+            + "uniform sampler2D u_TextureUnit;   \n"
             + "varying vec2 v_TexCoordinate;  \n"
             // triangle per fragment.
             + "void main()                    \n"     // The entry point for our fragment shader.
             + "{                              \n"
             //+ "   gl_FragColor = vec4(1.0,0.0,0.0,1.0); \n"   // FOR DEBUG PURPOSE
-            + "   gl_FragColor = texture2D(u_Texture, v_TexCoordinate);     \n"     // Pass the color directly through the pipeline.
+            + "   gl_FragColor = texture2D(u_TextureUnit, v_TexCoordinate);     \n"     // Pass the color directly through the pipeline.
             + "}                              \n";
 
     protected int shaderProgramHandle;
+    private ShaderProgram program;
 
     public BaseDrawer()  {}
 
     public BaseDrawer(float[] verticesPositionData)  {
         this.verticesPositionData = verticesPositionData;
+    }
+
+    public void setProgram(ShaderProgram program) {
+        this.program = program;
+        shaderProgramHandle = program.getProgramId();
     }
 
     @Override
@@ -132,7 +140,7 @@ public class BaseDrawer implements GLDrawable {
         calculateMVPMatrix();
 
         setupShader();
-        bindTexture();
+        getAttributeLocation();
     }
 
     public void init(Bitmap bitmap, float[] verticesPositionData) throws IOException {
@@ -300,12 +308,15 @@ public class BaseDrawer implements GLDrawable {
         return programHandle;
     }
 
-    protected void bindTexture() {
+    protected void getAttributeLocation() {
         // Set program handles. These will later be used to pass in values to the program.
-        mMVPMatrixHandle = GLES20.glGetUniformLocation(shaderProgramHandle, "u_MVPMatrix");
-        mTextureUniformHandle = GLES20.glGetUniformLocation(shaderProgramHandle, "u_Texture");
-        mPositionHandle = GLES20.glGetAttribLocation(shaderProgramHandle, "a_Position");
-        mTextureCoordinateHandle = GLES20.glGetAttribLocation(shaderProgramHandle, "a_TexCoordinate");
+        // uniform
+        mMVPMatrixHandle = GLES20.glGetUniformLocation(shaderProgramHandle, ShaderProgram.U_MATRIX);
+        mTextureUniformHandle = GLES20.glGetUniformLocation(shaderProgramHandle, ShaderProgram.U_TEXTURE_UNIT);
+
+        // attribute
+        mPositionHandle = GLES20.glGetAttribLocation(shaderProgramHandle, ShaderProgram.A_POSITION);
+        mTextureCoordinateHandle = GLES20.glGetAttribLocation(shaderProgramHandle, ShaderProgram.A_TEXTURE_COORDINATES);
     }
 
     @Override
