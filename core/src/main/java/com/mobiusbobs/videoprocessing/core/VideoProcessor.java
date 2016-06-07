@@ -14,7 +14,15 @@ import com.mobiusbobs.videoprocessing.core.codec.Extractor;
 import com.mobiusbobs.videoprocessing.core.gldrawer.GLDrawable;
 import com.mobiusbobs.videoprocessing.core.gles.surface.InputSurface;
 import com.mobiusbobs.videoprocessing.core.gles.surface.OutputSurface;
+import com.mobiusbobs.videoprocessing.core.program.BlurHShaderProgram;
+import com.mobiusbobs.videoprocessing.core.program.BlurVShaderProgram;
+import com.mobiusbobs.videoprocessing.core.program.TextureOpacityShaderProgram;
+import com.mobiusbobs.videoprocessing.core.program.TextureShaderProgram;
+import com.mobiusbobs.videoprocessing.core.tmp.BlurTable;
+import com.mobiusbobs.videoprocessing.core.tmp.Watermark;
 import com.mobiusbobs.videoprocessing.core.util.CoordConverter;
+import com.mobiusbobs.videoprocessing.core.util.FrameBufferHelper;
+import com.mobiusbobs.videoprocessing.core.util.MatrixHelper;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -22,6 +30,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static android.opengl.GLES20.GL_COLOR_BUFFER_BIT;
+import static android.opengl.GLES20.GL_DEPTH_BUFFER_BIT;
+import static android.opengl.GLES20.GL_FRAMEBUFFER;
+import static android.opengl.GLES20.glBindFramebuffer;
+import static android.opengl.GLES20.glClear;
+import static android.opengl.GLES20.glViewport;
+import static android.opengl.Matrix.multiplyMM;
+import static android.opengl.Matrix.rotateM;
+import static android.opengl.Matrix.setIdentityM;
+import static android.opengl.Matrix.translateM;
 import static com.mobiusbobs.videoprocessing.core.util.CoordConverter.rectCoordToGLCoord;
 
 /**
@@ -125,8 +143,54 @@ public class VideoProcessor {
     // for audio hotfix
     long lastAudioPresentationTime = 0;
 
+    // FBO
+    // should be power of 2 (POT)
+    private int fboWidth = 1024;
+    private int fboHeight = 1024;
+    // first FBO that stores all the render and apply first blur
+    private int fboId;
+    private int fboTextureId;
+    // second FBO that take the first FBO and apply second blur
+    private int fboBlurId;
+    private int fboBlurTextureId;
+
+    // shader program
+    private TextureShaderProgram textureProgram;
+    private BlurHShaderProgram blurHorizontalProgram;
+    private BlurVShaderProgram blurVerticalProgram;
+    private TextureOpacityShaderProgram textureOpacityProgram;
+
+    // data object
+    private BlurTable blurTable;
+    private Watermark watermark;
+
+    // matrix
+    private float[] projectionMatrix = new float[16];
+    protected float[] modelMatrix = new float[16];
+
+
     // Constructor
-    private VideoProcessor() {}
+    private VideoProcessor(Context context) {
+        // object
+        blurTable = new BlurTable();
+        watermark = new Watermark();
+
+        // shader program
+        textureProgram = new TextureShaderProgram(context);
+        textureOpacityProgram = new TextureOpacityShaderProgram(context);
+        blurHorizontalProgram = new BlurHShaderProgram(context);
+        blurVerticalProgram = new BlurVShaderProgram(context);
+
+        // create fbo
+        int[] tmp = FrameBufferHelper.createFrameBuffer(fboWidth, fboHeight);
+        fboId = tmp[0];
+        fboTextureId = tmp[1];
+
+        // create fboBlur
+        tmp = FrameBufferHelper.createFrameBuffer(fboWidth, fboHeight);
+        fboBlurId = tmp[0];
+        fboBlurTextureId = tmp[1];
+    }
 
     public void process() throws Exception {
 
@@ -422,11 +486,11 @@ public class VideoProcessor {
         if (sampleTime > maxTime) {
             Log.d(TAG, "FLAG: reach videoDuration: duration=" + maxTime + ", sampleTime=" + sampleTime);
             audioDecoder.queueInputBuffer(
-                    decoderInputBufferIndex,
-                    0,
-                    0,
-                    0,
-                    MediaCodec.BUFFER_FLAG_END_OF_STREAM);
+              decoderInputBufferIndex,
+              0,
+              0,
+              0,
+              MediaCodec.BUFFER_FLAG_END_OF_STREAM);
             return true;
         }
 
@@ -474,7 +538,7 @@ public class VideoProcessor {
             MediaCodec.BufferInfo videoDecoderOutputBufferInfo
     ) {
         int decoderOutputBufferIndex = videoDecoder.dequeueOutputBuffer(
-                videoDecoderOutputBufferInfo, TIMEOUT_USEC);
+          videoDecoderOutputBufferInfo, TIMEOUT_USEC);
 
         if (decoderOutputBufferIndex == MediaCodec.INFO_TRY_AGAIN_LATER) {
             Log.d(TAG, "no video decoder output buffer");
@@ -508,6 +572,23 @@ public class VideoProcessor {
     }
 
 
+    // ----- test function -------
+    private void setupViewport(int width, int height) {
+        // Set the OpenGL viewport to fill the entire surface.
+        glViewport(0, 0, width, height);
+
+        MatrixHelper.perspectiveM(projectionMatrix, 45, (float) width / (float) height, 1f, 10f);
+
+        setIdentityM(modelMatrix, 0);
+        translateM(modelMatrix, 0, 0f, 0f, -2.5f);
+        rotateM(modelMatrix, 0, 0f, 1f, 0f, 0f);
+
+        final float[] temp = new float[16];
+        multiplyMM(temp, 0, projectionMatrix, 0, modelMatrix, 0);
+        System.arraycopy(temp, 0, projectionMatrix, 0, temp.length);
+    }
+
+
     // ----- video draw function -----
     private void render(
             // surface from decoder
@@ -519,15 +600,63 @@ public class VideoProcessor {
     ) {
         // fetch frame
         outputSurface.awaitNewImage();
-        outputSurface.drawImage();
 
-        long timeMs = videoDecoderOutputBufferInfo.presentationTimeUs / 1000;
+        long timeMs = videoDecoderOutputBufferInfo.presentationTimeUs / 1000 % 8000L;
+        float blur; // = Math.min(2.0f,(float)((angleInDegrees % 360) / 120.0));   // blur goes from 0-2
+        float opacity;
+        if (timeMs < 2000) {
+            blur = 0;
+            opacity = 0;
+        }
+        else if (timeMs < 4000) {
+            blur = (float) (1 - (4000 - timeMs) / 2000.0);
+            opacity = (float) (1 - (4000 - timeMs) / 2000.0);
+        }
+        else {
+            blur = 1.0f;
+            opacity = 1.0f;
+        }
+        Log.d("TEST", "Render: timeMS=" + timeMs + ", blur=" + blur + ", opacity="+ opacity);
+
+
+        // -------- render to fbo ---------
+        glBindFramebuffer(GL_FRAMEBUFFER, fboId);
+        setupViewport(fboWidth, fboWidth);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+
+
+
+        outputSurface.drawImage();
         for (GLDrawable drawer : drawerList) {
             drawer.draw(timeMs);
         }
 
-        inputSurface.setPresentationTime(videoDecoderOutputBufferInfo.presentationTimeUs * 1000);
 
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        // -------------------------------
+
+
+
+        // -------- render to the screen ---------
+        setupViewport(720, 1280);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        blurVerticalProgram.useProgram();
+        blurVerticalProgram.setUniforms(projectionMatrix, fboTextureId, blur); //fboTextureId //texture
+        blurTable.bindData(blurVerticalProgram);
+        blurTable.draw();
+        // ----------------------------------------
+
+
+
+
+
+
+
+
+
+        inputSurface.setPresentationTime(videoDecoderOutputBufferInfo.presentationTimeUs * 1000);
         Log.d(TAG, "input surface: swap buffers");
         inputSurface.swapBuffers();
 
@@ -970,7 +1099,7 @@ public class VideoProcessor {
         }
 
         public VideoProcessor build(Context context) throws IOException {
-            VideoProcessor processor = new VideoProcessor();
+            VideoProcessor processor = new VideoProcessor(context);
             processor.drawerList = drawableList;
 
             if (inputResId != -1) {
