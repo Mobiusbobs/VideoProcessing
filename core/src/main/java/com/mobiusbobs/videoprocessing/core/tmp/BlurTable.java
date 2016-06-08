@@ -26,11 +26,11 @@ public class BlurTable {
     // Order of coordinates: X, Y, S, T
     // Triangle Fan
     0f,    0f,      0.5f, 0.5f,
-    -1.0f, -1.0f,   0f, 1.0f,
-    1.0f, -1.0f,   1f, 1.0f,
-    1.0f,  1.0f,   1f, 0.0f,
-    -1.0f,  1.0f,   0f, 0.0f,
-    -1.0f, -1.0f,   0f, 1.0f
+    -1.0f, 1.0f,   0f, 1f,
+    -1.0f, -1.0f,   0f, 0f,
+    1.0f,  -1.0f,   1f, 0f,
+    1.0f,  1.0f,   1f, 1f,
+    -1.0f, 1.0f,   0f, 1f
   };
 
   private final VertexArray vertexArray;
