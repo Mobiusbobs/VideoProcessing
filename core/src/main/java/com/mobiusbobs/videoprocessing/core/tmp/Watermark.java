@@ -2,6 +2,8 @@ package com.mobiusbobs.videoprocessing.core.tmp;
 
 
 
+import android.opengl.GLES20;
+
 import com.mobiusbobs.videoprocessing.core.program.TextureShaderProgram;
 
 import static android.opengl.GLES20.GL_BLEND;

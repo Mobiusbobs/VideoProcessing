@@ -26,10 +26,10 @@ public class TextureOpacityShaderProgram extends TextureShaderProgram {
     uOpcaityLocation = glGetUniformLocation(program, "u_Opacity"); //u_Opacity
   }
 
-  public void setUniforms(float[] matrix, int textureId, float opcaity) {
+  public void setUniforms(float[] matrix, int textureId, float opacity) {
     super.setUniforms(matrix, textureId);
     // Pass in the blur information
-    glUniform1f(uOpcaityLocation, opcaity);
+    glUniform1f(uOpcaityLocation, opacity);
   }
 
 }
