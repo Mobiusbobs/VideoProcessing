@@ -143,15 +143,6 @@ public class GifDrawer implements GLDrawable {
   }
 
   public void draw(long timeMs) {
-    /*
-    int textureIndex = updateFrameIndex(timeMs);
-
-    GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
-    // Bind the texture to this unit.
-    GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureHandle[textureIndex]);
-    // Tell the texture uniform sampler to use this texture in the shader by binding to texture unit 0.
-    GLES20.glUniform1i(mTextureUniformHandle, 0);
-    */
     stickerDrawer.draw();
   }
 

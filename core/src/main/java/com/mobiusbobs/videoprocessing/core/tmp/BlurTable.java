@@ -2,6 +2,7 @@ package com.mobiusbobs.videoprocessing.core.tmp;
 
 
 import com.mobiusbobs.videoprocessing.core.program.TextureShaderProgram;
+import com.mobiusbobs.videoprocessing.core.util.VertexArray;
 
 import static android.opengl.GLES20.GL_TRIANGLE_FAN;
 import static android.opengl.GLES20.glDrawArrays;

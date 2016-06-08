@@ -3,10 +3,8 @@ package com.mobiusbobs.videoprocessing.core.gldrawer;
 import android.content.Context;
 import android.graphics.Bitmap;
 
-import com.mobiusbobs.videoprocessing.core.R;
-import com.mobiusbobs.videoprocessing.core.program.ShaderProgram;
 import com.mobiusbobs.videoprocessing.core.program.TextureShaderProgram;
-import com.mobiusbobs.videoprocessing.core.tmp.VertexArray;
+import com.mobiusbobs.videoprocessing.core.util.VertexArray;
 import com.mobiusbobs.videoprocessing.core.util.BitmapHelper;
 import com.mobiusbobs.videoprocessing.core.util.CoordConverter;
 
@@ -63,7 +61,7 @@ public class WatermarkDrawer implements GLDrawable {
     @Override
     public void init() throws IOException {
         Bitmap bitmap = BitmapHelper.generateBitmap(context, resourceId);
-        drawer.init(bitmap);
+        drawer.init();
         bitmap.recycle();
     }
 
