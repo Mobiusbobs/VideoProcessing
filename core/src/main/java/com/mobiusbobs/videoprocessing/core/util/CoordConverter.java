@@ -121,15 +121,18 @@ public class CoordConverter {
   }
 
   public static float[] getVerticesCoord(float x1, float y1, float x2, float y2) {
-    float z = 0.0f;
-    return new float[]{
-      x1, y1, z,  // BL
-      x2, y1, z,  // BR
-      x2, y2, z,  // TR
+    float midx = (x1 + x2) / 2;
+    float midy = (y1 + y2) / 2;
 
-      x1, y1, z,  // BL
-      x2, y2, z,  // TR
-      x1, y2, z   // TL
+    return new float[] {
+      // Order of coordinates: X, Y, S, T
+      // Triangle Fan
+      midx, midy, 0.5f, 0.5f, // center
+      x1,   y2,   0f,   1f,   // TL
+      x1,   y1,   0f,   0f,   // BL
+      x2,   y1,   1f,   0f,   // BR
+      x2,   y2,   1f,   1f,   // TR
+      x1,   y2,   0f,   1f    // TL
     };
   }
 

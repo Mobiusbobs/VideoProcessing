@@ -23,13 +23,11 @@ import com.mobiusbobs.videoprocessing.core.tmp.BlurTable;
 import com.mobiusbobs.videoprocessing.core.tmp.Watermark;
 import com.mobiusbobs.videoprocessing.core.util.CoordConverter;
 import com.mobiusbobs.videoprocessing.core.util.FrameBufferHelper;
-import com.mobiusbobs.videoprocessing.core.util.MatrixHelper;
 import com.mobiusbobs.videoprocessing.core.util.TextureHelper;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.ShortBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -40,9 +38,7 @@ import static android.opengl.GLES20.GL_FRAMEBUFFER;
 import static android.opengl.GLES20.glBindFramebuffer;
 import static android.opengl.GLES20.glClear;
 import static android.opengl.GLES20.glViewport;
-import static android.opengl.Matrix.multiplyMM;
 import static android.opengl.Matrix.rotateM;
-import static android.opengl.Matrix.setIdentityM;
 import static android.opengl.Matrix.translateM;
 import static com.mobiusbobs.videoprocessing.core.util.CoordConverter.rectCoordToGLCoord;
 
@@ -684,6 +680,69 @@ public class VideoProcessor {
     }
 
 
+    private void renderWatermarkAnimation(
+      OutputSurface outputSurface,
+      long timeUs,
+      long videoDuration
+    ) {
+        float blur;
+        float opacity;
+        long animationTime = (timeUs - videoDuration) / 1000L;
+
+        // use 2 sec to animate blur and fade in
+        if (animationTime < 2000) {
+            blur = (float) (1 - (2000 - animationTime) / 2000.0);
+            opacity = (float) (1 - (2000 - animationTime) / 2000.0);
+        } else {
+            blur = 1.0f;
+            opacity = 1.0f;
+        }
+        Log.d("TEST", "Render: animationTime=" + animationTime + ", blur=" + blur + ", opacity=" + opacity);
+
+        // -------- render to fbo ---------
+        glBindFramebuffer(GL_FRAMEBUFFER, fboId);
+        setupViewport(fboWidth, fboWidth);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        // draw to texture
+        outputSurface.drawImage();
+        for (GLDrawable drawer : drawerList) {
+            drawer.draw(videoDuration);
+        }
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        // -------------------------------
+
+        // -------- render to fbo 2 ---------
+        glBindFramebuffer(GL_FRAMEBUFFER, fboBlurId);
+        setupViewport(fboWidth, fboWidth);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        //draw to texture
+        blurHorizontalProgram.useProgram();
+        blurHorizontalProgram.setUniforms(mMVPMatrix, fboTextureId, blur);
+        blurTable.bindData(blurHorizontalProgram);
+        blurTable.draw();
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        // -------------------------------
+
+        // -------- render to the screen ---------
+        setupViewport(720, 1280);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        blurVerticalProgram.useProgram();
+        blurVerticalProgram.setUniforms(mMVPMatrix, fboBlurTextureId, blur); //fboTextureId //texture
+        blurTable.bindData(blurVerticalProgram);
+        blurTable.draw();
+
+        textureOpacityProgram.useProgram();
+        textureOpacityProgram.setUniforms(mMVPMatrix, textureWatermark, opacity);
+        watermark.bindData(textureOpacityProgram);
+        watermark.draw();
+        // ----------------------------------------
+    }
+
     // ----- video draw function -----
     private void render(
             // surface from decoder
@@ -697,13 +756,9 @@ public class VideoProcessor {
 
             long videoDuration
     ) {
-        // fetch frame
-        //outputSurface.awaitNewImage();
-
-        long timeMs = timeUs / 1000;
-
         // render video
         if (timeUs < videoDuration) {
+            long timeMs = timeUs / 1000;
             Log.d(TAG, "render video... timeMs = " + timeMs);
             outputSurface.drawImage();
             for (GLDrawable drawer : drawerList) {
@@ -712,75 +767,8 @@ public class VideoProcessor {
         }
         // render watermark animation
         else {
-            Log.d(TAG, "render watermark animation timeUs=" + timeUs + ", videoDuration=" + videoDuration);
-            float blur;
-            float opacity;
-            long animationTime = (timeUs - videoDuration) / 1000L;
-            Log.d(TAG, "render watermark animationTime=" + animationTime);
-
-            if (animationTime < 2000) {
-                blur = (float) (1 - (2000 - animationTime) / 2000.0);
-                opacity = (float) (1 - (2000 - animationTime) / 2000.0);
-                Log.d("TEST", "Render: animation! blur=" + blur + ", opacity=" + opacity);
-
-            }
-            else {
-                blur = 1.0f;
-                opacity = 1.0f;
-            }
-            Log.d("TEST", "Render: animationTime=" + animationTime + ", blur=" + blur + ", opacity=" + opacity);
-
-            // -------- render to fbo ---------
-            glBindFramebuffer(GL_FRAMEBUFFER, fboId);
-            setupViewport(fboWidth, fboWidth);
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-
-            outputSurface.drawImage();
-            for (GLDrawable drawer : drawerList) {
-                drawer.draw(videoDuration);
-            }
-
-            glBindFramebuffer(GL_FRAMEBUFFER, 0);
-            // -------------------------------
-
-
-            // -------- render to fbo 2 ---------
-            glBindFramebuffer(GL_FRAMEBUFFER, fboBlurId);
-            setupViewport(fboWidth, fboWidth);
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-            //draw to texture
-            blurHorizontalProgram.useProgram();
-            blurHorizontalProgram.setUniforms(mMVPMatrix, fboTextureId, blur);
-            blurTable.bindData(blurHorizontalProgram);
-            blurTable.draw();
-
-            glBindFramebuffer(GL_FRAMEBUFFER, 0);
-            // -------------------------------
-
-
-            // -------- render to the screen ---------
-            setupViewport(720, 1280);
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-
-            blurVerticalProgram.useProgram();
-            blurVerticalProgram.setUniforms(mMVPMatrix, fboBlurTextureId, blur); //fboTextureId //texture
-            blurTable.bindData(blurVerticalProgram);
-            blurTable.draw();
-
-            textureOpacityProgram.useProgram();
-            textureOpacityProgram.setUniforms(mMVPMatrix, textureWatermark, opacity);
-            watermark.bindData(textureOpacityProgram);
-            watermark.draw();
-            // ----------------------------------------
+            renderWatermarkAnimation(outputSurface, timeUs, videoDuration);
         }
-
-
-
-
-
 
         inputSurface.setPresentationTime(timeUs * 1000);
         Log.d(TAG, "input surface: swap buffers");

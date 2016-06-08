@@ -29,7 +29,6 @@ public class BlurHShaderProgram extends TextureShaderProgram {
 
   public void setUniforms(float[] matrix, int textureId, float blur) {
     super.setUniforms(matrix, textureId);
-
     // Pass in the blur information
     glUniform1f(uBlurLocation, blur);
   }

@@ -7,11 +7,17 @@ import android.opengl.Matrix;
 import android.util.Log;
 
 import com.mobiusbobs.videoprocessing.core.program.ShaderProgram;
+import com.mobiusbobs.videoprocessing.core.program.TextureShaderProgram;
+import com.mobiusbobs.videoprocessing.core.tmp.VertexArray;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
+
+import static android.opengl.GLES20.GL_TRIANGLE_FAN;
+import static android.opengl.GLES20.glDrawArrays;
+import static com.mobiusbobs.videoprocessing.core.tmp.Constants.BYTES_PER_FLOAT;
 
 /**
  * VideoProcessing
@@ -29,6 +35,26 @@ public class BaseDrawer implements GLDrawable {
     private static final String TAG = "BaseDrawer";
 
     /** Store our model data in a float buffer. */
+
+
+    private static final int POSITION_COMPONENT_COUNT = 2;
+    private static final int TEXTURE_COORDINATES_COMPONENT_COUNT = 2;
+    private static final int STRIDE = (POSITION_COMPONENT_COUNT
+      + TEXTURE_COORDINATES_COMPONENT_COUNT) * BYTES_PER_FLOAT;
+
+    private VertexArray vertexArray;
+    protected float[] verticesPositionData = {
+      // Order of coordinates: X, Y, S, T
+      // Triangle Fan
+      0f,       0f,     0.5f,  0.5f,
+      -1.0f,    1.0f,   0f,    1f,
+      -1.0f,    -1.0f,  0f,    0f,
+      1.0f,     -1.0f,  1f,    0f,
+      1.0f,     1.0f,   1f,    1f,
+      -1.0f,    1.0f,   0f,    1f
+    };
+
+    /*
     protected float[] verticesPositionData = {
         // X, Y, Z,
         -1.0f, -1.0f, 0.0f,
@@ -40,6 +66,7 @@ public class BaseDrawer implements GLDrawable {
         -1.0f, 1.0f, 0.0f
     };
 
+
     float[] textureCoordinateData = {
         // Front face
         0.0f, 1.0f,
@@ -50,14 +77,16 @@ public class BaseDrawer implements GLDrawable {
         0.0f, 0.0f
     };
 
+
     protected FloatBuffer verticesPosition;
     protected FloatBuffer texturePosition;
     protected final int TEXTURE_COORD_DATASIZE = 2;
     protected final int POSITION_DATASIZE = 3;
     protected final int BYTES_PER_FLOAT = 4;
+*/
 
     // transformation
-    protected int mMVPMatrixHandle;
+    //protected int mMVPMatrixHandle;
 
     /** Allocate storage for the final combined matrix. This will be passed into the shader program. */
     protected float[] mMVPMatrix = new float[16];
@@ -77,6 +106,9 @@ public class BaseDrawer implements GLDrawable {
     /** Store the projection matrix. This is used to project the scene onto a 2D viewport. */
     protected float[] mProjectionMatrix = new float[16];
 
+
+
+
     // texture
     /** This will be used to pass in the texture. */
     protected int mTextureUniformHandle;
@@ -88,6 +120,10 @@ public class BaseDrawer implements GLDrawable {
     /** This is a handle to our texture data. */
     private int[] textureHandle;
 
+
+
+
+    /*
     // shader
     final String vertexShader =
             "uniform mat4 u_Matrix;      \n"     // A constant representing the combined model/view/projection matrix.
@@ -118,6 +154,7 @@ public class BaseDrawer implements GLDrawable {
 
     protected int shaderProgramHandle;
     private ShaderProgram program;
+    */
 
     public BaseDrawer()  {}
 
@@ -125,26 +162,30 @@ public class BaseDrawer implements GLDrawable {
         this.verticesPositionData = verticesPositionData;
     }
 
+    /*
     public void setProgram(ShaderProgram program) {
         this.program = program;
         shaderProgramHandle = program.getProgramId();
     }
+    */
 
     @Override
     public void init() throws IOException {
-        initCoordinateBuffer();
+        //initCoordinateBuffer();
+        vertexArray = new VertexArray(verticesPositionData);
 
         // calculate matrix
         setupProjectionMatrix();
         setupViewMatrix();
         calculateMVPMatrix();
 
-        setupShader();
-        getAttributeLocation();
+        //setupShader();
+        //getAttributeLocation();
     }
 
     public void init(Bitmap bitmap, float[] verticesPositionData) throws IOException {
-        setVerticesCoordinate(verticesPositionData);
+        //setVerticesCoordinate(verticesPositionData);
+        this.verticesPositionData = verticesPositionData;
         init(bitmap);
     }
 
@@ -153,6 +194,7 @@ public class BaseDrawer implements GLDrawable {
         loadTexture(bitmap, 1);
     }
 
+    /*
     public void setVerticesCoordinate(float[] verticesPositionData) {
         this.verticesPositionData = verticesPositionData;
         if (verticesPosition != null) {
@@ -160,7 +202,10 @@ public class BaseDrawer implements GLDrawable {
             verticesPosition.put(verticesPositionData).position(0);
         }
     }
+    */
 
+
+    /*
     protected void initCoordinateBuffer() {
         // Initialize the buffers.
       verticesPosition = ByteBuffer.allocateDirect(verticesPositionData.length * BYTES_PER_FLOAT)
@@ -171,6 +216,8 @@ public class BaseDrawer implements GLDrawable {
           .order(ByteOrder.nativeOrder()).asFloatBuffer();
       texturePosition.put(textureCoordinateData).position(0);
     }
+    */
+
 
     protected void setupProjectionMatrix() {
         // Create a new perspective projection matrix. The height will stay the same
@@ -235,6 +282,7 @@ public class BaseDrawer implements GLDrawable {
         GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, bitmap, 0);
     }
 
+    /*
     // TODO shader compile flow should be reused
     protected void setupShader() {
         int vertexShaderHandle = compileShader(GLES20.GL_VERTEX_SHADER, vertexShader);
@@ -307,7 +355,9 @@ public class BaseDrawer implements GLDrawable {
 
         return programHandle;
     }
+    */
 
+    /*
     protected void getAttributeLocation() {
         // Set program handles. These will later be used to pass in values to the program.
         // uniform
@@ -318,13 +368,31 @@ public class BaseDrawer implements GLDrawable {
         mPositionHandle = GLES20.glGetAttribLocation(shaderProgramHandle, ShaderProgram.A_POSITION);
         mTextureCoordinateHandle = GLES20.glGetAttribLocation(shaderProgramHandle, ShaderProgram.A_TEXTURE_COORDINATES);
     }
+    */
 
     @Override
     public void draw(long timeMs) {
         draw(0);
     }
 
+    public void bindData(TextureShaderProgram textureProgram) {
+        vertexArray.setVertexAttribPointer(
+          0,
+          textureProgram.getPositionAttributeLocation(),
+          POSITION_COMPONENT_COUNT,
+          STRIDE
+        );
+
+        vertexArray.setVertexAttribPointer(
+          POSITION_COMPONENT_COUNT,
+          textureProgram.getTextureCoordinatesAttributeLocation(),
+          TEXTURE_COORDINATES_COMPONENT_COUNT,
+          STRIDE
+        );
+    }
+
     public void draw(int textureIndex) {
+        /*
         GLES20.glUseProgram(shaderProgramHandle);
 
         // Set the active texture unit to texture unit 0.
@@ -333,7 +401,8 @@ public class BaseDrawer implements GLDrawable {
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureHandle[textureIndex]);
         // Tell the texture uniform sampler to use this texture in the shader by binding to texture unit 0.
         GLES20.glUniform1i(mTextureUniformHandle, 0);
-
+        */
+        /*
         // Pass in the position information
         verticesPosition.position(0);
         GLES20.glVertexAttribPointer(mPositionHandle, POSITION_DATASIZE, GLES20.GL_FLOAT, false,
@@ -345,15 +414,17 @@ public class BaseDrawer implements GLDrawable {
         GLES20.glVertexAttribPointer(mTextureCoordinateHandle, TEXTURE_COORD_DATASIZE, GLES20.GL_FLOAT, false,
           0, texturePosition);
         GLES20.glEnableVertexAttribArray(mTextureCoordinateHandle);
+        */
 
         // blend
         GLES20.glEnable(GLES20.GL_BLEND);
         GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA);
 
         // set the matrix
-        GLES20.glUniformMatrix4fv(mMVPMatrixHandle, 1, false, mMVPMatrix, 0);
+        //GLES20.glUniformMatrix4fv(mMVPMatrixHandle, 1, false, mMVPMatrix, 0);
 
         // Draw the sticker.
-        GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, 6);
+        //GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, 6);
+        GLES20.glDrawArrays(GL_TRIANGLE_FAN, 0, 6);
     }
 }
