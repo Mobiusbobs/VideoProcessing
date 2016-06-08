@@ -118,7 +118,7 @@ public class BaseDrawer implements GLDrawable {
     protected int mPositionHandle;
 
     /** This is a handle to our texture data. */
-    private int[] textureHandle;
+    //private int[] textureHandle;
 
 
 
@@ -189,20 +189,25 @@ public class BaseDrawer implements GLDrawable {
         init(bitmap);
     }
 
+
+    // TODO remove bitmap part...
     public void init(Bitmap bitmap) throws IOException {
         init();
-        loadTexture(bitmap, 1);
+        //loadTexture(bitmap, 1);
     }
 
-    /*
+
     public void setVerticesCoordinate(float[] verticesPositionData) {
         this.verticesPositionData = verticesPositionData;
+        vertexArray = new VertexArray(verticesPositionData);
+        /*
         if (verticesPosition != null) {
             verticesPosition.clear();
             verticesPosition.put(verticesPositionData).position(0);
         }
+        */
     }
-    */
+
 
 
     /*
@@ -256,10 +261,15 @@ public class BaseDrawer implements GLDrawable {
 
     protected void calculateMVPMatrix()   {
         Matrix.setIdentityM(mModelMatrix, 0);
+        // rotation matrix
         Matrix.multiplyMM(mMVPMatrix, 0, mViewMatrix, 0, mModelMatrix, 0);
         Matrix.multiplyMM(mMVPMatrix, 0, mProjectionMatrix, 0, mMVPMatrix, 0);
     }
 
+
+
+
+    /*
     public void setTextureHandleSize(int textureCount) {
         textureHandle = new int[textureCount];
         // alloc texture
@@ -281,6 +291,11 @@ public class BaseDrawer implements GLDrawable {
         // Load the bitmap into the bound texture.
         GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, bitmap, 0);
     }
+    */
+
+
+
+
 
     /*
     // TODO shader compile flow should be reused
@@ -370,9 +385,13 @@ public class BaseDrawer implements GLDrawable {
     }
     */
 
+    public float[] getMVPMatrix() {
+        return mMVPMatrix;
+    }
+
     @Override
     public void draw(long timeMs) {
-        draw(0);
+        draw();
     }
 
     public void bindData(TextureShaderProgram textureProgram) {
@@ -391,7 +410,7 @@ public class BaseDrawer implements GLDrawable {
         );
     }
 
-    public void draw(int textureIndex) {
+    public void draw() {
         /*
         GLES20.glUseProgram(shaderProgramHandle);
 

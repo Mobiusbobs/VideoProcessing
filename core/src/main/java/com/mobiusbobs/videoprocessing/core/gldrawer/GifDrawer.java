@@ -2,10 +2,13 @@ package com.mobiusbobs.videoprocessing.core.gldrawer;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.opengl.GLES20;
+import android.opengl.GLUtils;
 import android.util.Log;
 
 
 import com.mobiusbobs.videoprocessing.core.gif.GifDecoder;
+import com.mobiusbobs.videoprocessing.core.program.TextureShaderProgram;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -24,6 +27,10 @@ public class GifDrawer implements GLDrawable {
 
   // composition
   private BaseDrawer stickerDrawer;
+
+  // --- handler ---
+  // textures
+  private int[] textureHandle;
 
   private GifDecoder gifDecoder;
   private long gifLastFrameTime;
@@ -78,17 +85,33 @@ public class GifDrawer implements GLDrawable {
   }
 
   public void loadTextures(int frameCount) {
-    stickerDrawer.setTextureHandleSize(frameCount);
+    textureHandle = new int[frameCount];
+    GLES20.glGenTextures(frameCount, textureHandle, 0);
+
     Log.d(TAG, "TOTAL frame count = " + frameCount);
 
     // load bitmap into GL texture of textureHandle[i]
     for (int i=0; i<frameCount; i++) {
       Bitmap bitmap = gifDecoder.getNextFrame();
-      stickerDrawer.loadBitmapToTexture(bitmap, i);
+      loadBitmapToTexture(bitmap, i);
       bitmap.recycle();
       gifDecoder.advance();
     }
   }
+
+  private void loadBitmapToTexture(Bitmap bitmap, int textureIndex) {
+    GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureHandle[textureIndex]);
+
+    // Set filtering
+    GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_NEAREST);
+    GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_NEAREST);
+
+    // Load the bitmap into the bound texture.
+    GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, bitmap, 0);
+
+    GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0);
+  }
+
 
   private int updateFrameIndex(long currentTimeMs) {
     if (gifLastFrameTime == 0) {
@@ -106,9 +129,30 @@ public class GifDrawer implements GLDrawable {
     return gifDecoder.getCurrentFrameIndex();
   }
 
-  public void draw(long timeMs) {
+  public int getTextureHandle(long timeMs) {
     int textureIndex = updateFrameIndex(timeMs);
-    stickerDrawer.draw(textureIndex);
+    return textureHandle[textureIndex];
+  }
+
+  public float[] getMVPMatrix() {
+    return getMVPMatrix();
+  }
+
+  public void bindData(TextureShaderProgram textureShaderProgram) {
+    stickerDrawer.bindData(textureShaderProgram);
+  }
+
+  public void draw(long timeMs) {
+    /*
+    int textureIndex = updateFrameIndex(timeMs);
+
+    GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+    // Bind the texture to this unit.
+    GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureHandle[textureIndex]);
+    // Tell the texture uniform sampler to use this texture in the shader by binding to texture unit 0.
+    GLES20.glUniform1i(mTextureUniformHandle, 0);
+    */
+    stickerDrawer.draw();
   }
 
 }

@@ -72,4 +72,30 @@ public class TextureHelper {
     return textureObjectIds[0];
   }
 
+  public static int loadTexture(Bitmap bitmap) {
+    // generate texture object
+    final int[] textureObjectIds = new int[1];
+    glGenTextures(1, textureObjectIds, 0);
+
+    if (textureObjectIds[0] == 0) {
+      if (LoggerConfig.ON) {
+        Log.w(TAG, "Could not generate a new OpenGL texture object.");
+      }
+      return 0;
+    }
+
+    // tell openGL that texture calls should be applied to this texture object
+    glBindTexture(GL_TEXTURE_2D, textureObjectIds[0]);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    // load bitmap into texture
+    texImage2D(GL_TEXTURE_2D, 0, bitmap, 0);
+
+    // unbind texture so wont accidentally change the texture
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    return textureObjectIds[0];
+  }
 }
