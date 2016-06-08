@@ -128,11 +128,11 @@ public class CoordConverter {
       // Order of coordinates: X, Y, S, T
       // Triangle Fan
       midx, midy, 0.5f, 0.5f, // center
-      x1,   y2,   0f,   1f,   // TL
-      x1,   y1,   0f,   0f,   // BL
-      x2,   y1,   1f,   0f,   // BR
-      x2,   y2,   1f,   1f,   // TR
-      x1,   y2,   0f,   1f    // TL
+      x1,   y2,   0f,   0f,   // TL
+      x1,   y1,   0f,   1f,   // BL
+      x2,   y1,   1f,   1f,   // BR
+      x2,   y2,   1f,   0f,   // TR
+      x1,   y2,   0f,   0f    // TL
     };
   }
 

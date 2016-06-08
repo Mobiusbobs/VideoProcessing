@@ -17,13 +17,9 @@ import com.mobiusbobs.videoprocessing.core.gles.surface.InputSurface;
 import com.mobiusbobs.videoprocessing.core.gles.surface.OutputSurface;
 import com.mobiusbobs.videoprocessing.core.program.BlurHShaderProgram;
 import com.mobiusbobs.videoprocessing.core.program.BlurVShaderProgram;
-import com.mobiusbobs.videoprocessing.core.program.TextureOpacityShaderProgram;
-import com.mobiusbobs.videoprocessing.core.program.TextureShaderProgram;
 import com.mobiusbobs.videoprocessing.core.tmp.BlurTable;
-import com.mobiusbobs.videoprocessing.core.tmp.Watermark;
 import com.mobiusbobs.videoprocessing.core.util.CoordConverter;
 import com.mobiusbobs.videoprocessing.core.util.FrameBufferHelper;
-import com.mobiusbobs.videoprocessing.core.util.TextureHelper;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -38,8 +34,6 @@ import static android.opengl.GLES20.GL_FRAMEBUFFER;
 import static android.opengl.GLES20.glBindFramebuffer;
 import static android.opengl.GLES20.glClear;
 import static android.opengl.GLES20.glViewport;
-import static android.opengl.Matrix.rotateM;
-import static android.opengl.Matrix.translateM;
 import static com.mobiusbobs.videoprocessing.core.util.CoordConverter.rectCoordToGLCoord;
 
 /**
@@ -95,6 +89,7 @@ public class VideoProcessor {
 
     // drawers
     private List<GLDrawable> drawerList;
+    private GLDrawable watermarkDrawer;
 
     // ----- process states -----
     private int videoExtractedFrameCount = 0;
@@ -155,23 +150,17 @@ public class VideoProcessor {
     private int fboBlurTextureId;
 
     // shader program
-    private TextureShaderProgram textureProgram;
     private BlurHShaderProgram blurHorizontalProgram;
     private BlurVShaderProgram blurVerticalProgram;
-    private TextureOpacityShaderProgram textureOpacityProgram;
 
     // data object
     private BlurTable blurTable;
-    private Watermark watermark;
 
     // matrix
     protected float[] mMVPMatrix = new float[16];
     protected float[] mModelMatrix = new float[16];
     protected float[] mViewMatrix = new float[16];
     protected float[] mProjectionMatrix = new float[16];
-
-    // watermark texture
-    private int textureWatermark;
 
 
 
@@ -230,6 +219,7 @@ public class VideoProcessor {
         for (GLDrawable drawer : drawerList) {
             drawer.init();
         }
+        watermarkDrawer.init();
 
         // --- audio encoder / decoder ---
         // Create a MediaCodec for the desired codec, then configure it as an encoder with
@@ -247,11 +237,8 @@ public class VideoProcessor {
 
         // object
         blurTable = new BlurTable();
-        watermark = new Watermark();
 
         // shader program
-        textureProgram = new TextureShaderProgram(context);
-        textureOpacityProgram = new TextureOpacityShaderProgram(context);
         blurHorizontalProgram = new BlurHShaderProgram(context);
         blurVerticalProgram = new BlurVShaderProgram(context);
 
@@ -264,9 +251,6 @@ public class VideoProcessor {
         tmp = FrameBufferHelper.createFrameBuffer(fboWidth, fboHeight);
         fboBlurId = tmp[0];
         fboBlurTextureId = tmp[1];
-
-        // load texture
-        textureWatermark = TextureHelper.loadTexture(context, R.drawable.logo_watermark);
 
 
 
@@ -736,10 +720,7 @@ public class VideoProcessor {
         blurTable.bindData(blurVerticalProgram);
         blurTable.draw();
 
-        textureOpacityProgram.useProgram();
-        textureOpacityProgram.setUniforms(mMVPMatrix, textureWatermark, opacity);
-        watermark.bindData(textureOpacityProgram);
-        watermark.draw();
+        watermarkDrawer.draw(animationTime);
         // ----------------------------------------
     }
 
@@ -761,9 +742,11 @@ public class VideoProcessor {
             long timeMs = timeUs / 1000;
             Log.d(TAG, "render video... timeMs = " + timeMs);
             outputSurface.drawImage();
+
             for (GLDrawable drawer : drawerList) {
                 drawer.draw(timeMs);
             }
+
         }
         // render watermark animation
         else {
@@ -1204,12 +1187,18 @@ public class VideoProcessor {
     // ----- builder -----
     public static class Builder {
         private List<GLDrawable> drawableList = new ArrayList<>();
+        private GLDrawable watermarkDrawer;
         private int inputResId = -1;
         private int musicResId = -1;
         private String musicFilePath = null;
         private String inputFilePath = null;
         private String outputFilePath = null;
         private OnProgressListener onProgressListener = null;
+
+        public Builder setWatermarkDrawer(GLDrawable watermarkDrawer) {
+            this.watermarkDrawer = watermarkDrawer;
+            return this;
+        }
 
         public Builder addDrawer(GLDrawable drawer) {
             drawableList.add(drawer);
@@ -1264,6 +1253,7 @@ public class VideoProcessor {
         public VideoProcessor build(Context context) throws IOException {
             VideoProcessor processor = new VideoProcessor(context);
             processor.drawerList = drawableList;
+            processor.watermarkDrawer = watermarkDrawer;
 
             if (inputResId != -1) {
                 processor.videoExtractor = Extractor.createExtractor(context, inputResId);
