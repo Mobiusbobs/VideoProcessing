@@ -24,6 +24,7 @@ import com.mobiusbobs.videoprocessing.core.tmp.Watermark;
 import com.mobiusbobs.videoprocessing.core.util.CoordConverter;
 import com.mobiusbobs.videoprocessing.core.util.FrameBufferHelper;
 import com.mobiusbobs.videoprocessing.core.util.MatrixHelper;
+import com.mobiusbobs.videoprocessing.core.util.TextureHelper;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -166,13 +167,15 @@ public class VideoProcessor {
     private Watermark watermark;
 
     // matrix
-    //private float[] projectionMatrix = new float[16];
-    //protected float[] modelMatrix = new float[16];
-
     protected float[] mMVPMatrix = new float[16];
     protected float[] mModelMatrix = new float[16];
     protected float[] mViewMatrix = new float[16];
     protected float[] mProjectionMatrix = new float[16];
+
+    // watermark texture
+    private int textureWatermark;
+
+
 
 
     private Context context;
@@ -262,6 +265,9 @@ public class VideoProcessor {
         tmp = FrameBufferHelper.createFrameBuffer(fboWidth, fboHeight);
         fboBlurId = tmp[0];
         fboBlurTextureId = tmp[1];
+
+        // load texture
+        textureWatermark = TextureHelper.loadTexture(context, R.drawable.logo_watermark);
 
 
 
@@ -676,6 +682,7 @@ public class VideoProcessor {
         }
         else if (timeMs < 4000) {
             blur = (float) (1 - (4000 - timeMs) / 2000.0);
+            blur = (float) (1 - (4000 - timeMs) / 2000.0);
             opacity = (float) (1 - (4000 - timeMs) / 2000.0);
         }
         else {
@@ -720,10 +727,16 @@ public class VideoProcessor {
         setupViewport(720, 1280);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+
         blurVerticalProgram.useProgram();
         blurVerticalProgram.setUniforms(mMVPMatrix, fboBlurTextureId, blur); //fboTextureId //texture
         blurTable.bindData(blurVerticalProgram);
         blurTable.draw();
+
+        textureOpacityProgram.useProgram();
+        textureOpacityProgram.setUniforms(mMVPMatrix, textureWatermark, opacity);
+        watermark.bindData(textureOpacityProgram);
+        watermark.draw();
         // ----------------------------------------
 
 
