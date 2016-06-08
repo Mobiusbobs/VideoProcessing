@@ -81,7 +81,7 @@ public class BaseDrawer implements GLDrawable {
         // calculate matrix
         setupProjectionMatrix();
         setupViewMatrix();
-        calculateMVPMatrix();
+        setMVPMatrix(0);
     }
 
     public void init(float[] verticesPositionData) throws IOException {
@@ -129,11 +129,12 @@ public class BaseDrawer implements GLDrawable {
         Matrix.setLookAtM(mViewMatrix, 0, eyeX, eyeY, eyeZ, lookX, lookY, lookZ, upX, upY, upZ);
     }
 
-    protected void calculateMVPMatrix()   {
+    public float[] setMVPMatrix(float angleInDegrees)   {
         Matrix.setIdentityM(mModelMatrix, 0);
-        // rotation matrix
+        Matrix.rotateM(mModelMatrix, 0, angleInDegrees, 0.0f, 0.0f, 1.0f);
         Matrix.multiplyMM(mMVPMatrix, 0, mViewMatrix, 0, mModelMatrix, 0);
         Matrix.multiplyMM(mMVPMatrix, 0, mProjectionMatrix, 0, mMVPMatrix, 0);
+        return mMVPMatrix;
     }
 
     public float[] getMVPMatrix() {
