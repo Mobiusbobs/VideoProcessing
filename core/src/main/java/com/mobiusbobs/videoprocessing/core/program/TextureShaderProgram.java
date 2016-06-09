@@ -54,7 +54,7 @@ public class TextureShaderProgram extends ShaderProgram {
     // Pass the matrix into the shader program.
     glUniformMatrix4fv(uMatrixLocation, 1, false, matrix, 0);
 
-    // Set the active texture unit to texture unit 0.
+    // Set the active texture unit to texture unit 1.
     glActiveTexture(GL_TEXTURE1);
 
     // Bind the texture to this unit.
@@ -66,7 +66,7 @@ public class TextureShaderProgram extends ShaderProgram {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
     // Tell the texture uniform sampler to use this texture in the shader by
-    // telling it to read from texture unit 0.
+    // telling it to read from texture unit 1.
     glUniform1i(uTextureUnitLocation, 1);
   }
 

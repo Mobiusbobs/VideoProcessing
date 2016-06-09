@@ -112,7 +112,6 @@ public class GifDrawer implements GLDrawable {
     GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0);
   }
 
-
   private int updateFrameIndex(long currentTimeMs) {
     if (gifLastFrameTime == 0) {
       gifLastFrameTime = currentTimeMs;
@@ -131,11 +130,12 @@ public class GifDrawer implements GLDrawable {
 
   public int getTextureHandle(long timeMs) {
     int textureIndex = updateFrameIndex(timeMs);
-    return textureHandle[textureIndex];
+    int textureHandleId = textureHandle[textureIndex];
+    return textureHandleId;
   }
 
   public float[] getMVPMatrix() {
-    return getMVPMatrix();
+    return stickerDrawer.getMVPMatrix();
   }
 
   public void bindData(TextureShaderProgram textureShaderProgram) {
