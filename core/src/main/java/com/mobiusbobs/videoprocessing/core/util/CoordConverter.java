@@ -33,6 +33,7 @@ public class CoordConverter {
 
   private int screenWidth;
   private int screenHeight;
+  private float scale;
 
   private Context context;
 
@@ -41,6 +42,7 @@ public class CoordConverter {
     this.context = context;
     this.screenWidth = screenWidth;
     this.screenHeight = screenHeight;
+    scale = context.getResources().getDisplayMetrics().density;
     Log.d(TAG, "screenWidth="+screenWidth + ", screenHeight="+screenHeight);
   }
 
@@ -65,10 +67,11 @@ public class CoordConverter {
 
   // align bottom right corner
   private float[] calcAlignBtmRightVertices(int[] imgDimen, int margin) {
-    float x1 = rectCoordToGLCoord(screenWidth - imgDimen[0] - margin, screenWidth); // L
-    float x2 = rectCoordToGLCoord(screenWidth - margin, screenWidth); // R
-    float y1 = rectCoordToGLCoord(margin, screenHeight); //B
-    float y2 = rectCoordToGLCoord(imgDimen[1] + margin, screenHeight); //T
+    int trueMargin = (int)(scale * margin);
+    float x1 = rectCoordToGLCoord(screenWidth - imgDimen[0] - trueMargin, screenWidth); // L
+    float x2 = rectCoordToGLCoord(screenWidth - trueMargin, screenWidth); // R
+    float y1 = rectCoordToGLCoord(trueMargin, screenHeight); //B
+    float y2 = rectCoordToGLCoord(imgDimen[1] + trueMargin, screenHeight); //T
 
     float[] verticesCoord = getVerticesCoord(x1, y1, x2, y2);
     printVertices(verticesCoord);
@@ -76,32 +79,27 @@ public class CoordConverter {
   }
 
   // returns vertices that is centered, and scale to match width while keeping aspect ratio
-  public float[] getAlignCenterVertices(int drawableId) {
+  public float[] getAlignCenterVertices(int drawableId, int margin) {
     // image [width, height]
     int[] imgDimen = getImageDimen(drawableId);
-    return calcAlignCenterVertices(imgDimen[0], imgDimen[1]);
+    return calcAlignCenterVertices(imgDimen[0], imgDimen[1], margin);
   }
 
-  public float[] getAlignCenterVertices(String imgPath) {
+  public float[] getAlignCenterVertices(String imgPath, int margin) {
     // image [width, height]
     int[] imgDimen = getImageDimen(imgPath);
-    return calcAlignCenterVertices(imgDimen[0], imgDimen[1]);
+    return calcAlignCenterVertices(imgDimen[0], imgDimen[1], margin);
   }
 
   // align center with width stretch to side while maintain aspect ratio
-  private float[] calcAlignCenterVertices(int imageWidth, int imageHeight) {
-    // init height coordinate in GL coordinate
-    float initHeightCoordinate = (float)imageHeight / screenHeight;
+  private float[] calcAlignCenterVertices(int imageWidth, int imageHeight, int margin) {
+    // screen width to image width ratio
+    float imgScreenWidthRatio = (float)(screenWidth - 2 * margin) / imageWidth;
 
-    // screen width to image width ratio  //measure the amount of width we need to shrink/stretch
-    float imgScreenWidthRatio = (float)screenWidth / imageWidth;
-
-    Log.d(TAG, "imgScreenWidthRatio="+imgScreenWidthRatio+", initHeightCoordinate="+initHeightCoordinate);
-
-    float x1 = -1.0f;  // left
-    float x2 = 1.0f;  // right
-    float y1 = -1.0f * initHeightCoordinate * imgScreenWidthRatio;  // bottom
-    float y2 = 1.0f * initHeightCoordinate * imgScreenWidthRatio;   // top
+    float x1 = rectCoordToGLCoord(margin, screenWidth); // L
+    float x2 = rectCoordToGLCoord(screenWidth - margin, screenWidth); // R
+    float y1 = rectCoordToGLCoord((int)((screenHeight - imageHeight * imgScreenWidthRatio)/ 2), screenHeight); //B
+    float y2 = rectCoordToGLCoord((int)((screenHeight + imageHeight * imgScreenWidthRatio)/ 2), screenHeight); //T
 
     float[] verticesCoord = getVerticesCoord(x1,y1,x2,y2);
     printVertices(verticesCoord);
@@ -121,15 +119,18 @@ public class CoordConverter {
   }
 
   public static float[] getVerticesCoord(float x1, float y1, float x2, float y2) {
-    float z = 0.0f;
-    return new float[]{
-      x1, y1, z,  // BL
-      x2, y1, z,  // BR
-      x2, y2, z,  // TR
+    float midx = (x1 + x2) / 2;
+    float midy = (y1 + y2) / 2;
 
-      x1, y1, z,  // BL
-      x2, y2, z,  // TR
-      x1, y2, z   // TL
+    return new float[] {
+      // Order of coordinates: X, Y, S, T
+      // Triangle Fan
+      midx, midy, 0.5f, 0.5f, // center
+      x1,   y2,   0f,   0f,   // TL
+      x1,   y1,   0f,   1f,   // BL
+      x2,   y1,   1f,   1f,   // BR
+      x2,   y2,   1f,   0f,   // TR
+      x1,   y2,   0f,   0f    // TL
     };
   }
 

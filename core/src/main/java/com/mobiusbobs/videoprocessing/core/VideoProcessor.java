@@ -11,17 +11,26 @@ import android.util.Log;
 import android.view.Surface;
 
 import com.mobiusbobs.videoprocessing.core.codec.Extractor;
+import com.mobiusbobs.videoprocessing.core.gldrawer.BlurDrawer;
 import com.mobiusbobs.videoprocessing.core.gldrawer.GLDrawable;
 import com.mobiusbobs.videoprocessing.core.gles.surface.InputSurface;
 import com.mobiusbobs.videoprocessing.core.gles.surface.OutputSurface;
 import com.mobiusbobs.videoprocessing.core.util.CoordConverter;
+import com.mobiusbobs.videoprocessing.core.util.FrameBufferHelper;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static android.opengl.GLES20.GL_COLOR_BUFFER_BIT;
+import static android.opengl.GLES20.GL_DEPTH_BUFFER_BIT;
+import static android.opengl.GLES20.GL_FRAMEBUFFER;
+import static android.opengl.GLES20.glBindFramebuffer;
+import static android.opengl.GLES20.glClear;
+import static android.opengl.GLES20.glViewport;
 import static com.mobiusbobs.videoprocessing.core.util.CoordConverter.rectCoordToGLCoord;
 
 /**
@@ -77,6 +86,19 @@ public class VideoProcessor {
 
     // drawers
     private List<GLDrawable> drawerList;
+    private GLDrawable watermarkDrawer;
+    private BlurDrawer blurDrawer;
+
+    // FBO (Frame Buffer Object)
+    // should be power of 2 (POT)
+    private int fboWidth = 1024;
+    private int fboHeight = 1024;
+    // first FBO that stores all the render and apply first blur
+    private int fboId;
+    private int fboTextureId;
+    // second FBO that take the first FBO and apply second blur
+    private int fboBlurId;
+    private int fboBlurTextureId;
 
     // ----- process states -----
     private int videoExtractedFrameCount = 0;
@@ -125,8 +147,12 @@ public class VideoProcessor {
     // for audio hotfix
     long lastAudioPresentationTime = 0;
 
+    private Context context;
+
     // Constructor
-    private VideoProcessor() {}
+    private VideoProcessor(Context context) {
+        this.context = context;
+    }
 
     public void process() throws Exception {
 
@@ -161,6 +187,7 @@ public class VideoProcessor {
         // our desired properties. Request a Surface to use for input.
         MediaFormat outputVideoFormat = createOutputVideoFormat(inputVideoFormat);
         AtomicReference<Surface> inputSurfaceReference = new AtomicReference<>();
+        outputVideoFormat.setLong(MediaFormat.KEY_DURATION, 0); // videoDuration + 5 * 1000 * 1000); // TODO
         videoEncoder = createVideoEncoder(videoCodecInfo, outputVideoFormat, inputSurfaceReference);
         inputSurface = new InputSurface(inputSurfaceReference.get());
         inputSurface.makeCurrent();
@@ -174,6 +201,20 @@ public class VideoProcessor {
         for (GLDrawable drawer : drawerList) {
             drawer.init();
         }
+        watermarkDrawer.init();
+        // blur drawer
+        blurDrawer = new BlurDrawer(context);
+        blurDrawer.init();
+
+        // --- create fbo to render blur for watermark animation ---
+        // create fbo
+        int[] tmp = FrameBufferHelper.createFrameBuffer(fboWidth, fboHeight);
+        fboId = tmp[0];
+        fboTextureId = tmp[1];
+        // create fboBlur
+        tmp = FrameBufferHelper.createFrameBuffer(fboWidth, fboHeight);
+        fboBlurId = tmp[0];
+        fboBlurTextureId = tmp[1];
 
         // --- audio encoder / decoder ---
         // Create a MediaCodec for the desired codec, then configure it as an encoder with
@@ -234,7 +275,13 @@ public class VideoProcessor {
         boolean muxing = false;
 
         long audioPTimeOffset = 0;
-        long audioMaxTime = videoDuration;
+
+        long animationTime = 5 * 1000 * 1000;    // TODO
+        long videoTotalDuration = videoDuration + animationTime; // TODO
+        long lastPTimeUs = 0;
+        boolean hasVideoEncoderEndSignalSent = false;
+
+        long audioMaxTime = videoTotalDuration;
 
         while (!videoEncoderDone || !audioEncoderDone) {
             // --- extract video from extractor ---
@@ -257,6 +304,7 @@ public class VideoProcessor {
 
                 long sampleTime = audioExtractor.getSampleTime();
                 if (sampleTime == -1) {
+                    Log.d("WATER", "audioExtractor: sampleTime reached! Loop!!!");
                     audioMaxTime -= audioDuration;
                     audioPTimeOffset += audioDuration;
                     audioExtractor.seekTo(0, MediaExtractor.SEEK_TO_NEXT_SYNC);
@@ -265,22 +313,39 @@ public class VideoProcessor {
             }
 
             // --- pull output frames from video decoder and feed it to encoder ---
-            if (!videoDecoderDone && (encoderOutputVideoFormat == null || muxing)) {
-
-                boolean frameAvailable = checkVideoDecodeState(videoDecoder, videoDecoderOutputBufferInfo);
-
-                if ((videoDecoderOutputBufferInfo.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
-                    Log.d(TAG, "FLAG: videoDecoderDone!!! video decoder: EOS");
-                    videoDecoderDone = true;
-                }
-
-                if (frameAvailable) {
-                    videoDecodedFrameCount++;
-                    render(outputSurface, videoDecoderOutputBufferInfo, inputSurface);
-                }
-
+            if (encoderOutputVideoFormat == null || muxing) {
                 if (videoDecoderDone) {
-                    videoEncoder.signalEndOfInputStream();
+                    if (lastPTimeUs >= videoTotalDuration) {
+                        if (!hasVideoEncoderEndSignalSent) {
+                            Log.d(TAG, "-----signal end of input stream");
+                            videoEncoder.signalEndOfInputStream();
+                            hasVideoEncoderEndSignalSent = true;
+                        }
+                    } else {
+                        long timeUs = lastPTimeUs + 20 * 1000;
+                        Log.d(TAG, "-----render extended video timeUs: " + timeUs);
+                        render(outputSurface, inputSurface, timeUs, videoDuration);
+                        lastPTimeUs = timeUs;
+                    }
+
+                    Log.d("WATER", "Video(extended) timeStamp=" + lastPTimeUs + ", duration=" + videoTotalDuration);
+
+                } else {
+                    boolean frameAvailable = checkVideoDecodeState(videoDecoder, videoDecoderOutputBufferInfo);
+
+                    if (frameAvailable) {
+                        videoDecodedFrameCount++;
+                        long timeUs = videoDecoderOutputBufferInfo.presentationTimeUs;
+
+                        outputSurface.awaitNewImage();
+                        render(outputSurface, inputSurface, timeUs, videoDuration);
+                        lastPTimeUs = timeUs;
+                    }
+
+                    if ((videoDecoderOutputBufferInfo.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
+                        Log.d(TAG, "FLAG: videoDecoderDone!!! video decoder: EOS");
+                        videoDecoderDone = true;
+                    }
                 }
             }
 
@@ -292,7 +357,7 @@ public class VideoProcessor {
             // Feed the pending decoded audio buffer to the audio encoder.
             // TODO check to see if I can implement this into audio Decoder...
             if (pendingAudioDecoderOutputBufferIndex != -1) {
-                audioDecoderDone = pipeAudioStream(audioDecoder, audioEncoder, audioPTimeOffset);
+                audioDecoderDone = pipeAudioStream(audioDecoder, audioEncoder, audioPTimeOffset, videoDuration);
             }
 
             // --- mux video ---
@@ -422,11 +487,11 @@ public class VideoProcessor {
         if (sampleTime > maxTime) {
             Log.d(TAG, "FLAG: reach videoDuration: duration=" + maxTime + ", sampleTime=" + sampleTime);
             audioDecoder.queueInputBuffer(
-                    decoderInputBufferIndex,
-                    0,
-                    0,
-                    0,
-                    MediaCodec.BUFFER_FLAG_END_OF_STREAM);
+              decoderInputBufferIndex,
+              0,
+              0,
+              0,
+              MediaCodec.BUFFER_FLAG_END_OF_STREAM);
             return true;
         }
 
@@ -474,7 +539,7 @@ public class VideoProcessor {
             MediaCodec.BufferInfo videoDecoderOutputBufferInfo
     ) {
         int decoderOutputBufferIndex = videoDecoder.dequeueOutputBuffer(
-                videoDecoderOutputBufferInfo, TIMEOUT_USEC);
+          videoDecoderOutputBufferInfo, TIMEOUT_USEC);
 
         if (decoderOutputBufferIndex == MediaCodec.INFO_TRY_AGAIN_LATER) {
             Log.d(TAG, "no video decoder output buffer");
@@ -507,27 +572,88 @@ public class VideoProcessor {
         return frameAvailable;
     }
 
+    private void renderWatermarkAnimation(
+      OutputSurface outputSurface,
+      long timeUs,
+      long videoDuration
+    ) {
+        float blur;
+        long animationTime = (timeUs - videoDuration) / 1000L;
+
+        // use 2 sec to animate blur and fade in
+        if (animationTime < 2000) {
+            blur = (float) (1 - (2000 - animationTime) / 2000.0);
+        } else {
+            blur = 1.0f;
+        }
+
+        // -------- render to fbo ---------
+        glBindFramebuffer(GL_FRAMEBUFFER, fboId);
+        glViewport(0, 0, fboWidth, fboHeight);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        // draw to texture
+        outputSurface.drawImage();
+        for (GLDrawable drawer : drawerList) {
+            drawer.draw(videoDuration);
+        }
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        // -------------------------------
+
+        // -------- render to fbo 2 ---------
+        glBindFramebuffer(GL_FRAMEBUFFER, fboBlurId);
+        glViewport(0, 0, fboWidth, fboHeight);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        // blur texture from first fbo and render to second fbo
+        blurDrawer.drawHorizontalBlur(fboTextureId, blur);
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        // -------------------------------
+
+        // -------- render to the screen ---------
+        glViewport(0, 0, 720, 1280);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        // blur texture from second fbo and render to screen
+        blurDrawer.drawVerticalBlur(fboBlurTextureId, blur);
+
+
+        watermarkDrawer.draw(animationTime);
+        // ----------------------------------------
+    }
 
     // ----- video draw function -----
     private void render(
             // surface from decoder
             OutputSurface outputSurface,
-            MediaCodec.BufferInfo videoDecoderOutputBufferInfo,
 
             // surface to encoder
-            InputSurface inputSurface
-    ) {
-        // fetch frame
-        outputSurface.awaitNewImage();
-        outputSurface.drawImage();
+            InputSurface inputSurface,
 
-        long timeMs = videoDecoderOutputBufferInfo.presentationTimeUs / 1000;
-        for (GLDrawable drawer : drawerList) {
-            drawer.draw(timeMs);
+            // presentation time in microsecond (10^-6s)
+            long timeUs,
+
+            long videoDuration
+    ) {
+        // render video
+        if (timeUs < videoDuration) {
+            long timeMs = timeUs / 1000;
+            Log.d(TAG, "render video... timeMs = " + timeMs);
+            outputSurface.drawImage();
+
+            for (GLDrawable drawer : drawerList) {
+                drawer.draw(timeMs);
+            }
+
+        }
+        // render watermark animation
+        else {
+            renderWatermarkAnimation(outputSurface, timeUs, videoDuration);
         }
 
-        inputSurface.setPresentationTime(videoDecoderOutputBufferInfo.presentationTimeUs * 1000);
-
+        inputSurface.setPresentationTime(timeUs * 1000);
         Log.d(TAG, "input surface: swap buffers");
         inputSurface.swapBuffers();
 
@@ -576,7 +702,7 @@ public class VideoProcessor {
      * @param audioEncoder The audio encoder to
      * @return audioDecoderDone
      */
-    private boolean pipeAudioStream(MediaCodec audioDecoder, MediaCodec audioEncoder, long pTimeOffset) {
+    private boolean pipeAudioStream(MediaCodec audioDecoder, MediaCodec audioEncoder, long pTimeOffset, long thresholdTime) {
         int encoderInputBufferIndex = audioEncoder.dequeueInputBuffer(TIMEOUT_USEC);
         if (encoderInputBufferIndex < 0) {
             Log.e(TAG, "audioEncoder.dequeueInputBuffer: no audio encoder input buffer");
@@ -596,14 +722,55 @@ public class VideoProcessor {
                     audioDecoderOutputBuffers[pendingAudioDecoderOutputBufferIndex].duplicate();
             decoderOutputBuffer.position(audioDecoderOutputBufferInfo.offset);
             decoderOutputBuffer.limit(audioDecoderOutputBufferInfo.offset + size);
+
             encoderInputBuffer.position(0);
-            encoderInputBuffer.put(decoderOutputBuffer);
+
+            // handle extra frame
+            if (presentationTime >= thresholdTime) {
+                Log.d("WATER", "MediaCodec,BufferInfo: encoderInputBufferIndex = " + encoderInputBufferIndex);
+                Log.d("WATER", "MediaCodec,BufferInfo: size = " + audioDecoderOutputBufferInfo.size);
+                Log.d("WATER", "MediaCodec,BufferInfo: presentationTimeUs with offset... = " + presentationTime);
+                Log.d("WATER", "MediaCodec,BufferInfo: flags = " + audioDecoderOutputBufferInfo.flags);
+
+
+                // empty
+                byte[] bytes = new byte[size];
+                ByteBuffer emptyBuffer = ByteBuffer.wrap(bytes);
+                emptyBuffer.position(0);
+
+                // fade
+                byte[] fadeArray = new byte[size];
+                for(int i=0; i < fadeArray.length/2; i++) {
+                    int index = i*2;
+                    ByteBuffer bb = ByteBuffer.allocate(2);
+                    bb.order(ByteOrder.LITTLE_ENDIAN);
+                    bb.put(decoderOutputBuffer.get(index));
+                    bb.put(decoderOutputBuffer.get(index + 1));
+                    short tmp = (short)(bb.getShort(0) / 8);    //cut the volume in half
+
+                    bb.putShort(0, tmp);
+                    fadeArray[index] = bb.get(0);
+                    fadeArray[index + 1] = bb.get(1);
+                }
+                ByteBuffer fadeBuffer = ByteBuffer.wrap(fadeArray);
+                fadeBuffer.position(0);
+
+
+                emptyBuffer.position(0);
+                encoderInputBuffer.put(fadeBuffer);
+
+            // normal case
+            } else {
+                encoderInputBuffer.put(decoderOutputBuffer);
+            }
+
             audioEncoder.queueInputBuffer(
-                    encoderInputBufferIndex,
-                    0,
-                    size,
-                    presentationTime,
-                    audioDecoderOutputBufferInfo.flags);
+              encoderInputBufferIndex,
+              0,
+              size,
+              presentationTime,
+              audioDecoderOutputBufferInfo.flags);
+
         }
         audioDecoder.releaseOutputBuffer(pendingAudioDecoderOutputBufferIndex, false);
         pendingAudioDecoderOutputBufferIndex = -1;
@@ -633,6 +800,7 @@ public class VideoProcessor {
             videoEncoderOutputBuffers = videoEncoder.getOutputBuffers();
             return false;
         }
+
         if (encoderOutputBufferIndex == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
             Log.e(TAG, "video encoder: output format changed");
             if (outputVideoTrack >= 0) {
@@ -642,8 +810,8 @@ public class VideoProcessor {
             return false;
         }
 
-        ByteBuffer encoderOutputBuffer =
-                videoEncoderOutputBuffers[encoderOutputBufferIndex];
+        ByteBuffer encoderOutputBuffer = videoEncoderOutputBuffers[encoderOutputBufferIndex];
+
         if ((videoEncoderOutputBufferInfo.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0) {
             Log.d(TAG, "video encoder: codec config buffer");
             // Simply ignore codec config buffers.
@@ -652,12 +820,18 @@ public class VideoProcessor {
         }
 
         if (videoEncoderOutputBufferInfo.size != 0) {
-            muxer.writeSampleData(outputVideoTrack, encoderOutputBuffer, videoEncoderOutputBufferInfo);
+            muxer.writeSampleData(
+                    outputVideoTrack,
+                    encoderOutputBuffer,
+                    videoEncoderOutputBufferInfo
+            );
         }
+
         if ((videoEncoderOutputBufferInfo.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
             Log.d(TAG, "FLAG: videoEncoderDone!!! video encoder: EOS");
             return true;
         }
+
         videoEncoder.releaseOutputBuffer(encoderOutputBufferIndex, false);
         videoEncodedFrameCount++;
         return false;
@@ -802,6 +976,7 @@ public class VideoProcessor {
                 audioChannelCount
         );
 
+        Log.d("WATER", "audioChannelCount = " + audioChannelCount);
         outputAudioFormat.setInteger(MediaFormat.KEY_BIT_RATE, OUTPUT_AUDIO_BIT_RATE);
         outputAudioFormat.setInteger(MediaFormat.KEY_AAC_PROFILE, OUTPUT_AUDIO_AAC_PROFILE);
         outputAudioFormat.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, audioMaxInputSize);
@@ -912,12 +1087,18 @@ public class VideoProcessor {
     // ----- builder -----
     public static class Builder {
         private List<GLDrawable> drawableList = new ArrayList<>();
+        private GLDrawable watermarkDrawer;
         private int inputResId = -1;
         private int musicResId = -1;
         private String musicFilePath = null;
         private String inputFilePath = null;
         private String outputFilePath = null;
         private OnProgressListener onProgressListener = null;
+
+        public Builder setWatermarkDrawer(GLDrawable watermarkDrawer) {
+            this.watermarkDrawer = watermarkDrawer;
+            return this;
+        }
 
         public Builder addDrawer(GLDrawable drawer) {
             drawableList.add(drawer);
@@ -970,8 +1151,9 @@ public class VideoProcessor {
         }
 
         public VideoProcessor build(Context context) throws IOException {
-            VideoProcessor processor = new VideoProcessor();
+            VideoProcessor processor = new VideoProcessor(context);
             processor.drawerList = drawableList;
+            processor.watermarkDrawer = watermarkDrawer;
 
             if (inputResId != -1) {
                 processor.videoExtractor = Extractor.createExtractor(context, inputResId);
