@@ -10,7 +10,7 @@ import com.mobiusbobs.videoprocessing.core.util.CoordConverter;
 
 import java.io.IOException;
 
-import static com.mobiusbobs.videoprocessing.core.tmp.Constants.BYTES_PER_FLOAT;
+import static com.mobiusbobs.videoprocessing.core.util.Constants.BYTES_PER_FLOAT;
 
 /**
  * VideoProcessing

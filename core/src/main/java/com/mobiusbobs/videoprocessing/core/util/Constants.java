@@ -1,4 +1,4 @@
-package com.mobiusbobs.videoprocessing.core.tmp;
+package com.mobiusbobs.videoprocessing.core.util;
 
 /**
  * android

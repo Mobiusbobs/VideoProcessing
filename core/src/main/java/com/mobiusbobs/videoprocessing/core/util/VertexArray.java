@@ -7,7 +7,7 @@ import java.nio.FloatBuffer;
 import static android.opengl.GLES20.GL_FLOAT;
 import static android.opengl.GLES20.glEnableVertexAttribArray;
 import static android.opengl.GLES20.glVertexAttribPointer;
-import static com.mobiusbobs.videoprocessing.core.tmp.Constants.*;
+import static com.mobiusbobs.videoprocessing.core.util.Constants.*;
 
 /**
  * android

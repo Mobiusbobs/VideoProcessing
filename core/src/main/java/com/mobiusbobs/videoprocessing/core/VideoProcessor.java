@@ -7,17 +7,14 @@ import android.media.MediaCodecList;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
 import android.media.MediaMuxer;
-import android.opengl.Matrix;
 import android.util.Log;
 import android.view.Surface;
 
 import com.mobiusbobs.videoprocessing.core.codec.Extractor;
+import com.mobiusbobs.videoprocessing.core.gldrawer.BlurDrawer;
 import com.mobiusbobs.videoprocessing.core.gldrawer.GLDrawable;
 import com.mobiusbobs.videoprocessing.core.gles.surface.InputSurface;
 import com.mobiusbobs.videoprocessing.core.gles.surface.OutputSurface;
-import com.mobiusbobs.videoprocessing.core.program.BlurHShaderProgram;
-import com.mobiusbobs.videoprocessing.core.program.BlurVShaderProgram;
-import com.mobiusbobs.videoprocessing.core.tmp.BlurTable;
 import com.mobiusbobs.videoprocessing.core.util.CoordConverter;
 import com.mobiusbobs.videoprocessing.core.util.FrameBufferHelper;
 
@@ -150,11 +147,12 @@ public class VideoProcessor {
     private int fboBlurTextureId;
 
     // shader program
-    private BlurHShaderProgram blurHorizontalProgram;
-    private BlurVShaderProgram blurVerticalProgram;
+    //private BlurHShaderProgram blurHorizontalProgram;
+    //private BlurVShaderProgram blurVerticalProgram;
 
-    // data object
-    private BlurTable blurTable;
+    // blue Drawer object
+    private BlurDrawer blurDrawer;
+    //private BlurTable blurTable;
 
     // matrix
     protected float[] mMVPMatrix = new float[16];
@@ -220,6 +218,19 @@ public class VideoProcessor {
             drawer.init();
         }
         watermarkDrawer.init();
+        // blur drawer
+        blurDrawer = new BlurDrawer(context);
+        blurDrawer.init();
+
+        // --- create fbo to render blur for watermark animation ---
+        // create fbo
+        int[] tmp = FrameBufferHelper.createFrameBuffer(fboWidth, fboHeight);
+        fboId = tmp[0];
+        fboTextureId = tmp[1];
+        // create fboBlur
+        tmp = FrameBufferHelper.createFrameBuffer(fboWidth, fboHeight);
+        fboBlurId = tmp[0];
+        fboBlurTextureId = tmp[1];
 
         // --- audio encoder / decoder ---
         // Create a MediaCodec for the desired codec, then configure it as an encoder with
@@ -232,28 +243,6 @@ public class VideoProcessor {
 
         // --- muxer ---
         muxer = new MediaMuxer(outputPath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
-
-
-
-        // object
-        blurTable = new BlurTable();
-
-        // shader program
-        blurHorizontalProgram = new BlurHShaderProgram(context);
-        blurVerticalProgram = new BlurVShaderProgram(context);
-
-        // create fbo
-        int[] tmp = FrameBufferHelper.createFrameBuffer(fboWidth, fboHeight);
-        fboId = tmp[0];
-        fboTextureId = tmp[1];
-
-        // create fboBlur
-        tmp = FrameBufferHelper.createFrameBuffer(fboWidth, fboHeight);
-        fboBlurId = tmp[0];
-        fboBlurTextureId = tmp[1];
-
-
-
 
         // --- do the actual extract decode edit encode mux ---
         doProcess(
@@ -599,93 +588,24 @@ public class VideoProcessor {
         return frameAvailable;
     }
 
-
-    // ----- test function -------
-    protected void setupProjectionMatrix() {
-        // Create a new perspective projection matrix. The height will stay the same
-        // while the width will vary as per aspect ratio.
-        final float left = -1.0f;   //-ratio;
-        final float right = 1.0f;   //ratio;
-        final float bottom = -1.0f;
-        final float top = 1.0f;
-        final float near = -1.0f;   //1.0f;
-        final float far = 1.0f;     //10.0f;
-
-        Matrix.orthoM(mProjectionMatrix, 0, left, right, bottom, top, near, far);
-    }
-
-    protected void setupViewMatrix() {
-        // Position the eye behind the origin.
-        final float eyeX = 0.0f;
-        final float eyeY = 0.0f;
-        final float eyeZ = 1.0f;
-
-        // We are looking toward the distance
-        final float lookX = 0.0f;
-        final float lookY = 0.0f;
-        final float lookZ = 0.0f;
-
-        // Set our up vector. This is where our head would be pointing were we holding the camera.
-        final float upX = 0.0f;
-        final float upY = 1.0f;
-        final float upZ = 0.0f;
-
-        // Set the view matrix. This matrix can be said to represent the camera position.
-        // NOTE: In OpenGL 1, a ModelView matrix is used, which is a combination of a model and
-        // view matrix. In OpenGL 2, we can keep track of these matrices separately if we choose.
-        Matrix.setLookAtM(mViewMatrix, 0, eyeX, eyeY, eyeZ, lookX, lookY, lookZ, upX, upY, upZ);
-    }
-
-    protected void calculateMVPMatrix()   {
-        Matrix.setIdentityM(mModelMatrix, 0);
-        Matrix.multiplyMM(mMVPMatrix, 0, mViewMatrix, 0, mModelMatrix, 0);
-        Matrix.multiplyMM(mMVPMatrix, 0, mProjectionMatrix, 0, mMVPMatrix, 0);
-    }
-
-    private void setupViewport(int width, int height) {
-        // Set the OpenGL viewport to fill the entire surface.
-        glViewport(0, 0, width, height);
-
-        setupProjectionMatrix();
-        setupViewMatrix();
-        calculateMVPMatrix();
-
-        /*
-        MatrixHelper.perspectiveM(projectionMatrix, 45, (float) width / (float) height, 1f, 10f);
-
-        setIdentityM(modelMatrix, 0);
-        translateM(modelMatrix, 0, 0f, 0f, -2.5f);
-        rotateM(modelMatrix, 0, 0f, 1f, 0f, 0f);
-
-        final float[] temp = new float[16];
-        multiplyMM(temp, 0, projectionMatrix, 0, modelMatrix, 0);
-        System.arraycopy(temp, 0, projectionMatrix, 0, temp.length);
-        */
-    }
-
-
     private void renderWatermarkAnimation(
       OutputSurface outputSurface,
       long timeUs,
       long videoDuration
     ) {
         float blur;
-        float opacity;
         long animationTime = (timeUs - videoDuration) / 1000L;
 
         // use 2 sec to animate blur and fade in
         if (animationTime < 2000) {
             blur = (float) (1 - (2000 - animationTime) / 2000.0);
-            opacity = (float) (1 - (2000 - animationTime) / 2000.0);
         } else {
             blur = 1.0f;
-            opacity = 1.0f;
         }
-        Log.d("TEST", "Render: animationTime=" + animationTime + ", blur=" + blur + ", opacity=" + opacity);
 
         // -------- render to fbo ---------
         glBindFramebuffer(GL_FRAMEBUFFER, fboId);
-        setupViewport(fboWidth, fboWidth);
+        glViewport(0, 0, fboWidth, fboHeight);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // draw to texture
@@ -699,26 +619,22 @@ public class VideoProcessor {
 
         // -------- render to fbo 2 ---------
         glBindFramebuffer(GL_FRAMEBUFFER, fboBlurId);
-        setupViewport(fboWidth, fboWidth);
+        glViewport(0, 0, fboWidth, fboHeight);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        //draw to texture
-        blurHorizontalProgram.useProgram();
-        blurHorizontalProgram.setUniforms(mMVPMatrix, fboTextureId, blur);
-        blurTable.bindData(blurHorizontalProgram);
-        blurTable.draw();
+        // blur texture from first fbo and render to second fbo
+        blurDrawer.drawHorizontalBlur(fboTextureId, blur);
 
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         // -------------------------------
 
         // -------- render to the screen ---------
-        setupViewport(720, 1280);
+        glViewport(0, 0, 720, 1280);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        blurVerticalProgram.useProgram();
-        blurVerticalProgram.setUniforms(mMVPMatrix, fboBlurTextureId, blur); //fboTextureId //texture
-        blurTable.bindData(blurVerticalProgram);
-        blurTable.draw();
+        // blur texture from second fbo and render to screen
+        blurDrawer.drawVerticalBlur(fboBlurTextureId, blur);
+
 
         watermarkDrawer.draw(animationTime);
         // ----------------------------------------

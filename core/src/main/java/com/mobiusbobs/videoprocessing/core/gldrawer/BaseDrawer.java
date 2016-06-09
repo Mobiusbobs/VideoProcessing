@@ -9,7 +9,7 @@ import com.mobiusbobs.videoprocessing.core.util.VertexArray;
 import java.io.IOException;
 
 import static android.opengl.GLES20.GL_TRIANGLE_FAN;
-import static com.mobiusbobs.videoprocessing.core.tmp.Constants.BYTES_PER_FLOAT;
+import static com.mobiusbobs.videoprocessing.core.util.Constants.BYTES_PER_FLOAT;
 
 /**
  * VideoProcessing
