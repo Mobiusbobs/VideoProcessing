@@ -9,6 +9,8 @@ import java.io.IOException;
  * Copyright (c) 2016 MobiusBobs Inc. All rights reserved.
  */
 public interface GLDrawable {
+    void setRotate(float rotateInDeg);
+
     /**
      * init any OpenGL related things here
      * @throws IOException

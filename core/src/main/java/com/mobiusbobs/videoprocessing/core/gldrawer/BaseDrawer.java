@@ -53,6 +53,7 @@ public class BaseDrawer implements GLDrawable {
     protected final int TEXTURE_COORD_DATASIZE = 2;
     protected final int POSITION_DATASIZE = 3;
     protected final int BYTES_PER_FLOAT = 4;
+    private float rotateInDeg = 0.0f;
 
     // transformation
     protected int mMVPMatrixHandle;
@@ -123,8 +124,14 @@ public class BaseDrawer implements GLDrawable {
     }
 
     @Override
+    public void setRotate(float rotateInDeg) {
+        this.rotateInDeg = rotateInDeg;
+    }
+
+    @Override
     public void init() throws IOException {
         initCoordinateBuffer();
+
 
         // calculate matrix
         setupProjectionMatrix();
@@ -201,6 +208,7 @@ public class BaseDrawer implements GLDrawable {
 
     protected void calculateMVPMatrix()   {
         Matrix.setIdentityM(mModelMatrix, 0);
+        Matrix.rotateM(mModelMatrix, 0, rotateInDeg, 0.0f, 0.0f, 1.0f);
         Matrix.multiplyMM(mMVPMatrix, 0, mViewMatrix, 0, mModelMatrix, 0);
         Matrix.multiplyMM(mMVPMatrix, 0, mProjectionMatrix, 0, mMVPMatrix, 0);
     }
