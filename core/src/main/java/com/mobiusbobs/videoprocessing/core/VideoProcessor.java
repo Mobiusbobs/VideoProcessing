@@ -87,6 +87,18 @@ public class VideoProcessor {
     // drawers
     private List<GLDrawable> drawerList;
     private GLDrawable watermarkDrawer;
+    private BlurDrawer blurDrawer;
+
+    // FBO (Frame Buffer Object)
+    // should be power of 2 (POT)
+    private int fboWidth = 1024;
+    private int fboHeight = 1024;
+    // first FBO that stores all the render and apply first blur
+    private int fboId;
+    private int fboTextureId;
+    // second FBO that take the first FBO and apply second blur
+    private int fboBlurId;
+    private int fboBlurTextureId;
 
     // ----- process states -----
     private int videoExtractedFrameCount = 0;
@@ -134,34 +146,6 @@ public class VideoProcessor {
 
     // for audio hotfix
     long lastAudioPresentationTime = 0;
-
-    // FBO
-    // should be power of 2 (POT)
-    private int fboWidth = 1024;
-    private int fboHeight = 1024;
-    // first FBO that stores all the render and apply first blur
-    private int fboId;
-    private int fboTextureId;
-    // second FBO that take the first FBO and apply second blur
-    private int fboBlurId;
-    private int fboBlurTextureId;
-
-    // shader program
-    //private BlurHShaderProgram blurHorizontalProgram;
-    //private BlurVShaderProgram blurVerticalProgram;
-
-    // blue Drawer object
-    private BlurDrawer blurDrawer;
-    //private BlurTable blurTable;
-
-    // matrix
-    protected float[] mMVPMatrix = new float[16];
-    protected float[] mModelMatrix = new float[16];
-    protected float[] mViewMatrix = new float[16];
-    protected float[] mProjectionMatrix = new float[16];
-
-
-
 
     private Context context;
 
