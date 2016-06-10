@@ -161,7 +161,6 @@ public class VideoProcessor {
         // our desired properties. Request a Surface to use for input.
         MediaFormat outputVideoFormat = createOutputVideoFormat(inputVideoFormat);
         AtomicReference<Surface> inputSurfaceReference = new AtomicReference<>();
-        outputVideoFormat.setLong(MediaFormat.KEY_DURATION, 0); // videoDuration + 5 * 1000 * 1000); // TODO
         videoEncoder = createVideoEncoder(videoCodecInfo, outputVideoFormat, inputSurfaceReference);
         inputSurface = new InputSurface(inputSurfaceReference.get());
         inputSurface.makeCurrent();
@@ -240,7 +239,7 @@ public class VideoProcessor {
         long lastPTimeUs = 0;
         boolean hasVideoEncoderEndSignalSent = false;
 
-        long audioMaxTime = videoTotalDuration;
+        long audioRemainTime = videoTotalDuration;
 
         while (!videoEncoderDone || !audioEncoderDone) {
             // --- extract video from extractor ---
@@ -258,12 +257,12 @@ public class VideoProcessor {
                         audioExtractor,
                         audioDecoder,
                         audioDecoderInputBuffers,
-                        audioMaxTime
+                        audioRemainTime
                 );
 
                 long sampleTime = audioExtractor.getSampleTime();
                 if (sampleTime == -1) {
-                    audioMaxTime -= audioDuration;
+                    audioRemainTime -= audioDuration;
                     audioPTimeOffset += audioDuration;
                     audioExtractor.seekTo(0, MediaExtractor.SEEK_TO_NEXT_SYNC);
                     audioDecoder.flush();
@@ -288,6 +287,11 @@ public class VideoProcessor {
                 } else {
                     boolean frameAvailable = checkVideoDecodeState(videoDecoder, videoDecoderOutputBufferInfo);
 
+                    if ((videoDecoderOutputBufferInfo.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
+                        Log.d(TAG, "FLAG: videoDecoderDone!!! video decoder: EOS");
+                        videoDecoderDone = true;
+                    }
+
                     if (frameAvailable) {
                         videoDecodedFrameCount++;
                         long timeUs = videoDecoderOutputBufferInfo.presentationTimeUs;
@@ -295,11 +299,6 @@ public class VideoProcessor {
                         outputSurface.awaitNewImage();
                         render(outputSurface, inputSurface, timeUs);
                         lastPTimeUs = timeUs;
-                    }
-
-                    if ((videoDecoderOutputBufferInfo.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
-                        Log.d(TAG, "FLAG: videoDecoderDone!!! video decoder: EOS");
-                        videoDecoderDone = true;
                     }
                 }
             }
@@ -404,21 +403,22 @@ public class VideoProcessor {
         // 4.) queue the buffer to codec to process
         if (size >= 0) {
             videoDecoder.queueInputBuffer(
-                decoderInputBufferIndex,
-                0,
-                size,
-                presentationTime,
-                videoExtractor.getSampleFlags());
+                    decoderInputBufferIndex,
+                    0,
+                    size,
+                    presentationTime,
+                    videoExtractor.getSampleFlags());
         }
+
         boolean videoExtractorDone = !videoExtractor.advance();
         if (videoExtractorDone) {
             Log.d(TAG, "FLAG: videoExtractorDone!!!");
             videoDecoder.queueInputBuffer(
-                decoderInputBufferIndex,
-                0,
-                0,
-                0,
-                MediaCodec.BUFFER_FLAG_END_OF_STREAM);
+                    decoderInputBufferIndex,
+                    0,
+                    0,
+                    0,
+                    MediaCodec.BUFFER_FLAG_END_OF_STREAM);
         }
         videoExtractedFrameCount++;
         return videoExtractorDone;
@@ -530,14 +530,9 @@ public class VideoProcessor {
 
     // ----- video draw function -----
     private void render(
-            // surface from decoder
-            OutputSurface outputSurface,
-
-            // surface to encoder
-            InputSurface inputSurface,
-
-            // presentation time in microsecond (10^-6s)
-            long timeUs
+            OutputSurface outputSurface, // surface from decoder
+            InputSurface inputSurface,   // surface to encoder
+            long timeUs                 // presentation time in microsecond (10^-6s)
     ) {
         outputSurface.drawImage();
 
@@ -550,9 +545,6 @@ public class VideoProcessor {
 
         Log.d(TAG, "input surface: swap buffers");
         inputSurface.swapBuffers();
-
-        // TODO check this
-        Log.d(TAG, "video encoder: notified of new frame");
     }
 
     // ----- audio handle function -----
