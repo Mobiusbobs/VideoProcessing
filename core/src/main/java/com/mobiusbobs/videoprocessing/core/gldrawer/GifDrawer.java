@@ -38,6 +38,11 @@ public class GifDrawer implements GLDrawable {
     this.gifDecoder = gifDecoder;
   }
 
+  @Override
+  public void setRotate(float rotateInDeg) {
+    stickerDrawer.setRotate(rotateInDeg);
+  }
+
   public void init() throws IOException {
     stickerDrawer.init();
     setupGifDecoder(gifDecoder);

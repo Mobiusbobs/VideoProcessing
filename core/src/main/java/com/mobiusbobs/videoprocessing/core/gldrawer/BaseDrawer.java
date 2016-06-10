@@ -6,6 +6,8 @@ import android.opengl.GLUtils;
 import android.opengl.Matrix;
 import android.util.Log;
 
+import com.mobiusbobs.videoprocessing.core.VideoProcessor;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -53,6 +55,7 @@ public class BaseDrawer implements GLDrawable {
     protected final int TEXTURE_COORD_DATASIZE = 2;
     protected final int POSITION_DATASIZE = 3;
     protected final int BYTES_PER_FLOAT = 4;
+    private float rotateInDeg = 0.0f;
 
     // transformation
     protected int mMVPMatrixHandle;
@@ -123,10 +126,16 @@ public class BaseDrawer implements GLDrawable {
     }
 
     @Override
+    public void setRotate(float rotateInDeg) {
+        this.rotateInDeg = rotateInDeg;
+    }
+
+    @Override
     public void init() throws IOException {
         initCoordinateBuffer();
 
         // calculate matrix
+        setupModelMatrix();
         setupProjectionMatrix();
         setupViewMatrix();
         calculateMVPMatrix();
@@ -164,15 +173,31 @@ public class BaseDrawer implements GLDrawable {
       texturePosition.put(textureCoordinateData).position(0);
     }
 
+    void setupModelMatrix() {
+        // those index is come from util/CoordConverter
+        float x1 = verticesPositionData[0];
+        float x2 = verticesPositionData[3];
+        float y1 = verticesPositionData[1];
+        float y2 = verticesPositionData[7];
+
+        float centerX = (x1 + x2)/2;
+        float centerY = (y1 + y2)/2;
+
+        Matrix.setIdentityM(mModelMatrix, 0);
+        Matrix.translateM(mModelMatrix, 0, centerX, centerY, 0);
+        Matrix.rotateM(mModelMatrix, 0, rotateInDeg, 0.0f, 0.0f, 1.0f);
+        Matrix.translateM(mModelMatrix, 0, -centerX, -centerY, 0);
+    }
+
     protected void setupProjectionMatrix() {
         // Create a new perspective projection matrix. The height will stay the same
         // while the width will vary as per aspect ratio.
-        final float left = -1.0f;   //-ratio;
-        final float right = 1.0f;   //ratio;
-        final float bottom = -1.0f;
-        final float top = 1.0f;
-        final float near = -1.0f;   //1.0f;
-        final float far = 1.0f;     //10.0f;
+        final float left = 0;
+        final float right = VideoProcessor.OUTPUT_VIDEO_WIDTH;
+        final float bottom = 0;
+        final float top = VideoProcessor.OUTPUT_VIDEO_HEIGHT;
+        final float near = -1.0f;
+        final float far = 1.0f;
 
         Matrix.orthoM(mProjectionMatrix, 0, left, right, bottom, top, near, far);
     }
@@ -200,7 +225,6 @@ public class BaseDrawer implements GLDrawable {
     }
 
     protected void calculateMVPMatrix()   {
-        Matrix.setIdentityM(mModelMatrix, 0);
         Matrix.multiplyMM(mMVPMatrix, 0, mViewMatrix, 0, mModelMatrix, 0);
         Matrix.multiplyMM(mMVPMatrix, 0, mProjectionMatrix, 0, mMVPMatrix, 0);
     }
