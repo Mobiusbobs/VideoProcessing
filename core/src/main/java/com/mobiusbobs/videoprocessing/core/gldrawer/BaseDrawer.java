@@ -135,6 +135,7 @@ public class BaseDrawer implements GLDrawable {
         initCoordinateBuffer();
 
         // calculate matrix
+        setupModelMatrix();
         setupProjectionMatrix();
         setupViewMatrix();
         calculateMVPMatrix();
@@ -170,6 +171,22 @@ public class BaseDrawer implements GLDrawable {
       texturePosition = ByteBuffer.allocateDirect(textureCoordinateData.length * BYTES_PER_FLOAT)
           .order(ByteOrder.nativeOrder()).asFloatBuffer();
       texturePosition.put(textureCoordinateData).position(0);
+    }
+
+    void setupModelMatrix() {
+        // those index is come from util/CoordConverter
+        float x1 = verticesPositionData[0];
+        float x2 = verticesPositionData[3];
+        float y1 = verticesPositionData[1];
+        float y2 = verticesPositionData[7];
+
+        float centerX = (x1 + x2)/2;
+        float centerY = (y1 + y2)/2;
+
+        Matrix.setIdentityM(mModelMatrix, 0);
+        Matrix.translateM(mModelMatrix, 0, centerX, centerY, 0);
+        Matrix.rotateM(mModelMatrix, 0, rotateInDeg, 0.0f, 0.0f, 1.0f);
+        Matrix.translateM(mModelMatrix, 0, -centerX, -centerY, 0);
     }
 
     protected void setupProjectionMatrix() {
@@ -208,8 +225,6 @@ public class BaseDrawer implements GLDrawable {
     }
 
     protected void calculateMVPMatrix()   {
-        Matrix.setIdentityM(mModelMatrix, 0);
-        Matrix.rotateM(mModelMatrix, 0, rotateInDeg, 0.0f, 0.0f, 1.0f);
         Matrix.multiplyMM(mMVPMatrix, 0, mViewMatrix, 0, mModelMatrix, 0);
         Matrix.multiplyMM(mMVPMatrix, 0, mProjectionMatrix, 0, mMVPMatrix, 0);
     }
