@@ -44,13 +44,19 @@ public class CoordConverter {
     Log.d(TAG, "screenWidth="+screenWidth + ", screenHeight="+screenHeight);
   }
 
+  // convert a single rect coordinate to GL vertices
+  // ex: convert x=0 to GL_vertices = -1
+  public static float rectCoordToGLCoord(int rectCoord, int length) {
+    return (float)rectCoord / length * 2 - 1;  //length is either Width or Height
+  }
+
   public float[] getAlignTopVertices(Bitmap bitmap, int marginTop) {
     int height = bitmap.getHeight();
 
-    float x1 = rectCoordToGLCoord(0, screenWidth); // L
-    float x2 = rectCoordToGLCoord(screenWidth, screenWidth); // R
-    float y1 = rectCoordToGLCoord(screenHeight - (marginTop + height), screenHeight); //B
-    float y2 = rectCoordToGLCoord(screenHeight - marginTop, screenHeight); //T
+    float x1 = 0; // L
+    float x2 = screenWidth; // R
+    float y1 = screenHeight - (marginTop + height); //B
+    float y2 = screenHeight - marginTop; //T
 
     float[] verticesCoord = getVerticesCoord(x1, y1, x2, y2);
     printVertices(verticesCoord);
@@ -65,10 +71,10 @@ public class CoordConverter {
 
   // align bottom right corner
   private float[] calcAlignBtmRightVertices(int[] imgDimen, int margin) {
-    float x1 = rectCoordToGLCoord(screenWidth - imgDimen[0] - margin, screenWidth); // L
-    float x2 = rectCoordToGLCoord(screenWidth - margin, screenWidth); // R
-    float y1 = rectCoordToGLCoord(margin, screenHeight); //B
-    float y2 = rectCoordToGLCoord(imgDimen[1] + margin, screenHeight); //T
+    float x1 = screenWidth - imgDimen[0] - margin; // L
+    float x2 = screenWidth - margin; // R
+    float y1 = margin; // B
+    float y2 = imgDimen[1] + margin; // T
 
     float[] verticesCoord = getVerticesCoord(x1, y1, x2, y2);
     printVertices(verticesCoord);
@@ -106,12 +112,6 @@ public class CoordConverter {
     float[] verticesCoord = getVerticesCoord(x1,y1,x2,y2);
     printVertices(verticesCoord);
     return verticesCoord;
-  }
-
-  // convert a single rect coordinate to GL vertices
-  // ex: convert x=0 to GL_vertices = -1
-  public static float rectCoordToGLCoord(int rectCoord, int length) {
-    return (float)rectCoord / length * 2 - 1;  //length is either Width or Height
   }
 
   private void printVertices(float[] vertices)  {

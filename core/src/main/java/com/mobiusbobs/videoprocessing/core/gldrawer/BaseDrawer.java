@@ -6,6 +6,8 @@ import android.opengl.GLUtils;
 import android.opengl.Matrix;
 import android.util.Log;
 
+import com.mobiusbobs.videoprocessing.core.VideoProcessor;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -132,7 +134,6 @@ public class BaseDrawer implements GLDrawable {
     public void init() throws IOException {
         initCoordinateBuffer();
 
-
         // calculate matrix
         setupProjectionMatrix();
         setupViewMatrix();
@@ -174,12 +175,12 @@ public class BaseDrawer implements GLDrawable {
     protected void setupProjectionMatrix() {
         // Create a new perspective projection matrix. The height will stay the same
         // while the width will vary as per aspect ratio.
-        final float left = -1.0f;   //-ratio;
-        final float right = 1.0f;   //ratio;
-        final float bottom = -1.0f;
-        final float top = 1.0f;
-        final float near = -1.0f;   //1.0f;
-        final float far = 1.0f;     //10.0f;
+        final float left = 0;
+        final float right = VideoProcessor.OUTPUT_VIDEO_WIDTH;
+        final float bottom = 0;
+        final float top = VideoProcessor.OUTPUT_VIDEO_HEIGHT;
+        final float near = -1.0f;
+        final float far = 1.0f;
 
         Matrix.orthoM(mProjectionMatrix, 0, left, right, bottom, top, near, far);
     }
