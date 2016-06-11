@@ -56,6 +56,7 @@ public class BaseDrawer implements GLDrawable {
     protected final int POSITION_DATASIZE = 3;
     protected final int BYTES_PER_FLOAT = 4;
     private float rotateInDeg = 0.0f;
+    private float opacity = 1.0f;
 
     // transformation
     protected int mMVPMatrixHandle;
@@ -89,6 +90,8 @@ public class BaseDrawer implements GLDrawable {
     /** This is a handle to our texture data. */
     private int[] textureHandle;
 
+    private int opacityHandle;
+
     // shader
     final String vertexShader =
             "uniform mat4 u_MVPMatrix;      \n"     // A constant representing the combined model/view/projection matrix.
@@ -107,7 +110,9 @@ public class BaseDrawer implements GLDrawable {
 
     final String fragmentShader =
             "precision mediump float;       \n"     // Set the default precision to medium. We don't need as high of a
-                    // precision in the fragment shader.
+            // precision in the fragment shader.
+
+            + "uniform float u_Opacity;"
             + "uniform sampler2D u_Texture;   \n"
             + "varying vec2 v_TexCoordinate;  \n"
             // triangle per fragment.
@@ -115,6 +120,7 @@ public class BaseDrawer implements GLDrawable {
             + "{                              \n"
             //+ "   gl_FragColor = vec4(1.0,0.0,0.0,1.0); \n"   // FOR DEBUG PURPOSE
             + "   gl_FragColor = texture2D(u_Texture, v_TexCoordinate);     \n"     // Pass the color directly through the pipeline.
+            + "   gl_FragColor *= u_Opacity;"
             + "}                              \n";
 
     protected int shaderProgramHandle;
@@ -142,6 +148,7 @@ public class BaseDrawer implements GLDrawable {
 
         setupShader();
         bindTexture();
+        bindUniforms();
     }
 
     public void init(Bitmap bitmap, float[] verticesPositionData) throws IOException {
@@ -258,6 +265,10 @@ public class BaseDrawer implements GLDrawable {
         shaderProgramHandle = createShaderProgram(vertexShaderHandle, fragmentShaderHandle);
     }
 
+    public void setOpacity(float opacity) {
+        this.opacity = opacity;
+    }
+
     protected int compileShader(int shaderType, String shaderProgram) {
         // Load in the vertex shader.
         int shaderHandle = GLES20.glCreateShader(shaderType);
@@ -332,6 +343,10 @@ public class BaseDrawer implements GLDrawable {
         mTextureCoordinateHandle = GLES20.glGetAttribLocation(shaderProgramHandle, "a_TexCoordinate");
     }
 
+    private void bindUniforms() {
+        opacityHandle = GLES20.glGetUniformLocation(shaderProgramHandle, "u_Opacity");
+    }
+
     @Override
     public void draw(long timeMs) {
         draw(0);
@@ -358,6 +373,9 @@ public class BaseDrawer implements GLDrawable {
         GLES20.glVertexAttribPointer(mTextureCoordinateHandle, TEXTURE_COORD_DATASIZE, GLES20.GL_FLOAT, false,
           0, texturePosition);
         GLES20.glEnableVertexAttribArray(mTextureCoordinateHandle);
+
+        // Pass opacity info
+        GLES20.glUniform1f(opacityHandle, opacity);
 
         // blend
         GLES20.glEnable(GLES20.GL_BLEND);
