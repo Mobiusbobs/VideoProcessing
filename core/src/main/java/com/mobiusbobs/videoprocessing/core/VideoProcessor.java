@@ -12,6 +12,7 @@ import android.view.Surface;
 
 import com.mobiusbobs.videoprocessing.core.codec.Extractor;
 import com.mobiusbobs.videoprocessing.core.gldrawer.GLDrawable;
+import com.mobiusbobs.videoprocessing.core.gldrawer.OutputSurfaceDrawer;
 import com.mobiusbobs.videoprocessing.core.gles.Drawable2d;
 import com.mobiusbobs.videoprocessing.core.gles.surface.InputSurface;
 import com.mobiusbobs.videoprocessing.core.gles.surface.OutputSurface;
@@ -172,19 +173,10 @@ public class VideoProcessor {
         outputSurface = new OutputSurface(getOutputSurfaceRenderVerticesData(inputVideoFormat));
         videoDecoder = createVideoDecoder(inputVideoFormat, outputSurface.getSurface());
 
-        // TODO make outputSurface as a drawable
-        // TODO extract this into a method
-        // setup drawers
-        int n = drawerList.size();
-        if (n > 0) {
-            drawer = drawerList.get(0);
-            drawer.init(null);
-
-            for (int i = 1; i < n; i++) {
-                GLDrawable d = drawerList.get(i);
-                d.init(drawer);
-                drawer = d;
-            }
+        drawer = new OutputSurfaceDrawer(outputSurface);
+        for (GLDrawable d: drawerList) {
+            d.init(drawer);
+            drawer = d;
         }
 
         // --- audio encoder / decoder ---
@@ -293,7 +285,7 @@ public class VideoProcessor {
                     } else {
                         long timeUs = lastPTimeUs + 20 * 1000;
                         Log.d(TAG, "-----render extended video timeUs: " + timeUs);
-                        render(outputSurface, inputSurface, timeUs);
+                        render(drawer, inputSurface, timeUs);
                         lastPTimeUs = timeUs;
                     }
                 } else {
@@ -309,7 +301,7 @@ public class VideoProcessor {
                         long timeUs = videoDecoderOutputBufferInfo.presentationTimeUs;
 
                         outputSurface.awaitNewImage();
-                        render(outputSurface, inputSurface, timeUs);
+                        render(drawer, inputSurface, timeUs);
                         lastPTimeUs = timeUs;
                     }
                 }
@@ -542,17 +534,17 @@ public class VideoProcessor {
 
     // ----- video draw function -----
     private void render(
-            OutputSurface outputSurface, // surface from decoder
+            GLDrawable drawer,
             InputSurface inputSurface,   // surface to encoder
             long timeUs                 // presentation time in microsecond (10^-6s)
     ) {
-        outputSurface.drawImage();
-
         long timeMs = timeUs / 1000;
+        long timeNs = timeUs * 1000;
+
         drawer.draw(timeMs);
-        inputSurface.setPresentationTime(timeUs * 1000);
 
         Log.d(TAG, "input surface: swap buffers");
+        inputSurface.setPresentationTime(timeNs);
         inputSurface.swapBuffers();
     }
 

@@ -354,7 +354,7 @@ public class BaseDrawer implements GLDrawable {
     @Override
     public void draw(long timeMs) {
         drawBackground(timeMs);
-        draw(0);
+        drawThisOnly();
     }
 
     public void drawBackground(long timeMs) {
@@ -363,7 +363,11 @@ public class BaseDrawer implements GLDrawable {
         }
     }
 
-    public void draw(int textureIndex) {
+    public void drawThisOnly() {
+        drawThisOnly(0);
+    }
+
+    public void drawThisOnly(int textureIndex) {
         GLES20.glUseProgram(shaderProgramHandle);
 
         // Set the active texture unit to texture unit 0.

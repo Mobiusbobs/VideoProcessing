@@ -23,7 +23,7 @@ public class GifDrawer implements GLDrawable {
   private static final String TAG = "GifDrawer";
 
   // composition
-  private BaseDrawer baseDrawer;
+  protected BaseDrawer baseDrawer;
 
   private GifDecoder gifDecoder;
   private long gifLastFrameTime;
@@ -96,7 +96,7 @@ public class GifDrawer implements GLDrawable {
     }
   }
 
-  private int updateFrameIndex(long currentTimeMs) {
+  protected int updateFrameIndex(long currentTimeMs) {
     if (gifLastFrameTime == 0) {
       gifLastFrameTime = currentTimeMs;
     }
@@ -114,8 +114,10 @@ public class GifDrawer implements GLDrawable {
 
   @Override
   public void draw(long timeMs) {
+    baseDrawer.drawBackground(timeMs);
+
     int textureIndex = updateFrameIndex(timeMs);
-    baseDrawer.draw(textureIndex);
+    baseDrawer.drawThisOnly(textureIndex);
   }
 
 }
