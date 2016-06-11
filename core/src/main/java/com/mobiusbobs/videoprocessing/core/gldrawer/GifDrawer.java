@@ -23,28 +23,29 @@ public class GifDrawer implements GLDrawable {
   private static final String TAG = "GifDrawer";
 
   // composition
-  private BaseDrawer stickerDrawer;
+  private BaseDrawer baseDrawer;
 
   private GifDecoder gifDecoder;
   private long gifLastFrameTime;
 
   public GifDrawer(Context context, GifDecoder gifDecoder) {
-    stickerDrawer = new BaseDrawer();
+    baseDrawer = new BaseDrawer();
     this.gifDecoder = gifDecoder;
   }
 
   public GifDrawer(Context context, GifDecoder gifDecoder, float[] verticesPositionData) {
-    stickerDrawer = new BaseDrawer(verticesPositionData);
+    baseDrawer = new BaseDrawer(verticesPositionData);
     this.gifDecoder = gifDecoder;
   }
 
   @Override
   public void setRotate(float rotateInDeg) {
-    stickerDrawer.setRotate(rotateInDeg);
+    baseDrawer.setRotate(rotateInDeg);
   }
 
-  public void init() throws IOException {
-    stickerDrawer.init();
+  @Override
+  public void init(GLDrawable prevDrawer) throws IOException {
+    baseDrawer.init(prevDrawer);
     setupGifDecoder(gifDecoder);
     loadTextures(gifDecoder.getFrameCount());
   }
@@ -83,13 +84,13 @@ public class GifDrawer implements GLDrawable {
   }
 
   public void loadTextures(int frameCount) {
-    stickerDrawer.setTextureHandleSize(frameCount);
+    baseDrawer.setTextureHandleSize(frameCount);
     Log.d(TAG, "TOTAL frame count = " + frameCount);
 
     // load bitmap into GL texture of textureHandle[i]
     for (int i=0; i<frameCount; i++) {
       Bitmap bitmap = gifDecoder.getNextFrame();
-      stickerDrawer.loadBitmapToTexture(bitmap, i);
+      baseDrawer.loadBitmapToTexture(bitmap, i);
       bitmap.recycle();
       gifDecoder.advance();
     }
@@ -111,9 +112,10 @@ public class GifDrawer implements GLDrawable {
     return gifDecoder.getCurrentFrameIndex();
   }
 
+  @Override
   public void draw(long timeMs) {
     int textureIndex = updateFrameIndex(timeMs);
-    stickerDrawer.draw(textureIndex);
+    baseDrawer.draw(textureIndex);
   }
 
 }

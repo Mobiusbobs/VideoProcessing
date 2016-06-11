@@ -12,6 +12,7 @@ import android.view.Surface;
 
 import com.mobiusbobs.videoprocessing.core.codec.Extractor;
 import com.mobiusbobs.videoprocessing.core.gldrawer.GLDrawable;
+import com.mobiusbobs.videoprocessing.core.gles.Drawable2d;
 import com.mobiusbobs.videoprocessing.core.gles.surface.InputSurface;
 import com.mobiusbobs.videoprocessing.core.gles.surface.OutputSurface;
 import com.mobiusbobs.videoprocessing.core.util.CoordConverter;
@@ -77,6 +78,7 @@ public class VideoProcessor {
 
     // drawers
     private List<GLDrawable> drawerList;
+    private GLDrawable drawer;
 
     // ----- process states -----
     private int videoExtractedFrameCount = 0;
@@ -170,9 +172,19 @@ public class VideoProcessor {
         outputSurface = new OutputSurface(getOutputSurfaceRenderVerticesData(inputVideoFormat));
         videoDecoder = createVideoDecoder(inputVideoFormat, outputSurface.getSurface());
 
+        // TODO make outputSurface as a drawable
+        // TODO extract this into a method
         // setup drawers
-        for (GLDrawable drawer : drawerList) {
-            drawer.init();
+        int n = drawerList.size();
+        if (n > 0) {
+            drawer = drawerList.get(0);
+            drawer.init(null);
+
+            for (int i = 1; i < n; i++) {
+                GLDrawable d = drawerList.get(i);
+                d.init(drawer);
+                drawer = d;
+            }
         }
 
         // --- audio encoder / decoder ---
@@ -537,10 +549,7 @@ public class VideoProcessor {
         outputSurface.drawImage();
 
         long timeMs = timeUs / 1000;
-        for (GLDrawable drawer : drawerList) {
-            drawer.draw(timeMs);
-        }
-
+        drawer.draw(timeMs);
         inputSurface.setPresentationTime(timeUs * 1000);
 
         Log.d(TAG, "input surface: swap buffers");

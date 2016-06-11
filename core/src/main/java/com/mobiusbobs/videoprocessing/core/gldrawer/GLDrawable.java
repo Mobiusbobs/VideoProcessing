@@ -15,7 +15,6 @@ public interface GLDrawable {
      * init any OpenGL related things here
      * @throws IOException
      */
-    void init() throws IOException;
-
+    void init(GLDrawable prevDrawer) throws IOException;
     void draw(long timeMs);
 }

@@ -58,6 +58,8 @@ public class BaseDrawer implements GLDrawable {
     private float rotateInDeg = 0.0f;
     private float opacity = 1.0f;
 
+    protected GLDrawable prevDrawer;
+
     // transformation
     protected int mMVPMatrixHandle;
 
@@ -137,7 +139,9 @@ public class BaseDrawer implements GLDrawable {
     }
 
     @Override
-    public void init() throws IOException {
+    public void init(GLDrawable prevDrawer) throws IOException {
+        this.prevDrawer = prevDrawer;
+
         initCoordinateBuffer();
 
         // calculate matrix
@@ -151,13 +155,13 @@ public class BaseDrawer implements GLDrawable {
         bindUniforms();
     }
 
-    public void init(Bitmap bitmap, float[] verticesPositionData) throws IOException {
+    public void init(GLDrawable prevDrawer, Bitmap bitmap, float[] verticesPositionData) throws IOException {
         setVerticesCoordinate(verticesPositionData);
-        init(bitmap);
+        init(prevDrawer, bitmap);
     }
 
-    public void init(Bitmap bitmap) throws IOException {
-        init();
+    public void init(GLDrawable prevDrawer, Bitmap bitmap) throws IOException {
+        init(prevDrawer);
         loadTexture(bitmap, 1);
     }
 
@@ -349,7 +353,14 @@ public class BaseDrawer implements GLDrawable {
 
     @Override
     public void draw(long timeMs) {
+        drawBackground(timeMs);
         draw(0);
+    }
+
+    public void drawBackground(long timeMs) {
+        if (prevDrawer != null) {
+            prevDrawer.draw(timeMs);
+        }
     }
 
     public void draw(int textureIndex) {
@@ -365,13 +376,13 @@ public class BaseDrawer implements GLDrawable {
         // Pass in the position information
         verticesPosition.position(0);
         GLES20.glVertexAttribPointer(mPositionHandle, POSITION_DATASIZE, GLES20.GL_FLOAT, false,
-          0, verticesPosition);
+                0, verticesPosition);
         GLES20.glEnableVertexAttribArray(mPositionHandle);
 
         // Pass in the texture coordinate information
         texturePosition.position(0);
         GLES20.glVertexAttribPointer(mTextureCoordinateHandle, TEXTURE_COORD_DATASIZE, GLES20.GL_FLOAT, false,
-          0, texturePosition);
+                0, texturePosition);
         GLES20.glEnableVertexAttribArray(mTextureCoordinateHandle);
 
         // Pass opacity info
