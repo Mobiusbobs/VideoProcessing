@@ -9,6 +9,7 @@ import java.io.IOException;
  * Copyright (c) 2016 MobiusBobs Inc. All rights reserved.
  */
 public interface GLDrawable {
+    // TODO remove this
     void setRotate(float rotateInDeg);
 
     /**
