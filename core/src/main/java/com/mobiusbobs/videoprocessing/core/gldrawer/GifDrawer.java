@@ -23,28 +23,29 @@ public class GifDrawer implements GLDrawable {
   private static final String TAG = "GifDrawer";
 
   // composition
-  private BaseDrawer stickerDrawer;
+  protected BasicDrawer basicDrawer;
 
   private GifDecoder gifDecoder;
   private long gifLastFrameTime;
 
   public GifDrawer(Context context, GifDecoder gifDecoder) {
-    stickerDrawer = new BaseDrawer();
+    basicDrawer = new BasicDrawer(context);
     this.gifDecoder = gifDecoder;
   }
 
   public GifDrawer(Context context, GifDecoder gifDecoder, float[] verticesPositionData) {
-    stickerDrawer = new BaseDrawer(verticesPositionData);
+    basicDrawer = new BasicDrawer(context, verticesPositionData);
     this.gifDecoder = gifDecoder;
   }
 
   @Override
   public void setRotate(float rotateInDeg) {
-    stickerDrawer.setRotate(rotateInDeg);
+    basicDrawer.setRotate(rotateInDeg);
   }
 
-  public void init() throws IOException {
-    stickerDrawer.init();
+  @Override
+  public void init(GLDrawable prevDrawer) throws IOException {
+    basicDrawer.init(prevDrawer);
     setupGifDecoder(gifDecoder);
     loadTextures(gifDecoder.getFrameCount());
   }
@@ -83,19 +84,19 @@ public class GifDrawer implements GLDrawable {
   }
 
   public void loadTextures(int frameCount) {
-    stickerDrawer.setTextureHandleSize(frameCount);
+    basicDrawer.setTextureHandleSize(frameCount);
     Log.d(TAG, "TOTAL frame count = " + frameCount);
 
     // load bitmap into GL texture of textureHandle[i]
     for (int i=0; i<frameCount; i++) {
       Bitmap bitmap = gifDecoder.getNextFrame();
-      stickerDrawer.loadBitmapToTexture(bitmap, i);
+      basicDrawer.loadBitmapToTexture(bitmap, i);
       bitmap.recycle();
       gifDecoder.advance();
     }
   }
 
-  private int updateFrameIndex(long currentTimeMs) {
+  protected int updateFrameIndex(long currentTimeMs) {
     if (gifLastFrameTime == 0) {
       gifLastFrameTime = currentTimeMs;
     }
@@ -111,9 +112,12 @@ public class GifDrawer implements GLDrawable {
     return gifDecoder.getCurrentFrameIndex();
   }
 
+  @Override
   public void draw(long timeMs) {
+    basicDrawer.drawBackground(timeMs);
+
     int textureIndex = updateFrameIndex(timeMs);
-    stickerDrawer.draw(textureIndex);
+    basicDrawer.drawThisOnly(textureIndex);
   }
 
 }

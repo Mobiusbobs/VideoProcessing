@@ -9,13 +9,13 @@ import java.io.IOException;
  * Copyright (c) 2016 MobiusBobs Inc. All rights reserved.
  */
 public interface GLDrawable {
+    // TODO remove this
     void setRotate(float rotateInDeg);
 
     /**
      * init any OpenGL related things here
      * @throws IOException
      */
-    void init() throws IOException;
-
+    void init(GLDrawable prevDrawer) throws IOException;
     void draw(long timeMs);
 }
