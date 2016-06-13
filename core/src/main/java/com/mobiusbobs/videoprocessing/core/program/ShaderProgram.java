@@ -29,7 +29,7 @@ public class ShaderProgram {
 //    public static final String A_TEXTURE_COORDINATES = "a_TextureCoordinates";
 
     // Shader program
-    protected final int program;
+    protected final int programHandle;
 
     // Constructor
     protected ShaderProgram(Context context, int vertexShaderResourceId, int fragmentShaderResourceId) {
@@ -38,16 +38,16 @@ public class ShaderProgram {
         String fragmentShader = TextResourceReader.readTextFileFromResource(context, fragmentShaderResourceId);
 
         // Compile the shaders and link the program.
-        program = ShaderHelper.buildProgram(vertexShader, fragmentShader);
+        programHandle = ShaderHelper.buildProgram(vertexShader, fragmentShader);
     }
 
     public void useProgram() {
         // Set the current OpenGL shader program to this program.
-        glUseProgram(program);
+        glUseProgram(programHandle);
     }
 
-    public int getProgramId() {
-        return program;
-    }
+//    public int getProgramHandle() {
+//        return programHandle;
+//    }
 
 }

@@ -10,10 +10,11 @@ import java.nio.FloatBuffer;
 /**
  * android
  * <p/>
- * Created by rayshih on 6/11/16.
+ * Created by rayshih on 6/13/16.
  * Copyright (c) 2016 MobiusBobs Inc. All rights reserved.
  */
-public class BasicShaderProgram extends ShaderProgram {
+// TODO
+public class BlurHShaderProgram extends ShaderProgram {
 
     public final int POSITION_DATASIZE = 3;
     public final int TEXTURE_COORD_DATASIZE = 2;
@@ -24,7 +25,7 @@ public class BasicShaderProgram extends ShaderProgram {
     private int textureCoordinateHandle;
     private int opacityHandle;
 
-    public BasicShaderProgram(Context context) {
+    public BlurHShaderProgram(Context context) {
         super(context,
                 R.raw.basic_vertex_shader,
                 R.raw.basic_fragment_shader);
@@ -79,4 +80,5 @@ public class BasicShaderProgram extends ShaderProgram {
         // Pass opacity info
         GLES20.glUniform1f(opacityHandle, opacity);
     }
+
 }

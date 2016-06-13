@@ -23,29 +23,29 @@ public class GifDrawer implements GLDrawable {
   private static final String TAG = "GifDrawer";
 
   // composition
-  protected BaseDrawer baseDrawer;
+  protected BasicDrawer basicDrawer;
 
   private GifDecoder gifDecoder;
   private long gifLastFrameTime;
 
   public GifDrawer(Context context, GifDecoder gifDecoder) {
-    baseDrawer = new BaseDrawer(context);
+    basicDrawer = new BasicDrawer(context);
     this.gifDecoder = gifDecoder;
   }
 
   public GifDrawer(Context context, GifDecoder gifDecoder, float[] verticesPositionData) {
-    baseDrawer = new BaseDrawer(context, verticesPositionData);
+    basicDrawer = new BasicDrawer(context, verticesPositionData);
     this.gifDecoder = gifDecoder;
   }
 
   @Override
   public void setRotate(float rotateInDeg) {
-    baseDrawer.setRotate(rotateInDeg);
+    basicDrawer.setRotate(rotateInDeg);
   }
 
   @Override
   public void init(GLDrawable prevDrawer) throws IOException {
-    baseDrawer.init(prevDrawer);
+    basicDrawer.init(prevDrawer);
     setupGifDecoder(gifDecoder);
     loadTextures(gifDecoder.getFrameCount());
   }
@@ -84,13 +84,13 @@ public class GifDrawer implements GLDrawable {
   }
 
   public void loadTextures(int frameCount) {
-    baseDrawer.setTextureHandleSize(frameCount);
+    basicDrawer.setTextureHandleSize(frameCount);
     Log.d(TAG, "TOTAL frame count = " + frameCount);
 
     // load bitmap into GL texture of textureHandle[i]
     for (int i=0; i<frameCount; i++) {
       Bitmap bitmap = gifDecoder.getNextFrame();
-      baseDrawer.loadBitmapToTexture(bitmap, i);
+      basicDrawer.loadBitmapToTexture(bitmap, i);
       bitmap.recycle();
       gifDecoder.advance();
     }
@@ -114,10 +114,10 @@ public class GifDrawer implements GLDrawable {
 
   @Override
   public void draw(long timeMs) {
-    baseDrawer.drawBackground(timeMs);
+    basicDrawer.drawBackground(timeMs);
 
     int textureIndex = updateFrameIndex(timeMs);
-    baseDrawer.drawThisOnly(textureIndex);
+    basicDrawer.drawThisOnly(textureIndex);
   }
 
 }
