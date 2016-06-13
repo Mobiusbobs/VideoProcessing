@@ -30,19 +30,20 @@ public class BasicDrawer implements GLDrawable {
 
     private Context context;
 
-    private float rotateInDeg = 0.0f;
-    private float opacity = 1.0f;
-
     protected GLDrawable prevDrawer;
 
     private float[] verticesPositionData;
     private GLPosition glPosition = new GLPosition();
+
     private float[] mMVPMatrix;
 
     /** This is a handle to our texture data. */
     private int[] textureHandle;
 
     private BasicShaderProgram shaderProgram;
+
+    private float rotateInDeg = 0.0f;
+    private float opacity = 1.0f;
 
     public BasicDrawer(Context context)  {
         this.context = context;
@@ -57,15 +58,15 @@ public class BasicDrawer implements GLDrawable {
     }
 
     @Override
-    public void setRotate(float rotateInDeg) {
-        this.rotateInDeg = rotateInDeg;
-    }
-
-    @Override
     public void init(GLDrawable prevDrawer) throws IOException {
         this.prevDrawer = prevDrawer;
         setupMVPMatrix();
         shaderProgram = new BasicShaderProgram(context);
+    }
+
+    public void init(GLDrawable prevDrawer, Bitmap bitmap) throws IOException {
+        init(prevDrawer);
+        loadTexture(bitmap);
     }
 
     public void init(GLDrawable prevDrawer, Bitmap bitmap, float[] verticesPositionData) throws IOException {
@@ -73,16 +74,21 @@ public class BasicDrawer implements GLDrawable {
         init(prevDrawer, bitmap);
     }
 
-    public void init(GLDrawable prevDrawer, Bitmap bitmap) throws IOException {
-        init(prevDrawer);
-        loadTexture(bitmap, 1);
-    }
-
     public void setVerticesCoordinate(float[] verticesPositionData) {
         this.verticesPositionData = verticesPositionData;
         glPosition.setVerticesPositionData(verticesPositionData);
     }
 
+    @Override
+    public void setRotate(float rotateInDeg) {
+        this.rotateInDeg = rotateInDeg;
+    }
+
+    public void setOpacity(float opacity) {
+        this.opacity = opacity;
+    }
+
+    // ----- matrix -----
     private void setupMVPMatrix()   {
         // those index is come from util/CoordConverter
         float x1 = verticesPositionData[0];
@@ -100,15 +106,11 @@ public class BasicDrawer implements GLDrawable {
         );
     }
 
+    // ----- texture -----
     public void setTextureHandleSize(int textureCount) {
         textureHandle = new int[textureCount];
         // alloc texture
         GLES20.glGenTextures(textureCount, textureHandle, 0);
-    }
-
-    private void loadTexture(Bitmap bitmap, int textureCount) {
-        setTextureHandleSize(textureCount);
-        loadBitmapToTexture(bitmap, 0);
     }
 
     public void loadBitmapToTexture(Bitmap bitmap, int textureIndex) {
@@ -122,8 +124,9 @@ public class BasicDrawer implements GLDrawable {
         GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, bitmap, 0);
     }
 
-    public void setOpacity(float opacity) {
-        this.opacity = opacity;
+    private void loadTexture(Bitmap bitmap) {
+        setTextureHandleSize(1);
+        loadBitmapToTexture(bitmap, 0);
     }
 
     @Override
