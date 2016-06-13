@@ -14,8 +14,7 @@ public class ShaderHelper {
 
     public static final String TAG = "ShaderHelper";
 
-    // TODO disable debug
-    public static final boolean DEBUG = true;
+    public static final boolean DEBUG = false;
 
     public static int compileVertexShader(String shaderCode) {
         return compileShader(GL_VERTEX_SHADER, shaderCode);

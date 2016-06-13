@@ -17,17 +17,6 @@ import static android.opengl.GLES20.glUseProgram;
 public class ShaderProgram {
     private final static String TAG = "ShaderProgram";
 
-//    // Uniform constants
-//    public static final String U_MATRIX = "u_Matrix";
-//    public static final String U_TEXTURE_UNIT = "u_TextureUnit";
-//    public static final String U_OPACITY = "u_Opacity";
-//    public static final String U_BLUR = "u_Blur";
-//
-//    // Attribute constants
-//    public static final String A_POSITION = "a_Position";
-//    public static final String A_COLOR = "a_Color";
-//    public static final String A_TEXTURE_COORDINATES = "a_TextureCoordinates";
-
     // Shader program
     protected final int programHandle;
 
@@ -45,9 +34,4 @@ public class ShaderProgram {
         // Set the current OpenGL shader program to this program.
         glUseProgram(programHandle);
     }
-
-//    public int getProgramHandle() {
-//        return programHandle;
-//    }
-
 }

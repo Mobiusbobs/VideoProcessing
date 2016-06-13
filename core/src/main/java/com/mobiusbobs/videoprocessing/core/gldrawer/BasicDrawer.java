@@ -132,7 +132,6 @@ public class BasicDrawer implements GLDrawable {
         drawThisOnly();
     }
 
-    // TODO
     public void drawBackground(long timeMs) {
         if (prevDrawer != null) {
             prevDrawer.draw(timeMs);

@@ -22,21 +22,6 @@ public class MatrixHelper {
         return matrix;
     }
 
-    public static float[] createProjectionMatrix(float width, float height) {
-        // Create a new perspective projection matrix. The height will stay the same
-        // while the width will vary as per aspect ratio.
-        final float left = 0;
-        final float right = width;
-        final float bottom = 0;
-        final float top = height;
-        final float near = -1.0f;
-        final float far = 1.0f;
-
-        float[] matrix = new float[16];
-        Matrix.orthoM(matrix, 0, left, right, bottom, top, near, far);
-        return matrix;
-    }
-
     public static float[] createViewMatrix() {
         // Position the eye behind the origin.
         final float eyeX = 0.0f;
@@ -58,6 +43,21 @@ public class MatrixHelper {
         // view matrix. In OpenGL 2, we can keep track of these matrices separately if we choose.
         float[] matrix = new float[16];
         Matrix.setLookAtM(matrix, 0, eyeX, eyeY, eyeZ, lookX, lookY, lookZ, upX, upY, upZ);
+        return matrix;
+    }
+
+    public static float[] createProjectionMatrix(float width, float height) {
+        // Create a new perspective projection matrix. The height will stay the same
+        // while the width will vary as per aspect ratio.
+        final float left = 0;
+        final float right = width;
+        final float bottom = 0;
+        final float top = height;
+        final float near = -1.0f;
+        final float far = 1.0f;
+
+        float[] matrix = new float[16];
+        Matrix.orthoM(matrix, 0, left, right, bottom, top, near, far);
         return matrix;
     }
 
