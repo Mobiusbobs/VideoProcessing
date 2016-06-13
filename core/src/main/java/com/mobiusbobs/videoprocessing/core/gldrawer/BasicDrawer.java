@@ -4,9 +4,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.opengl.GLES20;
 import android.opengl.GLUtils;
-import android.opengl.Matrix;
 
-import com.mobiusbobs.videoprocessing.core.MatrixHelper;
 import com.mobiusbobs.videoprocessing.core.VideoProcessor;
 import com.mobiusbobs.videoprocessing.core.program.BasicShaderProgram;
 
@@ -32,38 +30,14 @@ public class BasicDrawer implements GLDrawable {
 
     private Context context;
 
-    /** Store our model data in a float buffer. */
-    protected float[] verticesPositionData = {
-        // X, Y, Z,
-        -1.0f, -1.0f, 0.0f,
-        1.0f, -1.0f, 0.0f,
-        1.0f, 1.0f, 0.0f,
-
-        -1.0f, -1.0f, 0.0f,
-        1.0f, 1.0f, 0.0f,
-        -1.0f, 1.0f, 0.0f
-    };
-
-    float[] textureCoordinateData = {
-        // Front face
-        0.0f, 1.0f,
-        1.0f, 1.0f,
-        1.0f, 0.0f,
-
-        0.0f, 1.0f,
-        1.0f, 0.0f,
-        0.0f, 0.0f
-    };
-
-    protected FloatBuffer verticesPosition;
-    protected FloatBuffer texturePosition;
-    protected final int BYTES_PER_FLOAT = 4;
     private float rotateInDeg = 0.0f;
     private float opacity = 1.0f;
 
     protected GLDrawable prevDrawer;
 
-    protected float[] mMVPMatrix = new float[16];
+    private float[] verticesPositionData;
+    private GLPosition glPosition = new GLPosition();
+    private float[] mMVPMatrix;
 
     /** This is a handle to our texture data. */
     private int[] textureHandle;
@@ -76,7 +50,10 @@ public class BasicDrawer implements GLDrawable {
 
     public BasicDrawer(Context context, float[] verticesPositionData)  {
         this.context = context;
+
+        // TODO refactor this
         this.verticesPositionData = verticesPositionData;
+        glPosition.setVerticesPositionData(verticesPositionData);
     }
 
     @Override
@@ -87,9 +64,6 @@ public class BasicDrawer implements GLDrawable {
     @Override
     public void init(GLDrawable prevDrawer) throws IOException {
         this.prevDrawer = prevDrawer;
-
-        initCoordinateBuffer();
-
         setupMVPMatrix();
         shaderProgram = new BasicShaderProgram(context);
     }
@@ -106,21 +80,7 @@ public class BasicDrawer implements GLDrawable {
 
     public void setVerticesCoordinate(float[] verticesPositionData) {
         this.verticesPositionData = verticesPositionData;
-        if (verticesPosition != null) {
-            verticesPosition.clear();
-            verticesPosition.put(verticesPositionData).position(0);
-        }
-    }
-
-    protected void initCoordinateBuffer() {
-        // Initialize the buffers.
-      verticesPosition = ByteBuffer.allocateDirect(verticesPositionData.length * BYTES_PER_FLOAT)
-          .order(ByteOrder.nativeOrder()).asFloatBuffer();
-      verticesPosition.put(verticesPositionData).position(0);
-
-      texturePosition = ByteBuffer.allocateDirect(textureCoordinateData.length * BYTES_PER_FLOAT)
-          .order(ByteOrder.nativeOrder()).asFloatBuffer();
-      texturePosition.put(textureCoordinateData).position(0);
+        glPosition.setVerticesPositionData(verticesPositionData);
     }
 
     private void setupMVPMatrix()   {
@@ -187,10 +147,10 @@ public class BasicDrawer implements GLDrawable {
         shaderProgram.useProgram();
         shaderProgram.bindData(
                 mMVPMatrix,
-                verticesPosition,
+                glPosition.getVerticesPosition(),
 
                 textureHandle[textureIndex],
-                texturePosition,
+                glPosition.getTexturePosition(),
 
                 opacity
         );
