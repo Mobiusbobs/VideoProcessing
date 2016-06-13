@@ -9,9 +9,6 @@ import com.mobiusbobs.videoprocessing.core.VideoProcessor;
 import com.mobiusbobs.videoprocessing.core.program.BasicShaderProgram;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.FloatBuffer;
 
 /**
  * VideoProcessing
@@ -33,7 +30,7 @@ public class BasicDrawer implements GLDrawable {
     protected GLDrawable prevDrawer;
 
     private float[] verticesPositionData;
-    private GLPosition glPosition = new GLPosition();
+    private GLPosition glPosition = new GLPosition(true);
 
     private float[] mMVPMatrix;
 

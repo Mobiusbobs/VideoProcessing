@@ -13,8 +13,7 @@ import java.nio.FloatBuffer;
  * Created by rayshih on 6/13/16.
  * Copyright (c) 2016 MobiusBobs Inc. All rights reserved.
  */
-// TODO
-public class BlurHShaderProgram extends ShaderProgram {
+public class BlurShaderProgram extends ShaderProgram {
 
     public final int POSITION_DATASIZE = 3;
     public final int TEXTURE_COORD_DATASIZE = 2;
@@ -23,12 +22,12 @@ public class BlurHShaderProgram extends ShaderProgram {
     private int textureUniformHandle;
     private int positionHandle;
     private int textureCoordinateHandle;
-    private int opacityHandle;
+    private int blurHandle;
 
-    public BlurHShaderProgram(Context context) {
+    public BlurShaderProgram(Context context, boolean vertical) {
         super(context,
-                R.raw.basic_vertex_shader,
-                R.raw.basic_fragment_shader);
+                (vertical ? R.raw.blur_vertical_vertex_shader : R.raw.blur_horizontal_vertex_shader),
+                R.raw.blur_fragment_shader);
 
         setupHandles();
     }
@@ -38,7 +37,7 @@ public class BlurHShaderProgram extends ShaderProgram {
         textureUniformHandle = GLES20.glGetUniformLocation(programHandle, "u_Texture");
         positionHandle = GLES20.glGetAttribLocation(programHandle, "a_Position");
         textureCoordinateHandle = GLES20.glGetAttribLocation(programHandle, "a_TexCoordinate");
-        opacityHandle = GLES20.glGetUniformLocation(programHandle, "u_Opacity");
+        blurHandle = GLES20.glGetUniformLocation(programHandle, "u_Blur");
     }
 
     public void bindData(
@@ -48,7 +47,7 @@ public class BlurHShaderProgram extends ShaderProgram {
             int textureHandle,
             FloatBuffer texturePosition,
 
-            float opacity
+            float blur
     ) {
         // --- mvp matrix ---
         // set the matrix
@@ -78,7 +77,7 @@ public class BlurHShaderProgram extends ShaderProgram {
 
         // --- opacity ---
         // Pass opacity info
-        GLES20.glUniform1f(opacityHandle, opacity);
+        GLES20.glUniform1f(blurHandle, blur);
     }
 
 }

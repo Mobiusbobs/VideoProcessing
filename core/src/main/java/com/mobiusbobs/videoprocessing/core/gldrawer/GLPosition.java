@@ -36,6 +36,17 @@ public class GLPosition {
 
     private float[] textureCoordinateData = {
             // Front face
+            0.0f, 0.0f,
+            1.0f, 0.0f,
+            1.0f, 1.0f,
+
+            0.0f, 0.0f,
+            1.0f, 1.0f,
+            0.0f, 1.0f
+    };
+
+    private float[] upsideDownTextureCoordinateData = {
+            // Front face
             0.0f, 1.0f,
             1.0f, 1.0f,
             1.0f, 0.0f,
@@ -50,19 +61,20 @@ public class GLPosition {
     private FloatBuffer verticesPosition;
     private FloatBuffer texturePosition;
 
-    public GLPosition() {
-        initCoordinateBuffer();
+    public GLPosition(boolean upsideDown) {
+        initCoordinateBuffer(upsideDown);
     }
 
-    private void initCoordinateBuffer() {
+    private void initCoordinateBuffer(boolean upsideDown) {
         // Initialize the buffers.
         verticesPosition = ByteBuffer.allocateDirect(verticesPositionData.length * BYTES_PER_FLOAT)
                 .order(ByteOrder.nativeOrder()).asFloatBuffer();
         verticesPosition.put(verticesPositionData).position(0);
 
-        texturePosition = ByteBuffer.allocateDirect(textureCoordinateData.length * BYTES_PER_FLOAT)
+        float[] tc = upsideDown ? upsideDownTextureCoordinateData : textureCoordinateData;
+        texturePosition = ByteBuffer.allocateDirect(tc.length * BYTES_PER_FLOAT)
                 .order(ByteOrder.nativeOrder()).asFloatBuffer();
-        texturePosition.put(textureCoordinateData).position(0);
+        texturePosition.put(tc).position(0);
     }
 
     public void setVerticesPositionData(float[] verticesPositionData) {
