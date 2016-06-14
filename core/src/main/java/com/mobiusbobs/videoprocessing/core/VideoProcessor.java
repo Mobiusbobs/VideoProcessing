@@ -20,6 +20,7 @@ import com.mobiusbobs.videoprocessing.core.util.CoordConverter;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -315,7 +316,7 @@ public class VideoProcessor {
             // Feed the pending decoded audio buffer to the audio encoder.
             // TODO check to see if I can implement this into audio Decoder...
             if (pendingAudioDecoderOutputBufferIndex != -1) {
-                audioDecoderDone = pipeAudioStream(audioDecoder, audioEncoder, audioPTimeOffset);
+                audioDecoderDone = pipeAudioStream(audioDecoder, audioEncoder, audioPTimeOffset, videoDuration);
             }
 
             // --- mux video ---
@@ -589,7 +590,12 @@ public class VideoProcessor {
      * @param audioEncoder The audio encoder to
      * @return audioDecoderDone
      */
-    private boolean pipeAudioStream(MediaCodec audioDecoder, MediaCodec audioEncoder, long pTimeOffset) {
+    private boolean pipeAudioStream(
+        MediaCodec audioDecoder,
+        MediaCodec audioEncoder,
+        long pTimeOffset,
+        long videoDuration
+    ) {
         int encoderInputBufferIndex = audioEncoder.dequeueInputBuffer(TIMEOUT_USEC);
         if (encoderInputBufferIndex < 0) {
             Log.e(TAG, "audioEncoder.dequeueInputBuffer: no audio encoder input buffer");
@@ -606,17 +612,60 @@ public class VideoProcessor {
 
         if (size >= 0) {
             ByteBuffer decoderOutputBuffer =
-                    audioDecoderOutputBuffers[pendingAudioDecoderOutputBufferIndex].duplicate();
+              audioDecoderOutputBuffers[pendingAudioDecoderOutputBufferIndex].duplicate();
             decoderOutputBuffer.position(audioDecoderOutputBufferInfo.offset);
             decoderOutputBuffer.limit(audioDecoderOutputBufferInfo.offset + size);
+
             encoderInputBuffer.position(0);
-            encoderInputBuffer.put(decoderOutputBuffer);
+
+            // handle extra frame
+            long fadeDuration = 1 * 1000 * 1000;                // amount of time to fade the audio to zero
+            long thresholdTime = videoDuration - fadeDuration;  // when it should start fading
+
+            // silence
+            if (presentationTime >= videoDuration) {
+                // empty buffer
+                byte[] bytes = new byte[size];
+                ByteBuffer emptyBuffer = ByteBuffer.wrap(bytes);
+                emptyBuffer.position(0);
+                encoderInputBuffer.put(emptyBuffer);
+
+            // fade
+            } else if (presentationTime >= thresholdTime) {
+                double timeInFadeOut = (double)presentationTime - thresholdTime;
+                double fadeOutRatio = 1.0 - timeInFadeOut / fadeDuration;      //Linear fadeout
+
+                // fade
+                byte[] fadeArray = new byte[size];
+                for (int i = 0; i < size; i+=2) {
+                    // little-endian
+                    byte lsb = decoderOutputBuffer.get(i);
+                    byte msb = decoderOutputBuffer.get(i + 1);
+                    short audioData = (short)(((msb & 0xFF) << 8) | (lsb & 0xFF));
+                    short fadedAudioData = (short)(audioData * fadeOutRatio);
+                    lsb = (byte)(fadedAudioData & 0xFF);
+                    msb = (byte)((fadedAudioData >> 8) & 0xFF);
+
+                    fadeArray[i] = lsb;
+                    fadeArray[i + 1] = msb;
+                }
+
+                ByteBuffer fadeBuffer = ByteBuffer.wrap(fadeArray);
+                fadeBuffer.position(0);
+                encoderInputBuffer.put(fadeBuffer);
+
+            // normal audio
+            } else {
+                encoderInputBuffer.put(decoderOutputBuffer);
+            }
+
             audioEncoder.queueInputBuffer(
-                    encoderInputBufferIndex,
-                    0,
-                    size,
-                    presentationTime,
-                    audioDecoderOutputBufferInfo.flags);
+              encoderInputBufferIndex,
+              0,
+              size,
+              presentationTime,
+              audioDecoderOutputBufferInfo.flags);
+
         }
         audioDecoder.releaseOutputBuffer(pendingAudioDecoderOutputBufferIndex, false);
         pendingAudioDecoderOutputBufferIndex = -1;
