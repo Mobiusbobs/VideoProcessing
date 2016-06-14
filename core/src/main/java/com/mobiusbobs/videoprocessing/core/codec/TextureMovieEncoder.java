@@ -358,7 +358,11 @@ public class TextureMovieEncoder implements Runnable {
      */
     private void handleFrameAvailable(float[] transform, long timestampNanos) {
         if (VERBOSE) Log.d(TAG, "handleFrameAvailable tr=" + transform);
-        if (mVideoEncoder != null) mVideoEncoder.drainEncoder(false);
+        if (mVideoEncoder == null) {
+            Log.e(TAG, "mVideoEncoder is not ready yet");
+            return;
+        }
+        mVideoEncoder.drainEncoder(false);
         mFullScreen.drawFrame(mTextureId, transform);
 
         if (isRecording) {
