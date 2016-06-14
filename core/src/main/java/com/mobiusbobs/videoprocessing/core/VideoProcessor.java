@@ -619,11 +619,12 @@ public class VideoProcessor {
             encoderInputBuffer.position(0);
 
             // handle extra frame
+            // TODO check the actual fade duration
             long fadeDuration = 3 * 1000 * 1000;                // amount of time to fade the audio to zero
             long thresholdTime = videoDuration - fadeDuration;  // when it should start fading
 
             // silence
-            if (presentationTime >= thresholdTime + fadeDuration) {
+            if (presentationTime >= videoDuration) {
                 // empty buffer
                 byte[] bytes = new byte[size];
                 ByteBuffer emptyBuffer = ByteBuffer.wrap(bytes);
@@ -633,24 +634,24 @@ public class VideoProcessor {
             // fade
             } else if (presentationTime >= thresholdTime) {
                 double timeInFadeOut = (double)presentationTime - thresholdTime;
-                double fadeOutRatio = 1 - timeInFadeOut / fadeDuration;      //Linear fadeout
+                double fadeOutRatio = 1.0 - timeInFadeOut / fadeDuration;      //Linear fadeout
 
                 // fade
                 byte[] fadeArray = new byte[size];
-                for(int i=0; i < fadeArray.length/2; i++) {
-                    int index = i*2;
-                    ByteBuffer bb = ByteBuffer.allocate(2);
-                    bb.order(ByteOrder.LITTLE_ENDIAN);
-                    bb.put(decoderOutputBuffer.get(index));
-                    bb.put(decoderOutputBuffer.get(index + 1));
-                    short tmp = (short)(bb.getShort(0) * fadeOutRatio);
+                for (int i = 0; i < size; i+=2) {
+                    // little-endian
+                    byte LSB = decoderOutputBuffer.get(i);
+                    byte MSB = decoderOutputBuffer.get(i + 1);
+                    short audioData = (short)(((MSB & 0xFF) << 8) | (LSB & 0xFF));
+                    short fadedAudioData = (short)(audioData * fadeOutRatio);
+                    LSB = (byte)(fadedAudioData & 0xFF);
+                    MSB = (byte)((fadedAudioData >> 8) & 0xFF);
 
-                    bb.putShort(0, tmp);
-                    fadeArray[index] = bb.get(0);
-                    fadeArray[index + 1] = bb.get(1);
+                    fadeArray[i] = LSB;
+                    fadeArray[i + 1] = MSB;
                 }
-                ByteBuffer fadeBuffer = ByteBuffer.wrap(fadeArray);
 
+                ByteBuffer fadeBuffer = ByteBuffer.wrap(fadeArray);
                 fadeBuffer.position(0);
                 encoderInputBuffer.put(fadeBuffer);
 
