@@ -619,8 +619,7 @@ public class VideoProcessor {
             encoderInputBuffer.position(0);
 
             // handle extra frame
-            // TODO check the actual fade duration
-            long fadeDuration = 3 * 1000 * 1000;                // amount of time to fade the audio to zero
+            long fadeDuration = 1 * 1000 * 1000;                // amount of time to fade the audio to zero
             long thresholdTime = videoDuration - fadeDuration;  // when it should start fading
 
             // silence
@@ -640,15 +639,15 @@ public class VideoProcessor {
                 byte[] fadeArray = new byte[size];
                 for (int i = 0; i < size; i+=2) {
                     // little-endian
-                    byte LSB = decoderOutputBuffer.get(i);
-                    byte MSB = decoderOutputBuffer.get(i + 1);
-                    short audioData = (short)(((MSB & 0xFF) << 8) | (LSB & 0xFF));
+                    byte lsb = decoderOutputBuffer.get(i);
+                    byte msb = decoderOutputBuffer.get(i + 1);
+                    short audioData = (short)(((msb & 0xFF) << 8) | (lsb & 0xFF));
                     short fadedAudioData = (short)(audioData * fadeOutRatio);
-                    LSB = (byte)(fadedAudioData & 0xFF);
-                    MSB = (byte)((fadedAudioData >> 8) & 0xFF);
+                    lsb = (byte)(fadedAudioData & 0xFF);
+                    msb = (byte)((fadedAudioData >> 8) & 0xFF);
 
-                    fadeArray[i] = LSB;
-                    fadeArray[i + 1] = MSB;
+                    fadeArray[i] = lsb;
+                    fadeArray[i + 1] = msb;
                 }
 
                 ByteBuffer fadeBuffer = ByteBuffer.wrap(fadeArray);
