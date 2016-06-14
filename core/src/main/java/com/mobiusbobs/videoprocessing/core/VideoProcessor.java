@@ -46,6 +46,8 @@ public class VideoProcessor {
     /** How long to wait for the next buffer to become available. */
     private static final int TIMEOUT_USEC = 10000;
 
+    public static final int VIDEO_EXTEND_DURATION_US = 1000 * 1000;
+
     // ----- input & output -----
     private MediaExtractor videoExtractor;
     private MediaExtractor audioExtractor;
@@ -240,7 +242,7 @@ public class VideoProcessor {
 
         long audioPTimeOffset = 0;
 
-        long videoTotalDuration = videoDuration + 5 * 1000 * 1000; // TODO
+        long videoTotalDuration = videoDuration + VIDEO_EXTEND_DURATION_US;
         long lastPTimeUs = 0;
         boolean hasVideoEncoderEndSignalSent = false;
 
