@@ -92,7 +92,7 @@ public class TextureMovieEncoder implements Runnable {
 
     // presentation timestamp offset
     private PTHelper ptHelper = new PTHelper();
-    private long previousPT = 0;
+    private long previousPT = -1;
 
     // Constructor
     public TextureMovieEncoder(MuxerWrapper muxerWrapper) {
@@ -371,11 +371,7 @@ public class TextureMovieEncoder implements Runnable {
         if (isRecording) {
             long currentPT = timestampNanos - ptHelper.getTimeOffsetNs();
             // block out duplicated time or wrong timestamp
-            if (previousPT != 0 && previousPT >= currentPT) {
-                if (previousPT > currentPT)
-                    Log.e(TAG, "Block out invalid timestamp " + previousPT + " > " + currentPT);
-                return;
-            }
+            if (previousPT >= currentPT) return;
             previousPT = currentPT;
 
             mInputWindowSurface.setPresentationTime(currentPT);
