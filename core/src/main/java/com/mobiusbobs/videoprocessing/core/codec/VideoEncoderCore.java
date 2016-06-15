@@ -24,6 +24,8 @@ import android.view.Surface;
 
 import java.io.IOException;
 
+import rx.Observable;
+
 /**
  * This class wraps up the core components used for surface-input video encoding.
  * <p>
@@ -76,5 +78,9 @@ public class VideoEncoderCore extends EncoderCore {
 
     public void drainEncoder(boolean endOfStream) {
         drainEncoder(true, endOfStream);
+    }
+
+    public Observable<Boolean> onRecordDone$() {
+        return muxer.onRecordDone$();
     }
 }

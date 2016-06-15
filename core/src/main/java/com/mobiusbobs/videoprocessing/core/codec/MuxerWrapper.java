@@ -7,6 +7,9 @@ import android.util.Log;
 
 import java.nio.ByteBuffer;
 
+import rx.Observable;
+import rx.subjects.BehaviorSubject;
+
 /**
  * android
  * <p>
@@ -22,6 +25,9 @@ public class MuxerWrapper {
   private int encoderCount = 0;
   private static int trackCount = 0;
   private boolean muxerStarted = false;
+
+  // send a signal when the muxer is done writing the data
+  private BehaviorSubject<Boolean> recordDone$ = BehaviorSubject.create();
 
   // Constructor
   public MuxerWrapper(MediaMuxer muxer, int encoderCount) {
@@ -46,6 +52,10 @@ public class MuxerWrapper {
     return muxerStarted;
   }
 
+  public Observable<Boolean> onRecordDone$() {
+    return recordDone$;
+  }
+
   /**
    * request stop recording from encoder when encoder received EOS
    */
@@ -57,6 +67,8 @@ public class MuxerWrapper {
       muxer.release();
       muxerStarted = false;
       Log.d(TAG, "MediaMuxer stopped:");
+      recordDone$.onNext(true);
+      recordDone$.onCompleted();
     }
   }
 
