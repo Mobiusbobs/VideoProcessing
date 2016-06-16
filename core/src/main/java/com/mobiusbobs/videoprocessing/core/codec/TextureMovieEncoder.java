@@ -379,8 +379,8 @@ public class TextureMovieEncoder implements Runnable {
         }
     }
 
-    public Observable<Boolean> onRecordDone$() {
-        return mVideoEncoder.onRecordDone$();
+    public Observable<Boolean> onEncodeDone$() {
+        return mVideoEncoder.onEncodeDone$();
     }
 
     /**

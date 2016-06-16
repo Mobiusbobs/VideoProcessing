@@ -80,7 +80,7 @@ public class VideoEncoderCore extends EncoderCore {
         drainEncoder(true, endOfStream);
     }
 
-    public Observable<Boolean> onRecordDone$() {
-        return muxer.onRecordDone$();
+    public Observable<Boolean> onEncodeDone$() {
+        return muxer.onMuxDone$();
     }
 }

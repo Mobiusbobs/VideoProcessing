@@ -43,7 +43,7 @@ public class VideoRecorder {
   }
 
   public Observable<Boolean> onRecordDone$() {
-    return textureMovieEncoder.onRecordDone$();
+    return textureMovieEncoder.onEncodeDone$();
   }
 
   public void resetRecorder(File outputFile) throws IOException {

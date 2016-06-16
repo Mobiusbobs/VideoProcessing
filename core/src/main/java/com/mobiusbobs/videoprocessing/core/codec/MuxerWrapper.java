@@ -8,7 +8,7 @@ import android.util.Log;
 import java.nio.ByteBuffer;
 
 import rx.Observable;
-import rx.subjects.BehaviorSubject;
+import rx.subjects.AsyncSubject;
 
 /**
  * android
@@ -27,7 +27,7 @@ public class MuxerWrapper {
   private boolean muxerStarted = false;
 
   // send a signal when the muxer is done writing the data
-  private BehaviorSubject<Boolean> recordDone$ = BehaviorSubject.create();
+  private AsyncSubject<Boolean> muxDone$ = AsyncSubject.create();
 
   // Constructor
   public MuxerWrapper(MediaMuxer muxer, int encoderCount) {
@@ -52,8 +52,8 @@ public class MuxerWrapper {
     return muxerStarted;
   }
 
-  public Observable<Boolean> onRecordDone$() {
-    return recordDone$;
+  public Observable<Boolean> onMuxDone$() {
+    return muxDone$;
   }
 
   /**
@@ -67,8 +67,9 @@ public class MuxerWrapper {
       muxer.release();
       muxerStarted = false;
       Log.d(TAG, "MediaMuxer stopped:");
-      recordDone$.onNext(true);
-      recordDone$.onCompleted();
+
+      muxDone$.onNext(true);
+      muxDone$.onCompleted();
     }
   }
 
