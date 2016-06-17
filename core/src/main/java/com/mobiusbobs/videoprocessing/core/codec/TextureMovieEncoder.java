@@ -31,6 +31,8 @@ import com.mobiusbobs.videoprocessing.core.gles.WindowSurface;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
 
+import rx.Observable;
+
 /**
  * Encode a movie from frames rendered from an external texture image.
  * <p>
@@ -375,6 +377,10 @@ public class TextureMovieEncoder implements Runnable {
             mInputWindowSurface.setPresentationTime(currentPT);
             mInputWindowSurface.swapBuffers();
         }
+    }
+
+    public Observable<Boolean> onEncodeDone$() {
+        return mVideoEncoder.onEncodeDone$();
     }
 
     /**

@@ -9,6 +9,8 @@ import android.opengl.GLSurfaceView;
 import java.io.File;
 import java.io.IOException;
 
+import rx.Observable;
+
 /**
  * android
  * <p>
@@ -38,6 +40,10 @@ public class VideoRecorder {
   public VideoRecorder(File outputFile) throws IOException {
     this.outputFile = outputFile;
     resetRecorder(outputFile);
+  }
+
+  public Observable<Boolean> onRecordDone$() {
+    return textureMovieEncoder.onEncodeDone$();
   }
 
   public void resetRecorder(File outputFile) throws IOException {
