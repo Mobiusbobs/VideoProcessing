@@ -130,7 +130,7 @@ public class GifDecoder {
   private Bitmap previousImage;
   private boolean savePrevious;
   private int status;
-  private int sampleSize;
+  private int sampleSize = 1;
   private int downsampledHeight;
   private int downsampledWidth;
   private boolean isFirstFrameTransparent;
@@ -191,13 +191,22 @@ public class GifDecoder {
     setData(gifHeader, rawData, sampleSize);
   }
 
-  GifDecoder(BitmapProvider provider) {
-    this.bitmapProvider = provider;
-    header = new GifHeader();
+  public GifDecoder() {
+    this(new SimpleBitmapProvider(), 1);
   }
 
-  public GifDecoder() {
-    this(new SimpleBitmapProvider());
+  public GifDecoder(int sampleSize) {
+    this(new SimpleBitmapProvider(), sampleSize);
+  }
+
+  public GifDecoder(BitmapProvider provider) {
+    this(provider, 1);
+  }
+
+  public GifDecoder(BitmapProvider provider, int sampleSize) {
+    this.sampleSize = sampleSize;
+    this.bitmapProvider = provider;
+    header = new GifHeader();
   }
 
   public int getWidth() {
@@ -432,6 +441,10 @@ public class GifDecoder {
     setData(header, ByteBuffer.wrap(data));
   }
 
+  public synchronized void setData(GifHeader header, byte[] data, int sampleSize) {
+    setData(header, ByteBuffer.wrap(data), sampleSize);
+  }
+
   public synchronized void setData(GifHeader header, ByteBuffer buffer) {
     Log.d(TAG, "setData sampleSize 1 is called!");
     setData(header, buffer, 1); //1
@@ -491,7 +504,7 @@ public class GifDecoder {
   public synchronized int read(byte[] data) {
     this.header = getHeaderParser().setData(data).parseHeader();
     if (data != null) {
-      setData(header, data);
+      setData(header, data, sampleSize);
     }
 
     return status;

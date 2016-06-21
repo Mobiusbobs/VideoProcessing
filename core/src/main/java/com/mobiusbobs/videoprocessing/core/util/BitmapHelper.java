@@ -22,15 +22,21 @@ public class BitmapHelper {
     }
 
     public static Bitmap generateBitmap(String fileUrl) throws IOException {
+      return generateBitmap(fileUrl, 1);
+    }
+
+    public static Bitmap generateBitmap(String fileUrl, int sampleSize) throws IOException {
         // get bitmap
         File imageFile = new File(fileUrl);
         BitmapFactory.Options bmOptions = new BitmapFactory.Options();
+        bmOptions.inJustDecodeBounds = false;
+        bmOptions.inSampleSize = sampleSize;
         Bitmap bitmap = BitmapFactory.decodeFile(imageFile.getAbsolutePath(), bmOptions);
 
         if (bitmap != null) return bitmap;
 
         InputStream is = new URL(fileUrl).openStream();
-        bitmap = BitmapFactory.decodeStream(is);
+        bitmap = BitmapFactory.decodeStream(is, null, bmOptions);
 
         return bitmap;
     }
