@@ -192,18 +192,18 @@ public class GifDecoder {
   }
 
   public GifDecoder() {
-    this(new SimpleBitmapProvider(), 0);
+    this(new SimpleBitmapProvider(), 1);
   }
 
   public GifDecoder(int sampleSize) {
     this(new SimpleBitmapProvider(), sampleSize);
   }
 
-  GifDecoder(BitmapProvider provider) {
-    this(provider, 0);
+  public GifDecoder(BitmapProvider provider) {
+    this(provider, 1);
   }
 
-  GifDecoder(BitmapProvider provider, int sampleSize) {
+  public GifDecoder(BitmapProvider provider, int sampleSize) {
     this.sampleSize = sampleSize;
     this.bitmapProvider = provider;
     header = new GifHeader();
