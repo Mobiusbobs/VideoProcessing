@@ -62,7 +62,7 @@ public class GifDrawer implements GLDrawable {
   }
 
   public static GifDecoder createGifDecoder(String filePath) {
-    return createGifDecoder(filePath, 0);
+    return createGifDecoder(filePath, 1);
   }
 
   public static GifDecoder createGifDecoder(String filePath, int sampleSize) {

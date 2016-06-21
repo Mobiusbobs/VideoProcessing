@@ -504,8 +504,7 @@ public class GifDecoder {
   public synchronized int read(byte[] data) {
     this.header = getHeaderParser().setData(data).parseHeader();
     if (data != null) {
-      if (sampleSize > 1) setData(header, data, sampleSize);
-      else setData(header, data);
+      setData(header, data, sampleSize);
     }
 
     return status;
