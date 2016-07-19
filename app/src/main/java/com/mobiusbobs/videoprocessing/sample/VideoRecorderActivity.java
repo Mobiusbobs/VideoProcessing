@@ -28,7 +28,12 @@ public class VideoRecorderActivity extends AppCompatActivity implements CameraVi
     private static final String FILE_OUTPUT_NAME = "/gl_video_record_test1.mp4";
 
     // camera
-    private CameraController cameraController = new CameraController();
+    private CameraController cameraController = new CameraController(new CameraController.Callback() {
+        @Override
+        public void onPreviewSizeChanged(int width, int height) {
+
+        }
+    });
 
     // ui
     private CameraView cameraView;

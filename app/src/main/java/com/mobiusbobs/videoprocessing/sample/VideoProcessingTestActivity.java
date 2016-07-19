@@ -13,7 +13,7 @@ import android.view.View;
 import com.mobiusbobs.videoprocessing.core.util.CoordConverter;
 import com.mobiusbobs.videoprocessing.core.gldrawer.GifDrawer;
 import com.mobiusbobs.videoprocessing.core.ProcessorRunner;
-import com.mobiusbobs.videoprocessing.core.gldrawer.TextDrawer;
+//import com.mobiusbobs.videoprocessing.core.gldrawer.TextDrawer;
 import com.mobiusbobs.videoprocessing.core.util.Timer;
 import com.mobiusbobs.videoprocessing.core.VideoProcessor;
 import com.mobiusbobs.videoprocessing.core.gif.GifDecoder;
@@ -95,14 +95,14 @@ public class VideoProcessingTestActivity extends AppCompatActivity {
         WatermarkDrawer watermarkDrawer = new WatermarkDrawer(context, coordConverter);
 
         // --- setup text drawer ---
-        int pawId = R.drawable.icon_paw;
-        TextDrawer textDrawer = new TextDrawer(
-                context,
-                coordConverter,
-                screenWidth,
-                "Tiger",
-                pawId
-        );
+//        int pawId = R.drawable.icon_paw;
+//        TextDrawer textDrawer = new TextDrawer(
+//                context,
+//                coordConverter,
+//                screenWidth,
+//                "Tiger",
+//                pawId
+//        );
 
         try {
             VideoProcessor videoProcessor = new VideoProcessor.Builder()
@@ -110,7 +110,7 @@ public class VideoProcessingTestActivity extends AppCompatActivity {
                     .setBackgroundMusic(R.raw.short1)
                     .addDrawer(gifDrawer)
                     .addDrawer(watermarkDrawer)
-                    .addDrawer(textDrawer)
+//                    .addDrawer(textDrawer)
                     .setOutputPath(FILE_OUTPUT_MP4)
                     .build(context);
 
