@@ -946,9 +946,9 @@ public class VideoProcessor {
         int rotation = getMediaDataOrDefault(inputVideoFormat, MediaFormat.KEY_ROTATION, 0);
 
         int inputVideoWidth = getMediaDataOrDefault(
-          inputVideoFormat, MediaFormat.KEY_WIDTH, OUTPUT_VIDEO_WIDTH);
+            inputVideoFormat, MediaFormat.KEY_WIDTH, OUTPUT_VIDEO_WIDTH);
         int inputVideoHeight = getMediaDataOrDefault(
-          inputVideoFormat, MediaFormat.KEY_HEIGHT, OUTPUT_VIDEO_HEIGHT);
+            inputVideoFormat, MediaFormat.KEY_HEIGHT, OUTPUT_VIDEO_HEIGHT);
 
         // swap weight and height if rotation is 90/270
         if (rotation == 90 || rotation == 270) {
