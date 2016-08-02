@@ -60,6 +60,7 @@ public class VideoProcessor {
     // parameters for the video encoder
     private static final String OUTPUT_VIDEO_MIME_TYPE = "video/avc"; // H.264 Advanced Video Coding
     private static final int OUTPUT_VIDEO_BIT_RATE = 6000000; // 2 Mbps
+    private static final int OUTPUT_VIDEO_MIN_FRAME_RATE = 15;
     private static final int OUTPUT_VIDEO_FRAME_RATE = 30;        // 15fps
     private static final int OUTPUT_VIDEO_IFRAME_INTERVAL = 10; // 10 seconds between I-frames
 
@@ -154,6 +155,12 @@ public class VideoProcessor {
 
         // input video format
         MediaFormat inputVideoFormat = videoExtractor.getTrackFormat(videoTrackIndex);
+
+        if (!inputVideoFormat.containsKey(MediaFormat.KEY_FRAME_RATE) ||
+            inputVideoFormat.getInteger(MediaFormat.KEY_FRAME_RATE) <= OUTPUT_VIDEO_MIN_FRAME_RATE) {
+            inputVideoFormat.setInteger(MediaFormat.KEY_FRAME_RATE, OUTPUT_VIDEO_FRAME_RATE);
+        }
+
         long videoDuration = inputVideoFormat.getLong(MediaFormat.KEY_DURATION);
         // fix config problem: http://stackoverflow.com/questions/15105843/mediacodec-jelly-bean
         inputVideoFormat.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, 0);
@@ -208,6 +215,40 @@ public class VideoProcessor {
             videoDuration,
             audioDuration);
 
+    }
+
+    public void dumpMediaFormat(MediaFormat mediaFormat) {
+        Log.d("DUMP_MEDIA_FORMAT", "Start");
+        printMediaFormat(mediaFormat, "KEY_AAC_PROFILE", MediaFormat.KEY_AAC_PROFILE, "Integer");
+        printMediaFormat(mediaFormat, "KEY_BIT_RATE", MediaFormat.KEY_BIT_RATE, "Integer");
+        printMediaFormat(mediaFormat, "KEY_CHANNEL_COUNT", MediaFormat.KEY_CHANNEL_COUNT, "Integer");
+        printMediaFormat(mediaFormat, "KEY_CHANNEL_MASK", MediaFormat.KEY_CHANNEL_MASK, "Integer");
+        printMediaFormat(mediaFormat, "KEY_COLOR_FORMAT", MediaFormat.KEY_COLOR_FORMAT, "Integer");
+        printMediaFormat(mediaFormat, "KEY_DURATION", MediaFormat.KEY_DURATION, "Long");
+        printMediaFormat(mediaFormat, "KEY_FLAC_COMPRESSION_LEVEL", MediaFormat.KEY_FLAC_COMPRESSION_LEVEL, "Integer");
+        printMediaFormat(mediaFormat, "KEY_FRAME_RATE", MediaFormat.KEY_FRAME_RATE, "Integer");
+        printMediaFormat(mediaFormat, "KEY_HEIGHT", MediaFormat.KEY_HEIGHT, "Integer");
+        printMediaFormat(mediaFormat, "KEY_IS_ADTS", MediaFormat.KEY_IS_ADTS, "Integer");
+        printMediaFormat(mediaFormat, "KEY_I_FRAME_INTERVAL", MediaFormat.KEY_I_FRAME_INTERVAL, "Integer");
+        printMediaFormat(mediaFormat, "KEY_MAX_INPUT_SIZE", MediaFormat.KEY_MAX_INPUT_SIZE, "Integer");
+        printMediaFormat(mediaFormat, "KEY_MIME", MediaFormat.KEY_MIME, "String");
+        printMediaFormat(mediaFormat, "KEY_SAMPLE_RATE", MediaFormat.KEY_SAMPLE_RATE, "Integer");
+        printMediaFormat(mediaFormat, "KEY_WIDTH", MediaFormat.KEY_WIDTH, "Integer");
+        Log.d("DUMP_MEDIA_FORMAT", "End");
+    }
+
+    public void printMediaFormat(MediaFormat mediaFormat, String tag, String key, String type) {
+        if (mediaFormat.containsKey(key)) {
+            if (type.equals("Integer")) {
+                Log.d("DUMP_MEDIA_FORMAT", tag + ": " + mediaFormat.getInteger(key));
+            } else if (type.equals("Long")) {
+                Log.d("DUMP_MEDIA_FORMAT", tag + ": " + mediaFormat.getLong(key));
+            } else if (type.equals("String")) {
+                Log.d("DUMP_MEDIA_FORMAT", tag + ": " + mediaFormat.getString(key));
+            }
+            return;
+        }
+        Log.d("DUMP_MEDIA_FORMAT", tag + ": Not Found");
     }
 
     private void doProcess(
