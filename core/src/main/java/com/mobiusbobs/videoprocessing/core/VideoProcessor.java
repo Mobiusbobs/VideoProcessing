@@ -158,7 +158,6 @@ public class VideoProcessor {
 
         if (!inputVideoFormat.containsKey(MediaFormat.KEY_FRAME_RATE) ||
             inputVideoFormat.getInteger(MediaFormat.KEY_FRAME_RATE) <= OUTPUT_VIDEO_MIN_FRAME_RATE) {
-            Log.d("VIDEO_PROCESSOR", "Steps 5.1 set frame rate");
             inputVideoFormat.setInteger(MediaFormat.KEY_FRAME_RATE, OUTPUT_VIDEO_FRAME_RATE);
         }
 
@@ -250,7 +249,7 @@ public class VideoProcessor {
             return;
         }
         Log.d("DUMP_MEDIA_FORMAT", tag + ": Not Found");
-     }
+    }
 
     private void doProcess(
         MediaExtractor videoExtractor,
