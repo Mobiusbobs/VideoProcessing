@@ -400,6 +400,16 @@ public class VideoProcessor {
         muxer.stop();
         muxer.release();
 
+        // stop and release video/audio encoder/decoder
+        videoDecoder.stop();
+        videoDecoder.release();
+        videoEncoder.stop();
+        videoEncoder.release();
+        audioDecoder.stop();
+        audioDecoder.release();
+        audioEncoder.stop();
+        audioEncoder.release();
+
         Log.d(TAG, "doExtractDecodeEncodeMux Done: videoExtractedFrameCount = " + videoExtractedFrameCount);
         Log.d(TAG, "doExtractDecodeEncodeMux Done: videoDecodedFrameCount = " + videoDecodedFrameCount);
         Log.d(TAG, "doExtractDecodeEncodeMux Done: videoEncodedFrameCount = " + videoEncodedFrameCount);
