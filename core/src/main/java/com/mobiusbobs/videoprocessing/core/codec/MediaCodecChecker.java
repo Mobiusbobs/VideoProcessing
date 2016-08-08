@@ -5,6 +5,7 @@ import android.media.MediaFormat;
 import android.os.Build;
 import android.util.Log;
 import android.util.Range;
+import android.widget.Toast;
 
 import com.mobiusbobs.videoprocessing.core.VideoProcessor;
 
@@ -44,8 +45,8 @@ public class MediaCodecChecker {
     Log.d(TAG, "hardware = " + hardware);
   }
 
-  public static void checkVideoCapability(MediaCodecInfo videoCodecInfo, MediaFormat inputVideoFormat) {
-    Log.d("VIDEO_CAPABILITIES", "checkVideoCapability... called...");
+  public static boolean checkVideoCapabilitySupported(MediaCodecInfo videoCodecInfo, MediaFormat inputVideoFormat) {
+    Log.d("VIDEO_CAPABILITIES", "checkVideoCapabilitySupported... called...");
 
     if(android.os.Build.VERSION.SDK_INT >= 21) {
       int width = VideoProcessor.getMediaDataOrDefault(inputVideoFormat, MediaFormat.KEY_WIDTH, -1);
@@ -55,7 +56,7 @@ public class MediaCodecChecker {
       if (width == -1 || height == -1 || frameRate == -1) {
         Log.e("VIDEO_CAPABILITIES", "inputMediaFormat missing variable: " +
           "width=" + width + ", height=" + height + ", frameRate=" + frameRate);
-        return;
+        return false;
       }
 
       MediaCodecInfo.VideoCapabilities videoCapabilities =
@@ -76,10 +77,14 @@ public class MediaCodecChecker {
       Log.d("VIDEO_CAPABILITIES", "widthRange = " + widthRange.toString());
       Log.d("VIDEO_CAPABILITIES", "isSizeSupport = " + isSizeSupport);
       Log.d("VIDEO_CAPABILITIES", "areSizeAndRateSupport = " + areSizeAndRateSupport);
+
+      if (isSizeSupport && areSizeAndRateSupport) return true;
+      return false;
     }
 
     else {
-      Log.d("VIDEO_CAPABILITIES", "android.os.Build.VERSION.SDK_INT is " + android.os.Build.VERSION.SDK_INT + ", checkVideoCapability not supported");
+      Log.d("VIDEO_CAPABILITIES", "android.os.Build.VERSION.SDK_INT is " + android.os.Build.VERSION.SDK_INT + ", checkVideoCapabilitySupported not supported");
+      return false;
     }
   }
 
