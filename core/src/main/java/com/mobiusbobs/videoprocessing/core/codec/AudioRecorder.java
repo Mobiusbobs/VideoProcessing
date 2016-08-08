@@ -124,7 +124,6 @@ public class AudioRecorder {
    * and write them to the MediaCodec encoder
    */
   private class AudioThread extends Thread {
-
     @Override
     public void run() {
       android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_URGENT_AUDIO);
