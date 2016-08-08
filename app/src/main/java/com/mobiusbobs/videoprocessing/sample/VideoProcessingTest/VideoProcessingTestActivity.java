@@ -18,6 +18,7 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.Toast;
 
+import com.mobiusbobs.videoprocessing.core.ProcessorRunner;
 import com.mobiusbobs.videoprocessing.core.codec.Extractor;
 import com.mobiusbobs.videoprocessing.core.codec.MediaCodecChecker;
 import com.mobiusbobs.videoprocessing.core.gldrawer.GLDrawable;
@@ -30,8 +31,10 @@ import com.mobiusbobs.videoprocessing.sample.VideoProcessingTest.videoProcessing
 import com.mobiusbobs.videoprocessing.sample.VideoProcessingTest.videoProcessing.Duration;
 import com.mobiusbobs.videoprocessing.sample.VideoProcessingTest.videoProcessing.DurationGLDrawable;
 import com.mobiusbobs.videoprocessing.sample.VideoProcessingTest.videoProcessing.DurationGifDrawable;
+import com.mobiusbobs.videoprocessing.sample.VideoProcessingTest.videoProcessing.MediaMetaHelper;
 import com.mobiusbobs.videoprocessing.sample.VideoProcessingTest.videoProcessing.StickerDrawer;
 import com.mobiusbobs.videoprocessing.sample.VideoProcessingTest.videoProcessing.TextDrawer;
+import com.mobiusbobs.videoprocessing.sample.VideoProcessingTest.videoProcessing.WatermarkDrawer;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -125,10 +128,11 @@ public class VideoProcessingTestActivity extends AppCompatActivity {
             fab.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-
+                    /*
                     runVideoProcess();
                     Snackbar.make(view, "Run test of adding gif, watermark and text", Snackbar.LENGTH_LONG)
                       .setAction("Action", null).show();
+                    */
                 }
             });
         }
@@ -148,35 +152,46 @@ public class VideoProcessingTestActivity extends AppCompatActivity {
                 runPrintMediaCondecInfo(file.getAbsolutePath());
                 break;
             case 2: // "Print MediaCodec / MediaFormat Info(imported video file)"
-                // TODO choose file from folder...
                 requestImportFile();
-                //Log.d(TAG, "file = " + file.getAbsolutePath());
-                //runPrintMediaCondecInfo(file.getAbsolutePath());
                 break;
+
 
             // simple encoder / decoder check
             case 3: //"Test Simply Decode -> Encode(default video file)"
+                //Toast.makeText(this, "Not Implemented", Toast.LENGTH_SHORT).show();
+                File file2 = copyRawFileToInternalStorage(R.raw.test1);
+                String[] stickers = {};
+                Log.d(TAG, "file = " + file2.getAbsolutePath());
+                runVideoProcess(file2.getAbsolutePath(), stickers, "");
+
                 break;
             case 4: //"Test Simply Decode -> Encode(chosen file)"
+                Toast.makeText(this, "Not Implemented", Toast.LENGTH_SHORT).show();
                 break;
             case 5: //"Test Simply Decode -> Encode(recorded file)"
+                Toast.makeText(this, "Not Implemented", Toast.LENGTH_SHORT).show();
                 break;
 
             // image processing check
             case 6: //"Test Processing with add Image Sticker"
-                runVideoProcess();
+                Toast.makeText(this, "Not Implemented", Toast.LENGTH_SHORT).show();
+                //runVideoProcess();
                 break;
             case 7: //"Test Processing with add Gif Sticker"
-                runVideoProcess();
+                Toast.makeText(this, "Not Implemented", Toast.LENGTH_SHORT).show();
+                //runVideoProcess();
                 break;
             case 8: //"Test Processing with add Text Sticker"
-                runVideoProcess();
+                Toast.makeText(this, "Not Implemented", Toast.LENGTH_SHORT).show();
+                //runVideoProcess();
                 break;
             case 9: //"Test Processing with add WaterMark(Blur)"
-                runVideoProcess();
+                Toast.makeText(this, "Not Implemented", Toast.LENGTH_SHORT).show();
+                //runVideoProcess();
                 break;
             case 10: //"Test Processing with all of above"
-                runVideoProcess();
+                Toast.makeText(this, "Not Implemented", Toast.LENGTH_SHORT).show();
+                //runVideoProcess();
                 break;
         }
     }
@@ -210,7 +225,6 @@ public class VideoProcessingTestActivity extends AppCompatActivity {
 
     private void requestImportFile() {
         //http://stackoverflow.com/questions/31044591/how-to-select-a-video-from-the-gallery-and-get-its-real-path
-
         Intent intent = new Intent();
         intent.setType("video/*");
         intent.setAction(Intent.ACTION_GET_CONTENT);
@@ -221,14 +235,75 @@ public class VideoProcessingTestActivity extends AppCompatActivity {
 
 
     // --- video processing test --- //
-    private void runVideoProcess() {
-        String inputVideoFilePath = "";
-        String[] stickerList = {"Text Sticker", "ABCDE"};
-        String petName = "myPetName";
-
+    private void runVideoProcess(String filePath, String[] stickerList, String petname) {
+        //String inputVideoFilePath = "";
+        //String[] stickerList = {"Text Sticker", "ABCDE"};
+        //String petName = "myPetName";
         Log.d(TAG, "runVideoProcess... filePath = ");
-        //processVideo(inputVideoFilePath, stickerList, petName);
+
+        // file output
+        File fileOutput = MediaFileHelper.getOutputMediaFile(MediaFileHelper.MEDIA_TYPE_VIDEO, true);
+        if (fileOutput == null) {
+            Log.e(TAG, "Can not get output media file path");
+            return;
+        }
+        Log.d(TAG, "fileOutput = " + fileOutput);
+
+        // video info
+        final String fileOutputPath = fileOutput.toString();
+        final long videoDuration = MediaMetaHelper.getMediaDuration(this, Uri.parse(filePath));
+
+        // coordinate converter
+        CoordConverter coordConverter = new CoordConverter(this);
+
+        // --- gl drawable (sticker / gif / text / watermark / etc.)
+        // watermark
+        /*
+        int watermarkWidth = 223 * 2;
+        int watermarkHeight = 52 * 2;
+        float[] watermarkVertices = coordConverter.getVertices(
+          (VideoProcessor.OUTPUT_VIDEO_WIDTH - watermarkWidth) / 2,
+          (VideoProcessor.OUTPUT_VIDEO_HEIGHT - watermarkHeight) / 2,
+          watermarkWidth,
+          watermarkHeight
+        );
+        WatermarkDrawer watermarkDrawer = new WatermarkDrawer(this, watermarkVertices);
+        watermarkDrawer.setDuration(new Duration(videoDuration - 100, videoDuration + 1000));
+        */
+
+        List<GLDrawable> drawerList = new ArrayList<>();
+        //drawerList.addAll(getStickerDrawerList(stickerList, coordConverter));
+        //drawerList.add(topRightTextDrawer);
+        //drawerList.add(watermarkDrawer);
+
+        try {
+            VideoProcessor.Builder builder = new VideoProcessor.Builder()
+              .setInputFilePath(filePath)
+              .setOutputPath(fileOutputPath);
+
+            for (GLDrawable drawer: drawerList) {
+                //builder.addDrawer(drawer);
+            }
+
+            VideoProcessor videoProcessor = builder.build(this);
+
+            ProcessorRunner.run(videoProcessor, "Process video", new ProcessorRunner.ProcessorRunnerCallback() {
+                @Override
+                public void onCompleted() {
+                    Log.d(TAG, "VideoProcess... complete... success...");
+                }
+
+                @Override
+                public void onError(Throwable e) {
+                    Log.e(TAG, "VideoProcess... fail... OnError = " + e);
+                }
+            });
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
+
 
     private List<GLDrawable> getStickerDrawerList(
       String[] stickers,
