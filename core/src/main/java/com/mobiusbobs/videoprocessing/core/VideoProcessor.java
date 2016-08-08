@@ -58,7 +58,7 @@ public class VideoProcessor {
 
     // ----- format parameters -----
     // parameters for the video encoder
-    private static final String OUTPUT_VIDEO_MIME_TYPE = "video/avc"; // H.264 Advanced Video Coding
+    public static final String OUTPUT_VIDEO_MIME_TYPE = "video/avc"; // H.264 Advanced Video Coding
     private static final int OUTPUT_VIDEO_BIT_RATE = 6000000; // 2 Mbps
     private static final int OUTPUT_VIDEO_MIN_FRAME_RATE = 15;
     private static final int OUTPUT_VIDEO_FRAME_RATE = 30;        // 15fps
@@ -959,7 +959,7 @@ public class VideoProcessor {
      * Returns the first codec capable of encoding the specified MIME type, or null if no match was
      * found.
      */
-    private static MediaCodecInfo selectCodec(String mimeType) {
+    public static MediaCodecInfo selectCodec(String mimeType) {
         int numCodecs = MediaCodecList.getCodecCount();
         for (int i = 0; i < numCodecs; i++) {
             MediaCodecInfo codecInfo = MediaCodecList.getCodecInfoAt(i);
@@ -976,7 +976,7 @@ public class VideoProcessor {
         return null;
     }
 
-    private int getMediaDataOrDefault(MediaFormat inputVideoFormat, String key, int defaultValue) {
+    public static int getMediaDataOrDefault(MediaFormat inputVideoFormat, String key, int defaultValue) {
         if (inputVideoFormat.containsKey(key)) return inputVideoFormat.getInteger(key);
         else return defaultValue;
     }

@@ -18,6 +18,8 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.Toast;
 
+import com.mobiusbobs.videoprocessing.sample.VideoProcessingTest.VideoProcessingTestActivity;
+
 public class MainActivity extends AppCompatActivity {
     public static String TAG = "MainActivity";
 

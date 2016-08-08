@@ -32,7 +32,7 @@
             android:name=".VideoRecorderActivity"
             android:screenOrientation="portrait"/>
         <activity
-            android:name=".VideoProcessingTestActivity"
+            android:name=".VideoProcessingTest.VideoProcessingTestActivity"
             android:screenOrientation="portrait"/>
     </application>
 
