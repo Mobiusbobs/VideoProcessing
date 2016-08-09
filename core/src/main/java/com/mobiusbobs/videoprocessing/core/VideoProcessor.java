@@ -129,7 +129,7 @@ public class VideoProcessor {
     int outputVideoTrack = -1;
     int outputAudioTrack = -1;
 
-    // for audio hotfix
+    // for audio hotfix on audio muxer
     long lastAudioPresentationTime = 0;
 
     // Constructor
@@ -400,6 +400,7 @@ public class VideoProcessor {
         muxer.stop();
         muxer.release();
 
+        // stop and release video/audio encoder/decoder
         stopAndReleaseMediaCodec(videoDecoder);
         stopAndReleaseMediaCodec(videoEncoder);
         stopAndReleaseMediaCodec(audioDecoder);
@@ -653,10 +654,6 @@ public class VideoProcessor {
         ByteBuffer encoderInputBuffer = audioEncoderInputBuffers[encoderInputBufferIndex];
         int size = audioDecoderOutputBufferInfo.size;
         long presentationTime = audioDecoderOutputBufferInfo.presentationTimeUs + pTimeOffset;
-        if (presentationTime < lastAudioPresentationTime) {
-            presentationTime = lastAudioPresentationTime + 1;
-        }
-        lastAudioPresentationTime = presentationTime;
 
         if (size >= 0) {
             ByteBuffer decoderOutputBuffer =
@@ -813,6 +810,12 @@ public class VideoProcessor {
             audioEncoder.releaseOutputBuffer(encoderOutputBufferIndex, false);
             return false;
         }
+
+        long presentationTime = audioEncoderOutputBufferInfo.presentationTimeUs;
+        if (lastAudioPresentationTime >= presentationTime) {
+            audioEncoderOutputBufferInfo.presentationTimeUs = lastAudioPresentationTime + 1;
+        }
+        lastAudioPresentationTime = presentationTime;
 
         if (audioEncoderOutputBufferInfo.size != 0) {
             Log.d(TAG, "write Audio sample to muxer");
