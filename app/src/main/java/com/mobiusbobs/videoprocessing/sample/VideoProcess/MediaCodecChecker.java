@@ -1,4 +1,4 @@
-package com.mobiusbobs.videoprocessing.core.codec;
+package com.mobiusbobs.videoprocessing.sample.VideoProcess;
 
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
@@ -115,9 +115,7 @@ public class MediaCodecChecker {
 
   public static void checkAudioCapability() {
 
-
   }
-
 
   // --- dump media format information
   public static void dumpMediaFormat(MediaFormat mediaFormat) {

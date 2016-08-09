@@ -1,4 +1,4 @@
-package com.mobiusbobs.videoprocessing.sample.VideoProcessingTest.videoProcessing;
+package com.mobiusbobs.videoprocessing.sample.VideoProcess.videoProcessing;
 
 import com.mobiusbobs.videoprocessing.core.gldrawer.GLDrawable;
 

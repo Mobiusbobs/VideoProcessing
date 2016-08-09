@@ -400,6 +400,11 @@ public class VideoProcessor {
         muxer.stop();
         muxer.release();
 
+        stopAndReleaseMediaCodec(videoDecoder);
+        stopAndReleaseMediaCodec(videoEncoder);
+        stopAndReleaseMediaCodec(audioDecoder);
+        stopAndReleaseMediaCodec(audioEncoder);
+
         Log.d(TAG, "doExtractDecodeEncodeMux Done: videoExtractedFrameCount = " + videoExtractedFrameCount);
         Log.d(TAG, "doExtractDecodeEncodeMux Done: videoDecodedFrameCount = " + videoDecodedFrameCount);
         Log.d(TAG, "doExtractDecodeEncodeMux Done: videoEncodedFrameCount = " + videoEncodedFrameCount);
@@ -451,11 +456,11 @@ public class VideoProcessor {
         // 4.) queue the buffer to codec to process
         if (size >= 0) {
             videoDecoder.queueInputBuffer(
-                    decoderInputBufferIndex,
-                    0,
-                    size,
-                    presentationTime,
-                    videoExtractor.getSampleFlags());
+              decoderInputBufferIndex,
+              0,
+              size,
+              presentationTime,
+              videoExtractor.getSampleFlags());
         }
 
         boolean videoExtractorDone = !videoExtractor.advance();
@@ -781,7 +786,7 @@ public class VideoProcessor {
      */
     private boolean muxAudio(MediaCodec audioEncoder, MediaMuxer muxer) {
         int encoderOutputBufferIndex = audioEncoder.dequeueOutputBuffer(
-                audioEncoderOutputBufferInfo, TIMEOUT_USEC);
+          audioEncoderOutputBufferInfo, TIMEOUT_USEC);
 
         if (encoderOutputBufferIndex == MediaCodec.INFO_TRY_AGAIN_LATER) {
             Log.d(TAG, "no audio encoder output buffer");

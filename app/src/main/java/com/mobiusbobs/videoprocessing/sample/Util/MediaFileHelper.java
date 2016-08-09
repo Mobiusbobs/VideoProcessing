@@ -1,10 +1,17 @@
-package com.mobiusbobs.videoprocessing.sample.VideoProcessingTest;
+package com.mobiusbobs.videoprocessing.sample.Util;
 
 import android.annotation.SuppressLint;
+import android.content.Context;
+import android.database.Cursor;
+import android.net.Uri;
 import android.os.Environment;
+import android.provider.MediaStore;
 import android.util.Log;
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -82,6 +89,39 @@ public class MediaFileHelper {
                 new File(directory, children[i]).delete();
             }
         }
+    }
+
+    // TODO update file name
+    public static File copyRawFileToInternalStorage(Context context, int testRawId) {
+        File file = new File(context.getFilesDir() + File.separator + "input.mp4");
+        try {
+            InputStream inputStream = context.getResources().openRawResource(testRawId);
+            FileOutputStream fileOutputStream = new FileOutputStream(file);
+
+            byte buf[]=new byte[1024];
+            int len;
+            while((len=inputStream.read(buf))>0) {
+                fileOutputStream.write(buf,0,len);
+            }
+
+            fileOutputStream.close();
+            inputStream.close();
+        } catch (IOException e1) {
+
+        }
+        return file;
+    }
+
+    public static String getPath(Context context, Uri uri) {
+        String[] projection = { MediaStore.Images.Media.DATA };
+        Cursor cursor = context.getContentResolver().query(uri, projection, null, null, null);
+        if (cursor != null) {
+            int column_index = cursor
+              .getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
+            cursor.moveToFirst();
+            return cursor.getString(column_index);
+        } else
+            return null;
     }
 
 }
