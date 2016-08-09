@@ -16,7 +16,9 @@ import com.mobiusbobs.videoprocessing.core.codec.Extractor;
 import com.mobiusbobs.videoprocessing.core.gldrawer.GLDrawable;
 import com.mobiusbobs.videoprocessing.sample.Util.MediaFileHelper;
 import com.mobiusbobs.videoprocessing.sample.VideoProcess.videoProcessing.CoordConverter;
+import com.mobiusbobs.videoprocessing.sample.VideoProcess.videoProcessing.Duration;
 import com.mobiusbobs.videoprocessing.sample.VideoProcess.videoProcessing.MediaMetaHelper;
+import com.mobiusbobs.videoprocessing.sample.VideoProcess.videoProcessing.WatermarkDrawer;
 
 import java.io.File;
 import java.io.IOException;
@@ -42,7 +44,7 @@ public class VideoProcessTask {
     this.context = context;
   }
 
-  // --- printing test --- //
+  // --- device info related --- //
   public void runPrintDeviceInfo() {
     Log.d(TAG, "runPrintDeviceInfo... ");
     MediaCodecChecker.dumpDeviceInfo();
@@ -69,6 +71,7 @@ public class VideoProcessTask {
     }
   }
 
+  // --- import file --- //
   public void requestImportFile(int requestCode) {
     //http://stackoverflow.com/questions/31044591/how-to-select-a-video-from-the-gallery-and-get-its-real-path
     Intent intent = new Intent();
@@ -81,20 +84,13 @@ public class VideoProcessTask {
 
 
   // --- video processing test --- //
+  // TODO rename() plain decide / encode
   public void runVideoProcess(String filePath) {
-    Log.d(TAG, "runVideoProcess: filePath = ");
+    // get output file path
+    final String fileOutputPath = createNewFileOutput();
+    if (fileOutputPath == null) return;
 
-    // file output
-    File fileOutput = MediaFileHelper.getOutputMediaFile(MediaFileHelper.MEDIA_TYPE_VIDEO, true);
-    if (fileOutput == null) {
-      Log.e(TAG, "Can not get output media file path");
-      return;
-    }
-    Log.d(TAG, "fileOutput = " + fileOutput);
-
-    // video info
-    final String fileOutputPath = fileOutput.toString();
-
+    // video processing - empty
     try {
       VideoProcessor.Builder builder = new VideoProcessor.Builder()
         .setInputFilePath(filePath)
@@ -117,6 +113,67 @@ public class VideoProcessTask {
     } catch (IOException e) {
       e.printStackTrace();
     }
+  }
+
+  public void runVideoProcessWithWatermark(String filePath) {
+    // get output file path
+    final String fileOutputPath = createNewFileOutput();
+    if (fileOutputPath == null) return;
+
+    // init coordconverter
+    CoordConverter coordConverter = new CoordConverter(context);
+    final long videoDuration = MediaMetaHelper.getMediaDuration(context, Uri.parse(filePath));
+
+    // watermark
+    GLDrawable watermarkDrawer = setupWatermarkDrawer(coordConverter, videoDuration);
+
+    // video processing
+    try {
+      VideoProcessor.Builder builder = new VideoProcessor.Builder()
+        .setInputFilePath(filePath)
+        .addDrawer(watermarkDrawer)
+        .setOutputPath(fileOutputPath);
+
+      VideoProcessor videoProcessor = builder.build(context);
+
+      ProcessorRunner.run(videoProcessor, "Process video", new ProcessorRunner.ProcessorRunnerCallback() {
+        @Override
+        public void onCompleted() {
+          Log.d(TAG, "VideoProcess... complete... success...");
+        }
+
+        @Override
+        public void onError(Throwable e) {
+          Log.e(TAG, "VideoProcess... fail... OnError = " + e);
+        }
+      });
+
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+  }
+
+  private String createNewFileOutput() {
+    File fileOutput = MediaFileHelper.getOutputMediaFile(MediaFileHelper.MEDIA_TYPE_VIDEO, true);
+    if (fileOutput == null) {
+      Log.e(TAG, "Can not get output media file path");
+      return null;
+    }
+    return fileOutput.toString();
+  }
+
+  private GLDrawable setupWatermarkDrawer(CoordConverter coordConverter, long videoDuration) {
+    int watermarkWidth = 223 * 2;
+    int watermarkHeight = 52 * 2;
+    float[] watermarkVertices = coordConverter.getVertices(
+      (VideoProcessor.OUTPUT_VIDEO_WIDTH - watermarkWidth) / 2,
+      (VideoProcessor.OUTPUT_VIDEO_HEIGHT - watermarkHeight) / 2,
+      watermarkWidth,
+      watermarkHeight
+    );
+    WatermarkDrawer watermarkDrawer = new WatermarkDrawer(context, watermarkVertices);
+    watermarkDrawer.setDuration(new Duration(videoDuration - 100, videoDuration + 1000));
+    return watermarkDrawer;
   }
 
   /*

@@ -52,9 +52,6 @@ public class MediaFileHelper {
             mediaStorageDir = new File(Environment.getExternalStoragePublicDirectory(
                 Environment.DIRECTORY_MOVIES), DIRECTORY_TMP);
 
-        // This location works best if you want the created images to be shared
-        // between applications and persist after your app has been uninstalled.
-
         // Create the storage directory if it does not exist
         if (!mediaStorageDir.exists()){
             if (!mediaStorageDir.mkdirs()) {
@@ -79,18 +76,6 @@ public class MediaFileHelper {
         return mediaFile;
     }
 
-    public static void removeTmpDirectory() {
-        File directory = new File(Environment.getExternalStoragePublicDirectory(
-            Environment.DIRECTORY_MOVIES), DIRECTORY_TMP);
-
-        if (directory.isDirectory()) {
-            String[] children = directory.list();
-            for (int i = 0; i < children.length; i++) {
-                new File(directory, children[i]).delete();
-            }
-        }
-    }
-
     // TODO update file name
     public static File copyRawFileToInternalStorage(Context context, int testRawId) {
         File file = new File(context.getFilesDir() + File.separator + "input.mp4");
@@ -112,16 +97,32 @@ public class MediaFileHelper {
         return file;
     }
 
-    public static String getPath(Context context, Uri uri) {
-        String[] projection = { MediaStore.Images.Media.DATA };
-        Cursor cursor = context.getContentResolver().query(uri, projection, null, null, null);
-        if (cursor != null) {
-            int column_index = cursor
+    // http://stackoverflow.com/questions/3401579/get-filename-and-path-from-uri-from-mediastore
+    public static String getRealPathFromUri(Context context, Uri contentUri) {
+        Cursor cursor = null;
+        try {
+            String[] proj = { MediaStore.Images.Media.DATA };
+            cursor = context.getContentResolver()
+              .query(contentUri,  proj, null, null, null);
+
+            int columnIndex = 0;
+            if (cursor == null) {
+                throw new IllegalArgumentException(
+                  "Cannot get cursor with contentUri: " + contentUri
+                );
+            }
+
+            columnIndex = cursor
               .getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
             cursor.moveToFirst();
-            return cursor.getString(column_index);
-        } else
-            return null;
+            return cursor.getString(columnIndex);
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+        }
     }
+
+
 
 }

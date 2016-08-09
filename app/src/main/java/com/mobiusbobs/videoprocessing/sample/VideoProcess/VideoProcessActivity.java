@@ -1,10 +1,8 @@
 package com.mobiusbobs.videoprocessing.sample.VideoProcess;
 
 import android.content.Intent;
-import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
-import android.provider.MediaStore;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -14,25 +12,11 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.Toast;
 
-import com.mobiusbobs.videoprocessing.core.gldrawer.GLDrawable;
-import com.mobiusbobs.videoprocessing.core.gldrawer.GifDrawer;
 //import com.mobiusbobs.videoprocessing.core.gldrawer.TextDrawer;
-import com.mobiusbobs.videoprocessing.core.gif.GifDecoder;
 import com.mobiusbobs.videoprocessing.sample.R;
 import com.mobiusbobs.videoprocessing.sample.Util.MediaFileHelper;
-import com.mobiusbobs.videoprocessing.sample.VideoProcess.videoProcessing.CoordConverter;
-import com.mobiusbobs.videoprocessing.sample.VideoProcess.videoProcessing.Duration;
-import com.mobiusbobs.videoprocessing.sample.VideoProcess.videoProcessing.DurationGLDrawable;
-import com.mobiusbobs.videoprocessing.sample.VideoProcess.videoProcessing.DurationGifDrawable;
-import com.mobiusbobs.videoprocessing.sample.VideoProcess.videoProcessing.StickerDrawer;
-import com.mobiusbobs.videoprocessing.sample.VideoProcess.videoProcessing.TextDrawer;
 
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Test Option:
@@ -81,6 +65,7 @@ public class VideoProcessActivity extends AppCompatActivity {
     };
 
     private VideoProcessTask task;
+    private File defaultFile;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -89,6 +74,7 @@ public class VideoProcessActivity extends AppCompatActivity {
         initView();
 
         task = new VideoProcessTask(this, this);
+        defaultFile = MediaFileHelper.copyRawFileToInternalStorage(this, R.raw.test1);
     }
 
     private void initView() {
@@ -140,8 +126,7 @@ public class VideoProcessActivity extends AppCompatActivity {
                 task.runPrintDeviceInfo();
                 break;
             case 1: // "Print MediaCodec / MediaFormat Info(default video file)"
-                File file = MediaFileHelper.copyRawFileToInternalStorage(this, R.raw.test1);
-                task.runPrintMediaCondecInfo(file.getAbsolutePath());
+                task.runPrintMediaCondecInfo(defaultFile.getAbsolutePath());
                 break;
             case 2: // "Print MediaCodec / MediaFormat Info(imported video file)"
                 task.requestImportFile(REQUEST_IMPORT_FILE_FOR_CONFIG);
@@ -149,8 +134,7 @@ public class VideoProcessActivity extends AppCompatActivity {
 
             // simple encoder / decoder check
             case 3: //"Test Simply Decode -> Encode(default video file)"
-                File file2 = MediaFileHelper.copyRawFileToInternalStorage(this, R.raw.test1);
-                task.runVideoProcess(file2.getAbsolutePath());
+                task.runVideoProcess(defaultFile.getAbsolutePath());
                 break;
             case 4: //"Test Simply Decode -> Encode(chosen file)"
                 task.requestImportFile(REQUEST_IMPORT_FILE_FOR_ENCODE);
@@ -173,7 +157,8 @@ public class VideoProcessActivity extends AppCompatActivity {
                 //runVideoProcess();
                 break;
             case 9: //"Test Processing with add WaterMark(Blur)"
-                Toast.makeText(this, "Not Implemented", Toast.LENGTH_SHORT).show();
+                task.runVideoProcessWithWatermark(defaultFile.getAbsolutePath());
+                //Toast.makeText(this, "Not Implemented", Toast.LENGTH_SHORT).show();
                 //runVideoProcess();
                 break;
             case 10: //"Test Processing with all of above"
@@ -188,11 +173,11 @@ public class VideoProcessActivity extends AppCompatActivity {
         if (resultCode == RESULT_OK) {
             if (requestCode == REQUEST_IMPORT_FILE_FOR_CONFIG) {
                 Uri selectedVideoUri = data.getData();
-                String filePath = MediaFileHelper.getPath(this, selectedVideoUri);
+                String filePath = MediaFileHelper.getRealPathFromUri(this, selectedVideoUri);
                 task.runPrintMediaCondecInfo(filePath);
             } else if(requestCode == REQUEST_IMPORT_FILE_FOR_ENCODE) {
                 Uri selectedVideoUri = data.getData();
-                String filePath = MediaFileHelper.getPath(this, selectedVideoUri);
+                String filePath = MediaFileHelper.getRealPathFromUri(this, selectedVideoUri);
                 Log.d(TAG, "file = " + filePath);
                 task.runVideoProcess(filePath);
             }

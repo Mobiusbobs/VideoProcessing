@@ -86,11 +86,6 @@ public class MediaCodecChecker {
       Log.d(TAG, "widthRange = " + widthRange.toString());
       Log.d(TAG, "isSizeSupport = " + isSizeSupport);
       Log.d(TAG, "areSizeAndRateSupport = " + areSizeAndRateSupport);
-
-
-
-      //if (isSizeSupport && areSizeAndRateSupport) return true;
-      //return false;
     }
 
     else {
@@ -101,12 +96,11 @@ public class MediaCodecChecker {
     MediaCodec videoDecoder = null;
     try {
       Log.d(TAG, "creating Video Decoder... ... ...");
-      //OutputSurface outputSurface = new OutputSurface(VideoProcessor.getOutputSurfaceRenderVerticesData(inputVideoFormat));
       videoDecoder = VideoProcessor.createVideoDecoder(inputVideoFormat, null);
       VideoProcessor.stopAndReleaseMediaCodec(videoDecoder);
     } catch(Exception e) {
       VideoProcessor.stopAndReleaseMediaCodec(videoDecoder);
-      Log.e(TAG, "Exception e = " + e.toString());
+      Log.e(TAG, "checkVideoCapabilitySupported fail: Exception = " + e.toString());
       return false;
     }
 
