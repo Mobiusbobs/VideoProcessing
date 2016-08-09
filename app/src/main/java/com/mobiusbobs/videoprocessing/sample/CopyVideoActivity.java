@@ -79,7 +79,7 @@ public class CopyVideoActivity extends AppCompatActivity {
   }
 
   private void copyVideo(String sourcePath, String targetPath) {
-    VideoProcessor videoProcessor = null;
+    VideoProcessor videoProcessor;
     try {
       videoProcessor = new VideoProcessor.Builder()
         .setInputFilePath(sourcePath)
