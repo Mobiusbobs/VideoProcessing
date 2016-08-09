@@ -1,5 +1,6 @@
 package com.mobiusbobs.videoprocessing.sample;
 
+import android.app.Activity;
 import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
@@ -41,15 +42,25 @@ public class Util {
     }
   }
 
-  public static void toastLong(Context context, String msg) {
-    Toast
-      .makeText(context, msg, Toast.LENGTH_LONG)
-      .show();
+  public static void toastLong(final Activity activity, final String msg) {
+    activity.runOnUiThread(new Runnable() {
+      @Override
+      public void run() {
+        Toast
+          .makeText(activity, msg, Toast.LENGTH_LONG)
+          .show();
+      }
+    });
   }
 
-  public static void toastShort(Context context, String msg) {
-    Toast
-      .makeText(context, msg, Toast.LENGTH_SHORT)
-      .show();
+  public static void toastShort(final Activity activity, final String msg) {
+    activity.runOnUiThread(new Runnable() {
+      @Override
+      public void run() {
+        Toast
+          .makeText(activity, msg, Toast.LENGTH_SHORT)
+          .show();
+      }
+    });
   }
 }

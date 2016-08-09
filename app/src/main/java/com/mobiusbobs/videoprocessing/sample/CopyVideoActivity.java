@@ -6,7 +6,13 @@ import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
+
+import com.mobiusbobs.videoprocessing.core.ProcessorRunner;
+import com.mobiusbobs.videoprocessing.core.VideoProcessor;
+
+import java.io.IOException;
 
 /**
  * VideoProcessing
@@ -73,5 +79,36 @@ public class CopyVideoActivity extends AppCompatActivity {
   }
 
   private void copyVideo(String sourcePath, String targetPath) {
+    VideoProcessor videoProcessor = null;
+    try {
+      videoProcessor = new VideoProcessor.Builder()
+        .setInputFilePath(sourcePath)
+        .setOutputPath(targetPath)
+        .build(this);
+    } catch (IOException e) {
+      Util.toastLong(this, "Failed while building video processor");
+      e.printStackTrace();
+
+      return;
+    }
+
+    ProcessorRunner.run(
+      videoProcessor, "Copy Video",
+      new ProcessorRunner.ProcessorRunnerCallback() {
+        @Override
+        public void onCompleted() {
+          Util.toastLong(CopyVideoActivity.this,
+            "Process complete");
+        }
+
+        @Override
+        public void onError(Throwable e) {
+          Util.toastLong(CopyVideoActivity.this,
+            "Process failed");
+
+          Log.e(TAG, e.getMessage());
+          e.printStackTrace();
+        }
+      });
   }
 }
