@@ -130,7 +130,7 @@ public class VideoProcessor {
     int outputAudioTrack = -1;
 
     // for audio hotfix on audio muxer
-    long audioPresentationTimeUsLast = 0;
+    long lastAudioPresentationTime = 0;
 
     // Constructor
     private VideoProcessor() {}
@@ -815,11 +815,11 @@ public class VideoProcessor {
             return false;
         }
 
-        long audioPresentationTimeUs = audioEncoderOutputBufferInfo.presentationTimeUs;
-        if (audioPresentationTimeUsLast >= audioPresentationTimeUs) {
-            audioEncoderOutputBufferInfo.presentationTimeUs = audioPresentationTimeUsLast + 1;
+        long presentationTime = audioEncoderOutputBufferInfo.presentationTimeUs;
+        if (lastAudioPresentationTime >= presentationTime) {
+            audioEncoderOutputBufferInfo.presentationTimeUs = lastAudioPresentationTime + 1;
         }
-        audioPresentationTimeUsLast = audioPresentationTimeUs;
+        lastAudioPresentationTime = presentationTime;
 
         if (audioEncoderOutputBufferInfo.size != 0) {
             Log.d(TAG, "write Audio sample to muxer");
