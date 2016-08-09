@@ -1,5 +1,6 @@
 package com.mobiusbobs.videoprocessing.core.codec;
 
+import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
 import android.os.Build;
@@ -8,6 +9,7 @@ import android.util.Range;
 import android.widget.Toast;
 
 import com.mobiusbobs.videoprocessing.core.VideoProcessor;
+import com.mobiusbobs.videoprocessing.core.gles.surface.OutputSurface;
 
 /**
  * android
@@ -45,24 +47,31 @@ public class MediaCodecChecker {
     Log.d(TAG, "hardware = " + hardware);
   }
 
-  public static boolean checkVideoCapabilitySupported(MediaCodecInfo videoCodecInfo, MediaFormat inputVideoFormat) {
-    Log.d("VIDEO_CAPABILITIES", "checkVideoCapabilitySupported... called...");
+  public static boolean checkVideoCapabilitySupported(MediaCodecInfo videoCodecInfo, MediaFormat inputVideoFormat)  {
+    String TAG = "VIDEO_CAPABILITIES";
+
+    Log.d(TAG, "*********************************************");
+    Log.d(TAG, "         checkVideoCapabilitySupport         ");
+    Log.d(TAG, "*********************************************");
+
+
+    dumpMediaFormat(inputVideoFormat);
 
     if(android.os.Build.VERSION.SDK_INT >= 21) {
       int width = VideoProcessor.getMediaDataOrDefault(inputVideoFormat, MediaFormat.KEY_WIDTH, -1);
-      int height = VideoProcessor.getMediaDataOrDefault(inputVideoFormat, MediaFormat.KEY_HEIGHT, -1); //inputVideoFormat.getInteger(MediaFormat.KEY_HEIGHT);
-      double frameRate = VideoProcessor.getMediaDataOrDefault(inputVideoFormat, MediaFormat.KEY_FRAME_RATE, -1); //inputVideoFormat.getInteger(MediaFormat.KEY_FRAME_RATE);
+      int height = VideoProcessor.getMediaDataOrDefault(inputVideoFormat, MediaFormat.KEY_HEIGHT, -1);
+      double frameRate = VideoProcessor.getMediaDataOrDefault(inputVideoFormat, MediaFormat.KEY_FRAME_RATE, -1);
 
       if (width == -1 || height == -1 || frameRate == -1) {
-        Log.e("VIDEO_CAPABILITIES", "inputMediaFormat missing variable: " +
+        Log.e(TAG, "inputMediaFormat missing variable: " +
           "width=" + width + ", height=" + height + ", frameRate=" + frameRate);
         return false;
       }
 
       MediaCodecInfo.VideoCapabilities videoCapabilities =
         videoCodecInfo.getCapabilitiesForType(VideoProcessor.getMimeTypeFor(inputVideoFormat)).getVideoCapabilities();
-      Log.d("VIDEO_CAPABILITIES", "width = " + width + ", height = " + height + ", frameRate = " + frameRate);
-      Log.d("VIDEO_CAPABILITIES", "videoCapabilities = " + videoCapabilities);
+      Log.d(TAG, "width = " + width + ", height = " + height + ", frameRate = " + frameRate);
+      Log.d(TAG, "videoCapabilities = " + videoCapabilities);
 
       Range<Integer> bitrateRange = videoCapabilities.getBitrateRange();
       Range<Integer> frameRateRange = videoCapabilities.getSupportedFrameRates();
@@ -71,21 +80,37 @@ public class MediaCodecChecker {
       boolean isSizeSupport = videoCapabilities.isSizeSupported(width, height);
       boolean areSizeAndRateSupport = videoCapabilities.areSizeAndRateSupported(width, height, frameRate);
 
-      Log.d("VIDEO_CAPABILITIES", "bitrateRange = " + bitrateRange.toString());
-      Log.d("VIDEO_CAPABILITIES", "frameRateRange = " + frameRateRange.toString());
-      Log.d("VIDEO_CAPABILITIES", "heightRange = " + heightRange.toString());
-      Log.d("VIDEO_CAPABILITIES", "widthRange = " + widthRange.toString());
-      Log.d("VIDEO_CAPABILITIES", "isSizeSupport = " + isSizeSupport);
-      Log.d("VIDEO_CAPABILITIES", "areSizeAndRateSupport = " + areSizeAndRateSupport);
+      Log.d(TAG, "bitrateRange = " + bitrateRange.toString());
+      Log.d(TAG, "frameRateRange = " + frameRateRange.toString());
+      Log.d(TAG, "heightRange = " + heightRange.toString());
+      Log.d(TAG, "widthRange = " + widthRange.toString());
+      Log.d(TAG, "isSizeSupport = " + isSizeSupport);
+      Log.d(TAG, "areSizeAndRateSupport = " + areSizeAndRateSupport);
 
-      if (isSizeSupport && areSizeAndRateSupport) return true;
-      return false;
+
+
+      //if (isSizeSupport && areSizeAndRateSupport) return true;
+      //return false;
     }
 
     else {
-      Log.d("VIDEO_CAPABILITIES", "android.os.Build.VERSION.SDK_INT is " + android.os.Build.VERSION.SDK_INT + ", checkVideoCapabilitySupported not supported");
+      Log.d(TAG, "android.os.Build.VERSION.SDK_INT is " + android.os.Build.VERSION.SDK_INT + ", checkVideoCapabilitySupported not supported");
+    }
+
+    // test config
+    MediaCodec videoDecoder = null;
+    try {
+      Log.d(TAG, "creating Video Decoder... ... ...");
+      //OutputSurface outputSurface = new OutputSurface(VideoProcessor.getOutputSurfaceRenderVerticesData(inputVideoFormat));
+      videoDecoder = VideoProcessor.createVideoDecoder(inputVideoFormat, null);
+      VideoProcessor.stopAndReleaseMediaCodec(videoDecoder);
+    } catch(Exception e) {
+      VideoProcessor.stopAndReleaseMediaCodec(videoDecoder);
+      Log.e(TAG, "Exception e = " + e.toString());
       return false;
     }
+
+    return true;
   }
 
   public static void checkAudioCapability() {

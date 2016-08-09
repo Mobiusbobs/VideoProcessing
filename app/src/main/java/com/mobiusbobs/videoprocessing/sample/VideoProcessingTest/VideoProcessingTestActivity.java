@@ -70,6 +70,8 @@ import java.util.List;
 public class VideoProcessingTestActivity extends AppCompatActivity {
     private static final String TAG = "TEST";
     private static final int REQUEST_TAKE_GALLERY_VIDEO = 10;
+    private static final int REQUEST_IMPORT_FILE_FOR_CONFIG = 11;
+    private static final int REQUEST_IMPORT_FILE_FOR_ENCODE = 12;
 
     private static final String OUTPUT_VIDEO_MIME_TYPE = "video/avc"; // H.264 Advanced Video Coding
     // File Path
@@ -152,7 +154,7 @@ public class VideoProcessingTestActivity extends AppCompatActivity {
                 runPrintMediaCondecInfo(file.getAbsolutePath());
                 break;
             case 2: // "Print MediaCodec / MediaFormat Info(imported video file)"
-                requestImportFile();
+                requestImportFile(REQUEST_IMPORT_FILE_FOR_CONFIG);
                 break;
 
 
@@ -166,7 +168,8 @@ public class VideoProcessingTestActivity extends AppCompatActivity {
 
                 break;
             case 4: //"Test Simply Decode -> Encode(chosen file)"
-                Toast.makeText(this, "Not Implemented", Toast.LENGTH_SHORT).show();
+                requestImportFile(REQUEST_IMPORT_FILE_FOR_ENCODE);
+
                 break;
             case 5: //"Test Simply Decode -> Encode(recorded file)"
                 Toast.makeText(this, "Not Implemented", Toast.LENGTH_SHORT).show();
@@ -223,12 +226,12 @@ public class VideoProcessingTestActivity extends AppCompatActivity {
         }
     }
 
-    private void requestImportFile() {
+    private void requestImportFile(int requestCode) {
         //http://stackoverflow.com/questions/31044591/how-to-select-a-video-from-the-gallery-and-get-its-real-path
         Intent intent = new Intent();
         intent.setType("video/*");
         intent.setAction(Intent.ACTION_GET_CONTENT);
-        startActivityForResult(Intent.createChooser(intent, "Select Video"), REQUEST_TAKE_GALLERY_VIDEO);
+        startActivityForResult(Intent.createChooser(intent, "Select Video"), requestCode);
     }
 
     // --- encoder / decoder test --- //
@@ -391,11 +394,20 @@ public class VideoProcessingTestActivity extends AppCompatActivity {
     // --- onActivity result --- //
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (resultCode == RESULT_OK) {
-            if (requestCode == REQUEST_TAKE_GALLERY_VIDEO) {
+            Log.d(TAG, "onActivity result... requestCode = " + requestCode);
+            if (requestCode == REQUEST_IMPORT_FILE_FOR_CONFIG) {
                 Uri selectedVideoUri = data.getData();
                 String filePath = getPath(selectedVideoUri);
                 Log.d(TAG, "onActivity result... filePath = " + filePath);
                 runPrintMediaCondecInfo(filePath);
+            } else if(requestCode == REQUEST_IMPORT_FILE_FOR_ENCODE) {
+                Uri selectedVideoUri = data.getData();
+                String filePath = getPath(selectedVideoUri);
+                String[] stickers = {};
+
+                Log.d(TAG, "file = " + filePath);
+                Log.d(TAG, "process imported file...");
+                runVideoProcess(filePath, stickers, "");
             }
         }
     }

@@ -829,11 +829,19 @@ public class VideoProcessor {
      * @param inputFormat the format of the stream to decode
      * @param surface into which to decode the frames
      */
-    private MediaCodec createVideoDecoder(MediaFormat inputFormat, Surface surface) throws Exception {
+    public static MediaCodec createVideoDecoder(MediaFormat inputFormat, Surface surface) throws Exception {
         MediaCodec decoder = MediaCodec.createDecoderByType(getMimeTypeFor(inputFormat));
         decoder.configure(inputFormat, surface, null, 0);
         decoder.start();
         return decoder;
+    }
+
+    public static void stopAndReleaseMediaCodec(MediaCodec mediaCodec) {
+        if (mediaCodec != null) {
+            Log.d(TAG, "stop and release Media Codec");
+            mediaCodec.stop();
+            mediaCodec.release();
+        }
     }
 
     /**
@@ -981,7 +989,7 @@ public class VideoProcessor {
         else return defaultValue;
     }
 
-    private float[] getOutputSurfaceRenderVerticesData(MediaFormat inputVideoFormat) {
+    public static float[] getOutputSurfaceRenderVerticesData(MediaFormat inputVideoFormat) {
         float outputRatio = (float)OUTPUT_VIDEO_HEIGHT / OUTPUT_VIDEO_WIDTH;
 
         int rotation = getMediaDataOrDefault(inputVideoFormat, MediaFormat.KEY_ROTATION, 0);
