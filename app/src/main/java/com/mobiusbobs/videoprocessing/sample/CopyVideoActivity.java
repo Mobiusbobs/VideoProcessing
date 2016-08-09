@@ -61,7 +61,9 @@ public class CopyVideoActivity extends AppCompatActivity {
         Uri videoUri = data.getData();
 
         String sourcePath = Util.getRealPathFromURI(this, videoUri);
-        String targetPath = sourcePath.replace("\\.(\\w*)$", "_processed.$1");
+        String targetPath = sourcePath.replaceAll(
+          "\\.([^.]*)$", "_processed.$1");
+
         Util.toastLong(this,
           "Copy video from " + sourcePath + " to " + targetPath);
 
