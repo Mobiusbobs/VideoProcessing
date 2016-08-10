@@ -19,8 +19,8 @@ import java.io.IOException;
  * Created by wangalbert on 4/8/16.
  * Copyright (c) 2016 MobiusBobs Inc. All rights reserved.
  */
-public class TopRightTextDrawer implements GLDrawable {
-  private static final String TAG = "TopRightTextDrawer";
+public class PetTagDrawer implements GLDrawable {
+  private static final String TAG = "PetTagDrawer";
 
   // composition
   private BasicDrawer stickerDrawer;
@@ -33,7 +33,7 @@ public class TopRightTextDrawer implements GLDrawable {
   private float scale;
 
   // Constructor
-  public TopRightTextDrawer(Context context, CoordConverter converter, int videoWidth, String text, int resId) {
+  public PetTagDrawer(Context context, CoordConverter converter, int videoWidth, String text, int resId) {
     this.context = context;
     this.videoWidth = videoWidth;
     this.converter = converter;

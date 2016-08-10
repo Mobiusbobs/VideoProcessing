@@ -26,6 +26,7 @@ import com.mobiusbobs.videoprocessing.sample.VideoProcess.videoProcessing.Durati
 import com.mobiusbobs.videoprocessing.sample.VideoProcess.videoProcessing.MediaMetaHelper;
 import com.mobiusbobs.videoprocessing.sample.VideoProcess.videoProcessing.StickerDrawer;
 import com.mobiusbobs.videoprocessing.sample.VideoProcess.videoProcessing.TextDrawer;
+import com.mobiusbobs.videoprocessing.sample.VideoProcess.videoProcessing.PetTagDrawer;
 import com.mobiusbobs.videoprocessing.sample.VideoProcess.videoProcessing.WatermarkDrawer;
 
 
@@ -105,8 +106,7 @@ public class VideoProcessTask {
 
 
   // --- video processing test --- //
-  // TODO rename() plain decide / encode
-  public void runVideoProcess(String inputFilePath) {
+  public void runVideoDecodeEncode(String inputFilePath) {
     // get output file path
     final String fileOutputPath = createNewFileOutput();
     if (fileOutputPath == null) return;
@@ -133,7 +133,7 @@ public class VideoProcessTask {
     final long videoDuration = MediaMetaHelper.getMediaDuration(context, Uri.parse(inputFilePath));
 
     // watermark
-    GLDrawable watermarkDrawer = setupWatermarkDrawer(coordConverter, videoDuration);
+    GLDrawable watermarkDrawer = createWatermarkDrawer(coordConverter, videoDuration);
 
     // video processing
     try {
@@ -158,8 +158,7 @@ public class VideoProcessTask {
     final long videoDuration = MediaMetaHelper.getMediaDuration(context, Uri.parse(inputFilePath));
 
     // textSticker
-    DurationGLDrawable textDrawer =  new TextDrawer(context, coordConverter, "textSticker", 50, "#00FFFF", 200, 200);
-    textDrawer.setDuration(new Duration(0, videoDuration));
+    DurationGLDrawable textDrawer =  createTextDrawer(coordConverter, videoDuration);
 
     // video processing
     try {
@@ -174,6 +173,7 @@ public class VideoProcessTask {
     }
   }
 
+  // TODO implement sampleSize
   public void runVideoProcessWithImageSticker(String inputFilePath) {
     // get output file path
     final String fileOutputPath = createNewFileOutput();
@@ -184,10 +184,7 @@ public class VideoProcessTask {
     final long videoDuration = MediaMetaHelper.getMediaDuration(context, Uri.parse(inputFilePath));
 
     // image sticker
-    int sampleSize = 1;
-    float[] vertices = coordConverter.getVertices(200, 200, 300, 300); //(x, y, width, height)
-    DurationGLDrawable stickerDrawer = new StickerDrawer(context, R.drawable.sticker_hungry, vertices, sampleSize);
-    stickerDrawer.setDuration(new Duration(0, videoDuration));
+    DurationGLDrawable stickerDrawer = createImageDrawer(coordConverter, videoDuration);
 
     // video processing
     try {
@@ -202,6 +199,7 @@ public class VideoProcessTask {
     }
   }
 
+  // TODO implement sampleSize
   public void runVideoProcessWithGifSticker(String inputFilePath) {
     // get output file path
     final String fileOutputPath = createNewFileOutput();
@@ -212,18 +210,74 @@ public class VideoProcessTask {
     final long videoDuration = MediaMetaHelper.getMediaDuration(context, Uri.parse(inputFilePath));
 
     // gif Sticker
-    int sampleSize = 1;
-    int gifResId = R.drawable.gif_happiness;
-    float[] vertices = coordConverter.getVertices(200, 200, 400, 300); //(x, y, width, height)
-    GifDecoder gifDecoder = GifDrawer.createGifDecoder(context, gifResId, sampleSize);
-    DurationGLDrawable gifDrawer =  new DurationGifDrawable(context, gifDecoder, vertices);
-    gifDrawer.setDuration(new Duration(0, videoDuration));
+    DurationGLDrawable gifDrawer =  createGifDrawer(coordConverter, videoDuration);
 
     // video processing
     try {
       VideoProcessor.Builder builder = new VideoProcessor.Builder()
         .setInputFilePath(inputFilePath)
         .addDrawer(gifDrawer)
+        .setOutputPath(fileOutputPath);
+
+      runVideoProcessor(builder);
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+  }
+
+  public void runVideoProcessWithPetTag(String inputFilePath) {
+    // get output file path
+    final String fileOutputPath = createNewFileOutput();
+    if (fileOutputPath == null) return;
+
+    // init coordconverter
+    CoordConverter coordConverter = new CoordConverter(context);
+
+    //  petTag drawer
+    PetTagDrawer petTagDrawer = createPetTagDrawer(coordConverter);
+
+    // video processing
+    try {
+      VideoProcessor.Builder builder = new VideoProcessor.Builder()
+        .setInputFilePath(inputFilePath)
+        .addDrawer(petTagDrawer)
+        .setOutputPath(fileOutputPath);
+
+      runVideoProcessor(builder);
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+  }
+
+  public void runVideoProcessWithAllFeature(String inputFilePath) {
+    // get output file path
+    final String fileOutputPath = createNewFileOutput();
+    if (fileOutputPath == null) return;
+
+    // init coordconverter
+    CoordConverter coordConverter = new CoordConverter(context);
+    final long videoDuration = MediaMetaHelper.getMediaDuration(context, Uri.parse(inputFilePath));
+
+    // watermark
+    GLDrawable watermarkDrawer = createWatermarkDrawer(coordConverter, videoDuration);
+    // textSticker
+    DurationGLDrawable textDrawer =  createTextDrawer(coordConverter, videoDuration);
+    // image sticker
+    DurationGLDrawable stickerDrawer = createImageDrawer(coordConverter, videoDuration);
+    // gif Sticker
+    DurationGLDrawable gifDrawer =  createGifDrawer(coordConverter, videoDuration);
+    //  petTag drawer
+    PetTagDrawer petTagDrawer = createPetTagDrawer(coordConverter);
+
+    // video processing
+    try {
+      VideoProcessor.Builder builder = new VideoProcessor.Builder()
+        .setInputFilePath(inputFilePath)
+        .addDrawer(watermarkDrawer)
+        .addDrawer(textDrawer)
+        .addDrawer(stickerDrawer)
+        .addDrawer(gifDrawer)
+        .addDrawer(petTagDrawer)
         .setOutputPath(fileOutputPath);
 
       runVideoProcessor(builder);
@@ -242,7 +296,8 @@ public class VideoProcessTask {
     return fileOutput.toString();
   }
 
-  private GLDrawable setupWatermarkDrawer(CoordConverter coordConverter, long videoDuration) {
+  // --- create different drawer --- //
+  private GLDrawable createWatermarkDrawer(CoordConverter coordConverter, long videoDuration) {
     int watermarkWidth = 223 * 2;
     int watermarkHeight = 52 * 2;
     float[] watermarkVertices = coordConverter.getVertices(
@@ -254,6 +309,42 @@ public class VideoProcessTask {
     WatermarkDrawer watermarkDrawer = new WatermarkDrawer(context, watermarkVertices);
     watermarkDrawer.setDuration(new Duration(videoDuration - 100, videoDuration + 1000));
     return watermarkDrawer;
+  }
+
+  private PetTagDrawer createPetTagDrawer(CoordConverter coordConverter) {
+    int pawId = R.drawable.icon_paw;
+    return new PetTagDrawer(
+      context,
+      coordConverter,
+      CoordConverter.IDEAL_WIDTH,
+      "PetTagName",
+      pawId
+    );
+  }
+
+  private DurationGLDrawable createGifDrawer(CoordConverter coordConverter, long videoDuration) {
+    int sampleSize = 1;
+    int gifResId = R.drawable.gif_happiness;
+    float[] vertices = coordConverter.getVertices(200, 200, 400, 300); //(x, y, width, height)
+    GifDecoder gifDecoder = GifDrawer.createGifDecoder(context, gifResId, sampleSize);
+    DurationGLDrawable gifDrawer =  new DurationGifDrawable(context, gifDecoder, vertices);
+    gifDrawer.setDuration(new Duration(0, videoDuration));
+    return gifDrawer;
+  }
+
+  private DurationGLDrawable createImageDrawer(CoordConverter coordConverter, long videoDuration) {
+    // image sticker
+    int sampleSize = 1;
+    float[] vertices = coordConverter.getVertices(200, 200, 300, 300); //(x, y, width, height)
+    DurationGLDrawable stickerDrawer = new StickerDrawer(context, R.drawable.sticker_hungry, vertices, sampleSize);
+    stickerDrawer.setDuration(new Duration(0, videoDuration));
+    return stickerDrawer;
+  }
+
+  private DurationGLDrawable createTextDrawer(CoordConverter coordConverter, long videoDuration) {
+    DurationGLDrawable textDrawer =  new TextDrawer(context, coordConverter, "textSticker", 30, "#00FFFF", 100, 200);
+    textDrawer.setDuration(new Duration(0, videoDuration));
+    return textDrawer;
   }
 
   private void runVideoProcessor(VideoProcessor.Builder builder) throws IOException {

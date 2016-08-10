@@ -131,7 +131,7 @@ public class VideoProcessActivity extends AppCompatActivity {
 
             // simple encoder / decoder check
             case 3: //"Test Simply Decode -> Encode(default video file)"
-                task.runVideoProcess(defaultFile.getAbsolutePath());
+                task.runVideoDecodeEncode(defaultFile.getAbsolutePath());
                 break;
             case 4: //"Test Simply Decode -> Encode(chosen file)"
                 task.requestImportFile(REQUEST_IMPORT_FILE_FOR_ENCODE);
@@ -152,14 +152,12 @@ public class VideoProcessActivity extends AppCompatActivity {
                 break;
             case 9: //"Test Processing with add WaterMark(Blur)"
                 task.runVideoProcessWithWatermark(defaultFile.getAbsolutePath());
-                //Toast.makeText(this, "Not Implemented", Toast.LENGTH_SHORT).show();
                 break;
             case 10: //"Test Processing with add Pet Tag"
-                Toast.makeText(this, "Not Implemented", Toast.LENGTH_SHORT).show();
+                task.runVideoProcessWithPetTag(defaultFile.getAbsolutePath());
                 break;
             case 11: //"Test Processing with all of above"
-                Toast.makeText(this, "Not Implemented", Toast.LENGTH_SHORT).show();
-                //runVideoProcess();
+                task.runVideoProcessWithAllFeature(defaultFile.getAbsolutePath());
                 break;
         }
     }
@@ -175,7 +173,7 @@ public class VideoProcessActivity extends AppCompatActivity {
                 Uri selectedVideoUri = data.getData();
                 String filePath = MediaFileHelper.getRealPathFromUri(this, selectedVideoUri);
                 Log.d(TAG, "file = " + filePath);
-                task.runVideoProcess(filePath);
+                task.runVideoDecodeEncode(filePath);
             }
         }
     }
