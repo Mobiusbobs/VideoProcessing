@@ -13,13 +13,20 @@ import android.widget.Toast;
 import com.mobiusbobs.videoprocessing.core.ProcessorRunner;
 import com.mobiusbobs.videoprocessing.core.VideoProcessor;
 import com.mobiusbobs.videoprocessing.core.codec.Extractor;
+import com.mobiusbobs.videoprocessing.core.gif.GifDecoder;
 import com.mobiusbobs.videoprocessing.core.gldrawer.GLDrawable;
+import com.mobiusbobs.videoprocessing.core.gldrawer.GifDrawer;
+import com.mobiusbobs.videoprocessing.sample.R;
 import com.mobiusbobs.videoprocessing.sample.Util.Logger;
 import com.mobiusbobs.videoprocessing.sample.Util.MediaFileHelper;
 import com.mobiusbobs.videoprocessing.sample.VideoProcess.videoProcessing.CoordConverter;
 import com.mobiusbobs.videoprocessing.sample.VideoProcess.videoProcessing.Duration;
+import com.mobiusbobs.videoprocessing.sample.VideoProcess.videoProcessing.DurationGLDrawable;
 import com.mobiusbobs.videoprocessing.sample.VideoProcess.videoProcessing.MediaMetaHelper;
+import com.mobiusbobs.videoprocessing.sample.VideoProcess.videoProcessing.StickerDrawer;
+import com.mobiusbobs.videoprocessing.sample.VideoProcess.videoProcessing.TextDrawer;
 import com.mobiusbobs.videoprocessing.sample.VideoProcess.videoProcessing.WatermarkDrawer;
+
 
 import java.io.File;
 import java.io.IOException;
@@ -29,6 +36,8 @@ import java.io.IOException;
  * <p/>
  * Created by wangalbert on 8/9/16.
  * Copyright (c) 2016 MobiusBobs Inc. All rights reserved.
+ *
+ * The output video is stored inside externalStorage/Movie/Test/ directory
  */
 public class VideoProcessTask {
   public static final String TAG = "VideoProcessTask";
@@ -69,6 +78,18 @@ public class VideoProcessTask {
       Toast.makeText(context, msg, Toast.LENGTH_LONG).show();
     }
   }
+
+  // --- open movie directory --- //
+  public void openMovieDirectory(Activity activity) {
+    Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+    Uri uri = Uri.parse(MediaFileHelper.getOutputDirectoryPath().getAbsolutePath());
+    Log.d(TAG, "openMovieDirectory: uri = " + uri.getPath());
+
+    intent.setAction(Intent.ACTION_GET_CONTENT);
+    intent.setDataAndType(uri, "video/*");
+    activity.startActivity(Intent.createChooser(intent, "Open folder"));
+  }
+
 
   // --- import file --- //
   public void requestImportFile(int requestCode) {
@@ -126,9 +147,90 @@ public class VideoProcessTask {
     }
   }
 
+  public void runVideoProcessWithTextSticker(String filePath) {
+    // get output file path
+    final String fileOutputPath = createNewFileOutput();
+    if (fileOutputPath == null) return;
+
+    // init coordconverter
+    CoordConverter coordConverter = new CoordConverter(context);
+    final long videoDuration = MediaMetaHelper.getMediaDuration(context, Uri.parse(filePath));
+
+    // textSticker
+    DurationGLDrawable textDrawer =  new TextDrawer(context, coordConverter, "textSticker", 50, "#00FFFF", 200, 200);
+    textDrawer.setDuration(new Duration(0, videoDuration));
+
+    // video processing
+    try {
+      VideoProcessor.Builder builder = new VideoProcessor.Builder()
+        .setInputFilePath(filePath)
+        .addDrawer(textDrawer)
+        .setOutputPath(fileOutputPath);
+
+      runVideoProcessor(builder);
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+  }
+
+  public void runVideoProcessWithImageSticker(String filePath) {
+    // get output file path
+    final String fileOutputPath = createNewFileOutput();
+    if (fileOutputPath == null) return;
+
+    // init coordconverter
+    CoordConverter coordConverter = new CoordConverter(context);
+    final long videoDuration = MediaMetaHelper.getMediaDuration(context, Uri.parse(filePath));
+
+    // image sticker
+    int sampleSize = 1;
+    float[] vertices = coordConverter.getVertices(200, 200, 300, 300); //(x, y, width, height)
+    DurationGLDrawable stickerDrawer = new StickerDrawer(context, R.drawable.sticker_hungry, vertices, sampleSize);
+    stickerDrawer.setDuration(new Duration(0, videoDuration));
+
+    // video processing
+    try {
+      VideoProcessor.Builder builder = new VideoProcessor.Builder()
+        .setInputFilePath(filePath)
+        .addDrawer(stickerDrawer)
+        .setOutputPath(fileOutputPath);
+
+      runVideoProcessor(builder);
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+  }
+
+  // TODO
+  public void runVideoProcessWithGifSticker(String filePath) {
+    // get output file path
+    final String fileOutputPath = createNewFileOutput();
+    if (fileOutputPath == null) return;
+
+    // init coordconverter
+    CoordConverter coordConverter = new CoordConverter(context);
+    final long videoDuration = MediaMetaHelper.getMediaDuration(context, Uri.parse(filePath));
+
+    // textSticker
+    DurationGLDrawable textDrawer =  new TextDrawer(context, coordConverter, "textSticker", 50, "#00FFFF", 200, 200);
+    textDrawer.setDuration(new Duration(0, videoDuration));
+
+    // video processing
+    try {
+      VideoProcessor.Builder builder = new VideoProcessor.Builder()
+        .setInputFilePath(filePath)
+        .addDrawer(textDrawer)
+        .setOutputPath(fileOutputPath);
+
+      runVideoProcessor(builder);
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+  }
+
   // --- helper method for video process --- //
   private String createNewFileOutput() {
-    File fileOutput = MediaFileHelper.getOutputMediaFile(MediaFileHelper.MEDIA_TYPE_VIDEO, true);
+    File fileOutput = MediaFileHelper.getOutputMediaFile(MediaFileHelper.MEDIA_TYPE_VIDEO);
     if (fileOutput == null) {
       Log.e(TAG, "Can not get output media file path");
       return null;

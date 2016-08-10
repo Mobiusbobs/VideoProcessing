@@ -20,13 +20,22 @@ public class StickerDrawer implements DurationGLDrawable {
     String stickerFilePath;
     protected Duration duration;
     private int sampleSize = 1;
+    private int resId = -1;
+    private Context context;
 
     public StickerDrawer(Context context, float[] verticesPositionData) {
         drawer = new BasicDrawer(context, verticesPositionData);
+        this.context = context;
     }
 
     public StickerDrawer(Context context, String stickerFilePath, float[] verticesPositionData) {
       this(context, stickerFilePath, verticesPositionData, 1);
+    }
+
+    public StickerDrawer(Context context, int resId, float[] verticesPositionData, int sampleSize) {
+        this(context, verticesPositionData);
+        this.sampleSize = sampleSize;
+        this.resId = resId;
     }
 
     public StickerDrawer(Context context, String stickerFilePath, float[] verticesPositionData, int sampleSize) {
@@ -46,7 +55,9 @@ public class StickerDrawer implements DurationGLDrawable {
 
     @Override
     public void init(GLDrawable prevDrawer) throws IOException {
-        Bitmap bitmap = BitmapHelper.generateBitmap(stickerFilePath, sampleSize);
+        Bitmap bitmap = resId == -1
+          ? BitmapHelper.generateBitmap(stickerFilePath, sampleSize)
+          : BitmapHelper.generateBitmap(context, resId, sampleSize);
         drawer.init(prevDrawer, bitmap);
         bitmap.recycle();
     }

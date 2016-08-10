@@ -106,11 +106,7 @@ public class VideoProcessActivity extends AppCompatActivity {
             fab.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    /*
-                    runVideoProcess();
-                    Snackbar.make(view, "Run test of adding gif, watermark and text", Snackbar.LENGTH_LONG)
-                      .setAction("Action", null).show();
-                    */
+                    task.openMovieDirectory(VideoProcessActivity.this);
                 }
             });
         }
@@ -145,21 +141,18 @@ public class VideoProcessActivity extends AppCompatActivity {
 
             // image processing check
             case 6: //"Test Processing with add Image Sticker"
-                Toast.makeText(this, "Not Implemented", Toast.LENGTH_SHORT).show();
-                //runVideoProcess();
+                task.runVideoProcessWithImageSticker(defaultFile.getAbsolutePath());
                 break;
             case 7: //"Test Processing with add Gif Sticker"
                 Toast.makeText(this, "Not Implemented", Toast.LENGTH_SHORT).show();
                 //runVideoProcess();
                 break;
             case 8: //"Test Processing with add Text Sticker"
-                Toast.makeText(this, "Not Implemented", Toast.LENGTH_SHORT).show();
-                //runVideoProcess();
+                task.runVideoProcessWithTextSticker(defaultFile.getAbsolutePath());
                 break;
             case 9: //"Test Processing with add WaterMark(Blur)"
                 task.runVideoProcessWithWatermark(defaultFile.getAbsolutePath());
                 //Toast.makeText(this, "Not Implemented", Toast.LENGTH_SHORT).show();
-                //runVideoProcess();
                 break;
             case 10: //"Test Processing with all of above"
                 Toast.makeText(this, "Not Implemented", Toast.LENGTH_SHORT).show();

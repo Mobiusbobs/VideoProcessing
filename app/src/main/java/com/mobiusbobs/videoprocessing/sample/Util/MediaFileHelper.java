@@ -22,11 +22,11 @@ import java.util.Date;
  * Copyright (c) 2016 MobiusBobs Inc. All rights reserved.
  */
 public class MediaFileHelper {
+    public static final String TAG = "MediaFileHelper";
 
     public static final int MEDIA_TYPE_IMAGE = 1;
     public static final int MEDIA_TYPE_VIDEO = 2;
 
-    public static final String DIRECTORY_TMP = "tmp";
     public static final String DIRECTORY_TEST = "TEST";
 
     /**
@@ -37,25 +37,13 @@ public class MediaFileHelper {
      * @return A file object pointing to the newly created file.
      */
     @SuppressLint("SimpleDateFormat")
-    public static File getOutputMediaFile(int type, boolean isForFinal){
-        // To be safe, you should check that the SDCard is mounted
-        // using Environment.getExternalStorageState() before doing this.
-        if (!Environment.getExternalStorageState().equalsIgnoreCase(Environment.MEDIA_MOUNTED)) {
-            return  null;
-        }
-
-        File mediaStorageDir;
-        if (isForFinal)
-            mediaStorageDir = new File(Environment.getExternalStoragePublicDirectory(
-                Environment.DIRECTORY_MOVIES), DIRECTORY_TEST);
-        else
-            mediaStorageDir = new File(Environment.getExternalStoragePublicDirectory(
-                Environment.DIRECTORY_MOVIES), DIRECTORY_TMP);
+    public static File getOutputMediaFile(int type){
+        File mediaStorageDir = getOutputDirectoryPath();
 
         // Create the storage directory if it does not exist
         if (!mediaStorageDir.exists()){
             if (!mediaStorageDir.mkdirs()) {
-                Log.e("CameraSample", "failed to create directory");
+                Log.e(TAG, "failed to create directory");
                 return null;
             }
         }
@@ -74,6 +62,15 @@ public class MediaFileHelper {
         }
 
         return mediaFile;
+    }
+
+    public static File getOutputDirectoryPath() {
+        if (!Environment.getExternalStorageState().equalsIgnoreCase(Environment.MEDIA_MOUNTED)) {
+            return  null;
+        }
+
+        return new File(Environment.getExternalStoragePublicDirectory(
+          Environment.DIRECTORY_MOVIES), DIRECTORY_TEST);
     }
 
     // TODO update file name

@@ -40,4 +40,14 @@ public class BitmapHelper {
 
         return bitmap;
     }
+
+    public static Bitmap generateBitmap(Context context, int resId, int sampleSize) throws IOException {
+        // get bitmap
+        BitmapFactory.Options bmOptions = new BitmapFactory.Options();
+        bmOptions.inJustDecodeBounds = false;
+        bmOptions.inSampleSize = sampleSize;
+        return  BitmapFactory.decodeResource(context.getResources(), resId, bmOptions);
+
+
+    }
 }
