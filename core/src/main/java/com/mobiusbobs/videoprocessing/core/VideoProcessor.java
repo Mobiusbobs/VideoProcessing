@@ -17,8 +17,10 @@ import com.mobiusbobs.videoprocessing.core.gles.Drawable2d;
 import com.mobiusbobs.videoprocessing.core.gles.surface.InputSurface;
 import com.mobiusbobs.videoprocessing.core.gles.surface.OutputSurface;
 import com.mobiusbobs.videoprocessing.core.util.CoordConverter;
+import com.mobiusbobs.videoprocessing.core.util.MediaMetadataDumper;
 
 import java.io.IOException;
+import java.lang.IllegalStateException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
@@ -49,6 +51,8 @@ public class VideoProcessor {
     public static final int VIDEO_EXTEND_DURATION_US = 1000 * 1000;
 
     // ----- input & output -----
+    private String inputFilePath = null;
+
     private MediaExtractor videoExtractor;
     private MediaExtractor audioExtractor;
 
@@ -215,40 +219,6 @@ public class VideoProcessor {
             videoDuration,
             audioDuration);
 
-    }
-
-    public void dumpMediaFormat(MediaFormat mediaFormat) {
-        Log.d("DUMP_MEDIA_FORMAT", "Start");
-        printMediaFormat(mediaFormat, "KEY_AAC_PROFILE", MediaFormat.KEY_AAC_PROFILE, "Integer");
-        printMediaFormat(mediaFormat, "KEY_BIT_RATE", MediaFormat.KEY_BIT_RATE, "Integer");
-        printMediaFormat(mediaFormat, "KEY_CHANNEL_COUNT", MediaFormat.KEY_CHANNEL_COUNT, "Integer");
-        printMediaFormat(mediaFormat, "KEY_CHANNEL_MASK", MediaFormat.KEY_CHANNEL_MASK, "Integer");
-        printMediaFormat(mediaFormat, "KEY_COLOR_FORMAT", MediaFormat.KEY_COLOR_FORMAT, "Integer");
-        printMediaFormat(mediaFormat, "KEY_DURATION", MediaFormat.KEY_DURATION, "Long");
-        printMediaFormat(mediaFormat, "KEY_FLAC_COMPRESSION_LEVEL", MediaFormat.KEY_FLAC_COMPRESSION_LEVEL, "Integer");
-        printMediaFormat(mediaFormat, "KEY_FRAME_RATE", MediaFormat.KEY_FRAME_RATE, "Integer");
-        printMediaFormat(mediaFormat, "KEY_HEIGHT", MediaFormat.KEY_HEIGHT, "Integer");
-        printMediaFormat(mediaFormat, "KEY_IS_ADTS", MediaFormat.KEY_IS_ADTS, "Integer");
-        printMediaFormat(mediaFormat, "KEY_I_FRAME_INTERVAL", MediaFormat.KEY_I_FRAME_INTERVAL, "Integer");
-        printMediaFormat(mediaFormat, "KEY_MAX_INPUT_SIZE", MediaFormat.KEY_MAX_INPUT_SIZE, "Integer");
-        printMediaFormat(mediaFormat, "KEY_MIME", MediaFormat.KEY_MIME, "String");
-        printMediaFormat(mediaFormat, "KEY_SAMPLE_RATE", MediaFormat.KEY_SAMPLE_RATE, "Integer");
-        printMediaFormat(mediaFormat, "KEY_WIDTH", MediaFormat.KEY_WIDTH, "Integer");
-        Log.d("DUMP_MEDIA_FORMAT", "End");
-    }
-
-    public void printMediaFormat(MediaFormat mediaFormat, String tag, String key, String type) {
-        if (mediaFormat.containsKey(key)) {
-            if (type.equals("Integer")) {
-                Log.d("DUMP_MEDIA_FORMAT", tag + ": " + mediaFormat.getInteger(key));
-            } else if (type.equals("Long")) {
-                Log.d("DUMP_MEDIA_FORMAT", tag + ": " + mediaFormat.getLong(key));
-            } else if (type.equals("String")) {
-                Log.d("DUMP_MEDIA_FORMAT", tag + ": " + mediaFormat.getString(key));
-            }
-            return;
-        }
-        Log.d("DUMP_MEDIA_FORMAT", tag + ": Not Found");
     }
 
     private void doProcess(
@@ -1114,6 +1084,7 @@ public class VideoProcessor {
                 throw new IllegalStateException("No input specified");
             }
 
+            processor.inputFilePath = inputFilePath;
             processor.audioExtractor = createAudioExtractor(context);
 
             if (outputFilePath != null) {
