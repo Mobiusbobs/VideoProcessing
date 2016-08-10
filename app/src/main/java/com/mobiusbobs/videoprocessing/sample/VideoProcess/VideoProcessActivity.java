@@ -61,6 +61,7 @@ public class VideoProcessActivity extends AppCompatActivity {
         "Test Processing with add Gif Sticker",
         "Test Processing with add Text Sticker",
         "Test Processing with add WaterMark(Blur)",
+        "Test Processing with add Pet Tag",
         "Test Processing with all of above",
     };
 
@@ -144,8 +145,7 @@ public class VideoProcessActivity extends AppCompatActivity {
                 task.runVideoProcessWithImageSticker(defaultFile.getAbsolutePath());
                 break;
             case 7: //"Test Processing with add Gif Sticker"
-                Toast.makeText(this, "Not Implemented", Toast.LENGTH_SHORT).show();
-                //runVideoProcess();
+                task.runVideoProcessWithGifSticker(defaultFile.getAbsolutePath());
                 break;
             case 8: //"Test Processing with add Text Sticker"
                 task.runVideoProcessWithTextSticker(defaultFile.getAbsolutePath());
@@ -154,7 +154,10 @@ public class VideoProcessActivity extends AppCompatActivity {
                 task.runVideoProcessWithWatermark(defaultFile.getAbsolutePath());
                 //Toast.makeText(this, "Not Implemented", Toast.LENGTH_SHORT).show();
                 break;
-            case 10: //"Test Processing with all of above"
+            case 10: //"Test Processing with add Pet Tag"
+                Toast.makeText(this, "Not Implemented", Toast.LENGTH_SHORT).show();
+                break;
+            case 11: //"Test Processing with all of above"
                 Toast.makeText(this, "Not Implemented", Toast.LENGTH_SHORT).show();
                 //runVideoProcess();
                 break;

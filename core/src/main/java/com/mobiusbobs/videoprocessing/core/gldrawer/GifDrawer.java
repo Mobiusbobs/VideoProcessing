@@ -61,6 +61,16 @@ public class GifDrawer implements GLDrawable {
     return gifDecoder;
   }
 
+  public static GifDecoder createGifDecoder(Context context, int rawGifId, int sampleSize) {
+    // open gif file as inputSource
+    InputStream inputStream = context.getResources().openRawResource(rawGifId);
+
+    GifDecoder gifDecoder = new GifDecoder(sampleSize);
+    gifDecoder.read(inputStream, 0);
+
+    return gifDecoder;
+  }
+
   public static GifDecoder createGifDecoder(String filePath) {
     return createGifDecoder(filePath, 1);
   }

@@ -22,6 +22,7 @@ import com.mobiusbobs.videoprocessing.sample.Util.MediaFileHelper;
 import com.mobiusbobs.videoprocessing.sample.VideoProcess.videoProcessing.CoordConverter;
 import com.mobiusbobs.videoprocessing.sample.VideoProcess.videoProcessing.Duration;
 import com.mobiusbobs.videoprocessing.sample.VideoProcess.videoProcessing.DurationGLDrawable;
+import com.mobiusbobs.videoprocessing.sample.VideoProcess.videoProcessing.DurationGifDrawable;
 import com.mobiusbobs.videoprocessing.sample.VideoProcess.videoProcessing.MediaMetaHelper;
 import com.mobiusbobs.videoprocessing.sample.VideoProcess.videoProcessing.StickerDrawer;
 import com.mobiusbobs.videoprocessing.sample.VideoProcess.videoProcessing.TextDrawer;
@@ -105,7 +106,7 @@ public class VideoProcessTask {
 
   // --- video processing test --- //
   // TODO rename() plain decide / encode
-  public void runVideoProcess(String filePath) {
+  public void runVideoProcess(String inputFilePath) {
     // get output file path
     final String fileOutputPath = createNewFileOutput();
     if (fileOutputPath == null) return;
@@ -113,7 +114,7 @@ public class VideoProcessTask {
     // video processing - empty
     try {
       VideoProcessor.Builder builder = new VideoProcessor.Builder()
-        .setInputFilePath(filePath)
+        .setInputFilePath(inputFilePath)
         .setOutputPath(fileOutputPath);
 
       runVideoProcessor(builder);
@@ -122,14 +123,14 @@ public class VideoProcessTask {
     }
   }
 
-  public void runVideoProcessWithWatermark(String filePath) {
+  public void runVideoProcessWithWatermark(String inputFilePath) {
     // get output file path
     final String fileOutputPath = createNewFileOutput();
     if (fileOutputPath == null) return;
 
     // init coordconverter
     CoordConverter coordConverter = new CoordConverter(context);
-    final long videoDuration = MediaMetaHelper.getMediaDuration(context, Uri.parse(filePath));
+    final long videoDuration = MediaMetaHelper.getMediaDuration(context, Uri.parse(inputFilePath));
 
     // watermark
     GLDrawable watermarkDrawer = setupWatermarkDrawer(coordConverter, videoDuration);
@@ -137,7 +138,7 @@ public class VideoProcessTask {
     // video processing
     try {
       VideoProcessor.Builder builder = new VideoProcessor.Builder()
-        .setInputFilePath(filePath)
+        .setInputFilePath(inputFilePath)
         .addDrawer(watermarkDrawer)
         .setOutputPath(fileOutputPath);
 
@@ -147,14 +148,14 @@ public class VideoProcessTask {
     }
   }
 
-  public void runVideoProcessWithTextSticker(String filePath) {
+  public void runVideoProcessWithTextSticker(String inputFilePath) {
     // get output file path
     final String fileOutputPath = createNewFileOutput();
     if (fileOutputPath == null) return;
 
     // init coordconverter
     CoordConverter coordConverter = new CoordConverter(context);
-    final long videoDuration = MediaMetaHelper.getMediaDuration(context, Uri.parse(filePath));
+    final long videoDuration = MediaMetaHelper.getMediaDuration(context, Uri.parse(inputFilePath));
 
     // textSticker
     DurationGLDrawable textDrawer =  new TextDrawer(context, coordConverter, "textSticker", 50, "#00FFFF", 200, 200);
@@ -163,7 +164,7 @@ public class VideoProcessTask {
     // video processing
     try {
       VideoProcessor.Builder builder = new VideoProcessor.Builder()
-        .setInputFilePath(filePath)
+        .setInputFilePath(inputFilePath)
         .addDrawer(textDrawer)
         .setOutputPath(fileOutputPath);
 
@@ -173,14 +174,14 @@ public class VideoProcessTask {
     }
   }
 
-  public void runVideoProcessWithImageSticker(String filePath) {
+  public void runVideoProcessWithImageSticker(String inputFilePath) {
     // get output file path
     final String fileOutputPath = createNewFileOutput();
     if (fileOutputPath == null) return;
 
     // init coordconverter
     CoordConverter coordConverter = new CoordConverter(context);
-    final long videoDuration = MediaMetaHelper.getMediaDuration(context, Uri.parse(filePath));
+    final long videoDuration = MediaMetaHelper.getMediaDuration(context, Uri.parse(inputFilePath));
 
     // image sticker
     int sampleSize = 1;
@@ -191,7 +192,7 @@ public class VideoProcessTask {
     // video processing
     try {
       VideoProcessor.Builder builder = new VideoProcessor.Builder()
-        .setInputFilePath(filePath)
+        .setInputFilePath(inputFilePath)
         .addDrawer(stickerDrawer)
         .setOutputPath(fileOutputPath);
 
@@ -201,25 +202,28 @@ public class VideoProcessTask {
     }
   }
 
-  // TODO
-  public void runVideoProcessWithGifSticker(String filePath) {
+  public void runVideoProcessWithGifSticker(String inputFilePath) {
     // get output file path
     final String fileOutputPath = createNewFileOutput();
     if (fileOutputPath == null) return;
 
     // init coordconverter
     CoordConverter coordConverter = new CoordConverter(context);
-    final long videoDuration = MediaMetaHelper.getMediaDuration(context, Uri.parse(filePath));
+    final long videoDuration = MediaMetaHelper.getMediaDuration(context, Uri.parse(inputFilePath));
 
-    // textSticker
-    DurationGLDrawable textDrawer =  new TextDrawer(context, coordConverter, "textSticker", 50, "#00FFFF", 200, 200);
-    textDrawer.setDuration(new Duration(0, videoDuration));
+    // gif Sticker
+    int sampleSize = 1;
+    int gifResId = R.drawable.gif_happiness;
+    float[] vertices = coordConverter.getVertices(200, 200, 400, 300); //(x, y, width, height)
+    GifDecoder gifDecoder = GifDrawer.createGifDecoder(context, gifResId, sampleSize);
+    DurationGLDrawable gifDrawer =  new DurationGifDrawable(context, gifDecoder, vertices);
+    gifDrawer.setDuration(new Duration(0, videoDuration));
 
     // video processing
     try {
       VideoProcessor.Builder builder = new VideoProcessor.Builder()
-        .setInputFilePath(filePath)
-        .addDrawer(textDrawer)
+        .setInputFilePath(inputFilePath)
+        .addDrawer(gifDrawer)
         .setOutputPath(fileOutputPath);
 
       runVideoProcessor(builder);
