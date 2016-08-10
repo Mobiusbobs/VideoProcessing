@@ -8,6 +8,11 @@
     android:fitsSystemWindows="true"
     tools:context=".VideoProcessingTestActivity">
 
+    <ListView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/list_view" />
+
     <android.support.design.widget.FloatingActionButton
         android:id="@+id/fab"
         android:layout_width="wrap_content"

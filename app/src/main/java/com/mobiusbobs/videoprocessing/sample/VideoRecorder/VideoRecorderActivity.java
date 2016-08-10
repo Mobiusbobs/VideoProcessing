@@ -1,4 +1,4 @@
-package com.mobiusbobs.videoprocessing.sample;
+package com.mobiusbobs.videoprocessing.sample.VideoRecorder;
 
 import android.graphics.SurfaceTexture;
 import android.opengl.EGL14;
@@ -11,6 +11,7 @@ import android.widget.Button;
 import com.mobiusbobs.videoprocessing.core.CameraView;
 import com.mobiusbobs.videoprocessing.core.codec.VideoRecorder;
 import com.mobiusbobs.videoprocessing.core.hardware_control.CameraController;
+import com.mobiusbobs.videoprocessing.sample.R;
 
 import java.io.File;
 import java.io.IOException;

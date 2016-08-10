@@ -29,10 +29,10 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".VideoRecorderActivity"
+            android:name=".VideoRecorder.VideoRecorderActivity"
             android:screenOrientation="portrait"/>
         <activity
-            android:name=".VideoProcessingTestActivity"
+            android:name=".VideoProcess.VideoProcessActivity"
             android:screenOrientation="portrait"/>
     </application>
 

@@ -18,6 +18,9 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.Toast;
 
+import com.mobiusbobs.videoprocessing.sample.VideoProcess.VideoProcessActivity;
+import com.mobiusbobs.videoprocessing.sample.VideoRecorder.VideoRecorderActivity;
+
 public class MainActivity extends AppCompatActivity {
     public static String TAG = "MainActivity";
 
@@ -64,7 +67,7 @@ public class MainActivity extends AppCompatActivity {
                         break;
                     }
                     case 1: {
-                        startActivity(VideoProcessingTestActivity.class);
+                        startActivity(VideoProcessActivity.class);
                         break;
                     }
                 }

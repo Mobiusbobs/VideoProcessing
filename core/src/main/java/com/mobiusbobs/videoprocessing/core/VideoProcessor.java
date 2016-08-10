@@ -60,7 +60,7 @@ public class VideoProcessor {
 
     // ----- format parameters -----
     // parameters for the video encoder
-    private static final String OUTPUT_VIDEO_MIME_TYPE = "video/avc"; // H.264 Advanced Video Coding
+    public static final String OUTPUT_VIDEO_MIME_TYPE = "video/avc"; // H.264 Advanced Video Coding
     private static final int OUTPUT_VIDEO_BIT_RATE = 6000000; // 2 Mbps
     private static final int OUTPUT_VIDEO_MIN_FRAME_RATE = 15;
     private static final int OUTPUT_VIDEO_FRAME_RATE = 30;        // 15fps
@@ -369,14 +369,10 @@ public class VideoProcessor {
         muxer.release();
 
         // stop and release video/audio encoder/decoder
-        videoDecoder.stop();
-        videoDecoder.release();
-        videoEncoder.stop();
-        videoEncoder.release();
-        audioDecoder.stop();
-        audioDecoder.release();
-        audioEncoder.stop();
-        audioEncoder.release();
+        stopAndReleaseMediaCodec(videoDecoder);
+        stopAndReleaseMediaCodec(videoEncoder);
+        stopAndReleaseMediaCodec(audioDecoder);
+        stopAndReleaseMediaCodec(audioEncoder);
 
         Log.d(TAG, "doExtractDecodeEncodeMux Done: videoExtractedFrameCount = " + videoExtractedFrameCount);
         Log.d(TAG, "doExtractDecodeEncodeMux Done: videoDecodedFrameCount = " + videoDecodedFrameCount);
@@ -429,11 +425,11 @@ public class VideoProcessor {
         // 4.) queue the buffer to codec to process
         if (size >= 0) {
             videoDecoder.queueInputBuffer(
-                    decoderInputBufferIndex,
-                    0,
-                    size,
-                    presentationTime,
-                    videoExtractor.getSampleFlags());
+              decoderInputBufferIndex,
+              0,
+              size,
+              presentationTime,
+              videoExtractor.getSampleFlags());
         }
 
         boolean videoExtractorDone = !videoExtractor.advance();
@@ -755,7 +751,7 @@ public class VideoProcessor {
      */
     private boolean muxAudio(MediaCodec audioEncoder, MediaMuxer muxer) {
         int encoderOutputBufferIndex = audioEncoder.dequeueOutputBuffer(
-                audioEncoderOutputBufferInfo, TIMEOUT_USEC);
+          audioEncoderOutputBufferInfo, TIMEOUT_USEC);
 
         if (encoderOutputBufferIndex == MediaCodec.INFO_TRY_AGAIN_LATER) {
             Log.d(TAG, "no audio encoder output buffer");
@@ -809,11 +805,19 @@ public class VideoProcessor {
      * @param inputFormat the format of the stream to decode
      * @param surface into which to decode the frames
      */
-    private MediaCodec createVideoDecoder(MediaFormat inputFormat, Surface surface) throws Exception {
+    public static MediaCodec createVideoDecoder(MediaFormat inputFormat, Surface surface) throws Exception {
         MediaCodec decoder = MediaCodec.createDecoderByType(getMimeTypeFor(inputFormat));
         decoder.configure(inputFormat, surface, null, 0);
         decoder.start();
         return decoder;
+    }
+
+    public static void stopAndReleaseMediaCodec(MediaCodec mediaCodec) {
+        if (mediaCodec != null) {
+            Log.d(TAG, "stop and release Media Codec");
+            mediaCodec.stop();
+            mediaCodec.release();
+        }
     }
 
     /**
@@ -939,7 +943,7 @@ public class VideoProcessor {
      * Returns the first codec capable of encoding the specified MIME type, or null if no match was
      * found.
      */
-    private static MediaCodecInfo selectCodec(String mimeType) {
+    public static MediaCodecInfo selectCodec(String mimeType) {
         int numCodecs = MediaCodecList.getCodecCount();
         for (int i = 0; i < numCodecs; i++) {
             MediaCodecInfo codecInfo = MediaCodecList.getCodecInfoAt(i);
@@ -956,12 +960,12 @@ public class VideoProcessor {
         return null;
     }
 
-    private int getMediaDataOrDefault(MediaFormat inputVideoFormat, String key, int defaultValue) {
+    public static int getMediaDataOrDefault(MediaFormat inputVideoFormat, String key, int defaultValue) {
         if (inputVideoFormat.containsKey(key)) return inputVideoFormat.getInteger(key);
         else return defaultValue;
     }
 
-    private float[] getOutputSurfaceRenderVerticesData(MediaFormat inputVideoFormat) {
+    public static float[] getOutputSurfaceRenderVerticesData(MediaFormat inputVideoFormat) {
         float outputRatio = (float)OUTPUT_VIDEO_HEIGHT / OUTPUT_VIDEO_WIDTH;
 
         int rotation = getMediaDataOrDefault(inputVideoFormat, MediaFormat.KEY_ROTATION, 0);
