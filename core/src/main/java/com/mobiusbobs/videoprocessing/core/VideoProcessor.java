@@ -51,8 +51,6 @@ public class VideoProcessor {
     public static final int VIDEO_EXTEND_DURATION_US = 1000 * 1000;
 
     // ----- input & output -----
-    private String inputFilePath = null;
-
     private MediaExtractor videoExtractor;
     private MediaExtractor audioExtractor;
 
@@ -1084,7 +1082,6 @@ public class VideoProcessor {
                 throw new IllegalStateException("No input specified");
             }
 
-            processor.inputFilePath = inputFilePath;
             processor.audioExtractor = createAudioExtractor(context);
 
             if (outputFilePath != null) {
