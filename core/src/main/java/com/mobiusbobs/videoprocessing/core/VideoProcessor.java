@@ -46,6 +46,7 @@ public class VideoProcessor {
     /** How long to wait for the next buffer to become available. */
     private static final int TIMEOUT_USEC = 10000;
 
+    // [refactor] time unit conversion util
     public static final int VIDEO_EXTEND_DURATION_US = 1000 * 1000;
 
     // ----- input & output -----
@@ -61,7 +62,7 @@ public class VideoProcessor {
     private static final String OUTPUT_VIDEO_MIME_TYPE = "video/avc"; // H.264 Advanced Video Coding
     private static final int OUTPUT_VIDEO_BIT_RATE = 6000000; // 2 Mbps
     private static final int OUTPUT_VIDEO_MIN_FRAME_RATE = 15;
-    private static final int OUTPUT_VIDEO_FRAME_RATE = 30;        // 15fps
+    private static final int OUTPUT_VIDEO_FRAME_RATE = 30;        // 30 fps
     private static final int OUTPUT_VIDEO_IFRAME_INTERVAL = 10; // 10 seconds between I-frames
 
     private static final int OUTPUT_VIDEO_COLOR_FORMAT =
@@ -89,12 +90,14 @@ public class VideoProcessor {
     private int videoExtractedFrameCount = 0;
     private int videoDecodedFrameCount = 0;
     private int videoEncodedFrameCount = 0;
+
     private int audioExtractedFrameCount = 0;
     private int audioDecodedFrameCount = 0;
     private int audioEncodedFrameCount = 0;
 
     // We will get these from the decoders when notified of a format change.
     // decoder
+    // [question] why there is no decoder output video format
     MediaFormat decoderOutputAudioFormat;
 
     // We will get these from the encoders when notified of a format change.
@@ -103,9 +106,11 @@ public class VideoProcessor {
     MediaFormat encoderOutputAudioFormat = null;
 
     // The audio decoder output buffer to process, -1 if none.
+    // [question] what's this?
     int pendingAudioDecoderOutputBufferIndex = -1;
 
     // buffers
+    // [question] why not balance?
     // video buffer
     ByteBuffer[] videoDecoderInputBuffers;
     MediaCodec.BufferInfo videoDecoderOutputBufferInfo;
@@ -143,8 +148,8 @@ public class VideoProcessor {
         MediaCodec audioEncoder;
         MediaMuxer muxer;
 
-        OutputSurface outputSurface;    // output for decoder
-        InputSurface inputSurface;        // input for encoder
+        OutputSurface outputSurface;      // output for decoder (the input
+        InputSurface inputSurface;        // input for encoder  (the output
 
         MediaCodecInfo videoCodecInfo = selectCodec(OUTPUT_VIDEO_MIME_TYPE);    // for video encoder
         MediaCodecInfo audioCodecInfo = selectCodec(OUTPUT_AUDIO_MIME_TYPE);    // for audio encoder
@@ -154,6 +159,7 @@ public class VideoProcessor {
         int audioTrackIndex = Extractor.getAndSelectAudioTrackIndex(audioExtractor);
 
         // input video format
+        // [refactor] encapsulate inputVideoFormat getter with fixes
         MediaFormat inputVideoFormat = videoExtractor.getTrackFormat(videoTrackIndex);
 
         if (!inputVideoFormat.containsKey(MediaFormat.KEY_FRAME_RATE) ||
@@ -180,6 +186,7 @@ public class VideoProcessor {
 
         // --- video decoder ---
         // to create OutputSurface object, it must be after inputSurface.makeCurrent()
+        // [refactor] so we need to extract gl env init
         outputSurface = new OutputSurface(getOutputSurfaceRenderVerticesData(inputVideoFormat));
         videoDecoder = createVideoDecoder(inputVideoFormat, outputSurface.getSurface());
 
@@ -217,6 +224,7 @@ public class VideoProcessor {
 
     }
 
+    // [refactor] logger out
     public void dumpMediaFormat(MediaFormat mediaFormat) {
         Log.d("DUMP_MEDIA_FORMAT", "Start");
         printMediaFormat(mediaFormat, "KEY_AAC_PROFILE", MediaFormat.KEY_AAC_PROFILE, "Integer");
@@ -301,6 +309,7 @@ public class VideoProcessor {
 
             // --- extract audio from extractor ---
             if (!audioExtractorDone && (encoderOutputAudioFormat == null || muxing)) {
+                // [refactor] circular extraction mode and offset
                 audioExtractorDone = extractAudioData(
                         audioExtractor,
                         audioDecoder,
@@ -846,6 +855,7 @@ public class VideoProcessor {
      * @param format of the stream to be produced
      * @param surfaceReference to store the surface to use as input
      */
+    // [refactor] extract
     private MediaCodec createVideoEncoder(
         MediaCodecInfo codecInfo,
         MediaFormat format,
@@ -891,6 +901,7 @@ public class VideoProcessor {
         return format.getString(MediaFormat.KEY_MIME);
     }
 
+    // [refactor] this
     private MediaFormat createOutputAudioFormat(MediaFormat inputAudioFormat) {
         int audioSamplingRate = getMediaDataOrDefault(
                 inputAudioFormat,
@@ -921,6 +932,7 @@ public class VideoProcessor {
         return outputAudioFormat;
     }
 
+    // [refactor] extract this to helper class
     private MediaFormat createOutputVideoFormat(MediaFormat inputVideoFormat) {
         int videoFrameRate = getMediaDataOrDefault(
                 inputVideoFormat,
@@ -959,6 +971,8 @@ public class VideoProcessor {
      * Returns the first codec capable of encoding the specified MIME type, or null if no match was
      * found.
      */
+    // [refactor] rename: select codec for decoder
+    // [refactor] use optional to handle null
     private static MediaCodecInfo selectCodec(String mimeType) {
         int numCodecs = MediaCodecList.getCodecCount();
         for (int i = 0; i < numCodecs; i++) {
@@ -976,6 +990,7 @@ public class VideoProcessor {
         return null;
     }
 
+    // [refactor] extract to helper class
     private int getMediaDataOrDefault(MediaFormat inputVideoFormat, String key, int defaultValue) {
         if (inputVideoFormat.containsKey(key)) return inputVideoFormat.getInteger(key);
         else return defaultValue;
@@ -1031,6 +1046,7 @@ public class VideoProcessor {
     }
 
     // ----- builder -----
+    // [TODO] extract this to other file
     public static class Builder {
         private List<GLDrawable> drawableList = new ArrayList<>();
         private int inputResId = -1;
@@ -1077,7 +1093,8 @@ public class VideoProcessor {
             return this;
         }
 
-        private MediaExtractor createAudioExtractor(Context context) throws IOException{
+        // [refactor] move this to processor builder class
+        private MediaExtractor createAudioExtractor(Context context) throws IOException {
             if (musicFilePath != null)
                 return Extractor.createExtractor(musicFilePath);
             else if (musicResId > 0)

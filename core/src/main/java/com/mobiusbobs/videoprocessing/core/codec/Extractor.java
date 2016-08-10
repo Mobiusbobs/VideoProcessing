@@ -23,6 +23,7 @@ import java.nio.channels.FileChannel;
 public class Extractor {
     private static final String TAG = "Extractor";
 
+    // [refactor] remove test code
     public static final String FILE_OUTPUT_AAC = "/sdcard/Download/TestAAC.aac";
     public static final String FILE_OUTPUT_AVC = "/sdcard/Download/tmp2AVC.mp4";
 
@@ -30,6 +31,7 @@ public class Extractor {
 
     }
 
+    // [refactor] merge these two?
     public static MediaExtractor createExtractor(String filePath) {
         MediaExtractor extractor = new MediaExtractor();
 
@@ -40,6 +42,7 @@ public class Extractor {
             extractor.setDataSource(fd);
         } catch (IOException e) {
             e.printStackTrace();
+            // TODO error handle
         }
 
         return extractor;
@@ -53,9 +56,9 @@ public class Extractor {
         return extractor;
     }
 
-
     // MediaExtractor
     // TODO update this..?
+    // TODO remove it: seems like this is a testing function
     public void extractVideoFile(String filePath) {
         MediaExtractor extractor = createExtractor(filePath);
 
@@ -156,6 +159,7 @@ public class Extractor {
         return format.getString(MediaFormat.KEY_MIME);
     }
 
+    // [refactor] rename and break down this
     public static int getAndSelectVideoTrackIndex(MediaExtractor extractor) {
         for (int index = 0; index < extractor.getTrackCount(); ++index) {
             if (isVideoFormat(extractor.getTrackFormat(index))) {
