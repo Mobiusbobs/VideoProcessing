@@ -65,7 +65,6 @@ public class VideoProcessor {
 
   private static final int OUTPUT_VIDEO_COLOR_FORMAT =
       MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface;
-
   public static final int OUTPUT_VIDEO_WIDTH = 720;
   public static final int OUTPUT_VIDEO_HEIGHT = 1280;
   private static final int OUTPUT_VIDEO_MAX_INPUT_SIZE = 0;
