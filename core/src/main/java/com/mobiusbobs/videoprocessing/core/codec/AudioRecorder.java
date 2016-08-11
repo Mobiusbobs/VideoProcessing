@@ -124,6 +124,7 @@ public class AudioRecorder {
    * and write them to the MediaCodec encoder
    */
   private class AudioThread extends Thread {
+    private long lastAudioPresentationTime = 0;
     @Override
     public void run() {
       android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_URGENT_AUDIO);
@@ -147,11 +148,16 @@ public class AudioRecorder {
                 readBytes = 0;
 
               if (readBytes > 0) {
+                long presentationTime = ptHelper.getPTSUsWithOffset();
+                // HOTFIX to skip bytes with timestamp issue
+                if (presentationTime < lastAudioPresentationTime) continue;
+                lastAudioPresentationTime = presentationTime;
+
                 // set audio data to encoder
                 buf.position(readBytes);
                 buf.flip();
 
-                audioEncoderCore.encode(buf, readBytes, ptHelper.getPTSUsWithOffset(), false);
+                audioEncoderCore.encode(buf, readBytes, presentationTime, false);
                 printFlag("encode done");
 
                 audioEncoderCore.drainEncoder();
