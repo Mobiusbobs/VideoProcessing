@@ -1,11 +1,13 @@
 package com.mobiusbobs.videoprocessing.core.util;
 
+import android.annotation.TargetApi;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.Drawable;
 import android.media.MediaFormat;
 import android.media.MediaMetadataRetriever;
+import android.os.Build;
 import android.util.Log;
 
 import java.io.InputStream;
@@ -234,6 +236,7 @@ public class CoordConverter {
     return new int[]{w,h};
   }
 
+  @TargetApi(Build.VERSION_CODES.M)
   public static float[] getVerticesCoord(
     MediaFormat inputVideoFormat,
     MediaMetadataRetriever mmr,
@@ -243,9 +246,7 @@ public class CoordConverter {
     int rotation = 0;
     boolean gotRotationFromMMR = false;
 
-    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-      rotation = MediaFormatHelper.getInteger(inputVideoFormat, MediaFormat.KEY_ROTATION, 0);
-    }
+    rotation = MediaFormatHelper.getInteger(inputVideoFormat, MediaFormat.KEY_ROTATION, 0);
 
     if (rotation == 0 && mmr != null) {
       String rotationStr = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION);
