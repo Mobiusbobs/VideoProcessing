@@ -626,8 +626,9 @@ public class VideoProcessor {
     int size = audioDecoderOutputBufferInfo.size;
     long presentationTime = audioDecoderOutputBufferInfo.presentationTimeUs + pTimeOffset;
     if (presentationTime <= lastAudioPTForPipeAudio) {
-      presentationTime = lastAudioPTForPipeAudio;
+      presentationTime = lastAudioPTForPipeAudio + 1;
     }
+    lastAudioPTForPipeAudio = presentationTime;
 
     if (size >= 0) {
       ByteBuffer decoderOutputBuffer =
@@ -787,7 +788,7 @@ public class VideoProcessor {
     }
 
     long presentationTime = audioEncoderOutputBufferInfo.presentationTimeUs;
-    if (lastAudioPTForMuxer >= presentationTime) {
+    if (presentationTime <= lastAudioPTForMuxer) {
       audioEncoderOutputBufferInfo.presentationTimeUs = lastAudioPTForMuxer + 1;
     }
     lastAudioPTForMuxer = presentationTime;
