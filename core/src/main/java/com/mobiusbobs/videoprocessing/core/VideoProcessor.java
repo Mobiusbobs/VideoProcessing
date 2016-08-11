@@ -16,6 +16,7 @@ import com.mobiusbobs.videoprocessing.core.gldrawer.OutputSurfaceDrawer;
 import com.mobiusbobs.videoprocessing.core.gles.surface.InputSurface;
 import com.mobiusbobs.videoprocessing.core.gles.surface.OutputSurface;
 import com.mobiusbobs.videoprocessing.core.util.CoordConverter;
+import com.mobiusbobs.videoprocessing.core.util.MediaFormatHelper;
 
 import java.io.IOException;
 import java.lang.IllegalStateException;
@@ -955,56 +956,14 @@ public class VideoProcessor {
   }
 
   private int getMediaDataOrDefault(MediaFormat inputVideoFormat, String key, int defaultValue) {
-    if (inputVideoFormat.containsKey(key)) return inputVideoFormat.getInteger(key);
-    else return defaultValue;
+    return MediaFormatHelper.getInteger(inputVideoFormat, key, defaultValue);
   }
 
   private float[] getOutputSurfaceRenderVerticesData(MediaFormat inputVideoFormat) {
-    float outputRatio = (float)OUTPUT_VIDEO_HEIGHT / OUTPUT_VIDEO_WIDTH;
-
-    int rotation = 0;
-    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-      rotation = getMediaDataOrDefault(inputVideoFormat, MediaFormat.KEY_ROTATION, 0);
-    }
-
-    int inputVideoWidth = getMediaDataOrDefault(
-        inputVideoFormat, MediaFormat.KEY_WIDTH, OUTPUT_VIDEO_WIDTH);
-    int inputVideoHeight = getMediaDataOrDefault(
-        inputVideoFormat, MediaFormat.KEY_HEIGHT, OUTPUT_VIDEO_HEIGHT);
-
-    // swap weight and height if rotation is 90/270
-    if (rotation == 90 || rotation == 270) {
-      int tmp = inputVideoWidth;
-      //noinspection SuspiciousNameCombination
-      inputVideoWidth = inputVideoHeight;
-      inputVideoHeight = tmp;
-    }
-
-    float width = inputVideoWidth;
-    float height = inputVideoHeight;
-    float ratio = height / width;
-
-    if (ratio > outputRatio) {
-      width = OUTPUT_VIDEO_HEIGHT / ratio;
-      height = OUTPUT_VIDEO_HEIGHT;
-    } else {
-      width = OUTPUT_VIDEO_WIDTH;
-      height = OUTPUT_VIDEO_WIDTH * ratio;
-    }
-
-    // horizontal
-    float hDiff = OUTPUT_VIDEO_WIDTH - width;
-    int hOffset = (int)hDiff / 2;
-
-    // vertical
-    float vDiff = OUTPUT_VIDEO_HEIGHT - height;
-    int vOffset = (int)vDiff / 2;
-
-    float x1 = rectCoordToGLCoord(hOffset, OUTPUT_VIDEO_WIDTH);
-    float x2 = rectCoordToGLCoord(OUTPUT_VIDEO_WIDTH - hOffset, OUTPUT_VIDEO_WIDTH);
-    float y1 = rectCoordToGLCoord(vOffset, OUTPUT_VIDEO_HEIGHT);
-    float y2 = rectCoordToGLCoord(OUTPUT_VIDEO_HEIGHT - vOffset, OUTPUT_VIDEO_HEIGHT);
-    return CoordConverter.getTriangleVerticesData(x1, y1, x2, y2);
+    return CoordConverter.getVerticesCoord(
+      inputVideoFormat,
+      OUTPUT_VIDEO_WIDTH, OUTPUT_VIDEO_HEIGHT
+    );
   }
 
   // ----- listener -----
