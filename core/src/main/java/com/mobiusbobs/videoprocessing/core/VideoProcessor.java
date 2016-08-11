@@ -791,8 +791,8 @@ public class VideoProcessor {
     if (presentationTime <= lastAudioPTForMuxer) {
       presentationTime = lastAudioPTForMuxer + 1;
     }
-    lastAudioPTForMuxer = presentationTime;
     audioEncoderOutputBufferInfo.presentationTimeUs = presentationTime;
+    lastAudioPTForMuxer = presentationTime;
 
     if (audioEncoderOutputBufferInfo.size != 0) {
       Log.d(TAG, "write Audio sample to muxer");
