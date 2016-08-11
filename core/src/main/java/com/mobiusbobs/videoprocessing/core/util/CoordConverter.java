@@ -1,9 +1,13 @@
 package com.mobiusbobs.videoprocessing.core.util;
 
+import android.annotation.TargetApi;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.Drawable;
+import android.media.MediaFormat;
+import android.media.MediaMetadataRetriever;
+import android.os.Build;
 import android.util.Log;
 
 import java.io.InputStream;
@@ -133,23 +137,71 @@ public class CoordConverter {
     };
   }
 
-    // For TextureRender
-    // (x1, y1) bottom-left
-    // (x2, y2) top-right
-    public static float[] getTriangleVerticesData(float x1, float y1, float x2, float y2) {
-        float z = 0.0f;
+  // For TextureRender
+  // (x1, y1) bottom-left
+  // (x2, y2) top-right
+  public static float[] getTriangleVerticesData(float x1, float y1, float x2, float y2) {
+    float z = 0.0f;
 
-        // bottom-left
-        // bottom-right
-        // top-left
-        // top-right
-        return new float[]{
-                x1, y1, 0, 0, 0,
-                x2, y1, 0, 1, 0,
-                x1, y2, 0, 0, 1,
-                x2, y2, 0, 1, 1,
-        };
-    }
+    // bottom-left
+    // bottom-right
+    // top-left
+    // top-right
+    return new float[]{
+      x1, y1, z, 0, 0,
+      x2, y1, z, 1, 0,
+      x1, y2, z, 0, 1,
+      x2, y2, z, 1, 1,
+    };
+  }
+
+  // stored -> displayed 90 degree
+  public static float[] getTriangleVerticesData90(float x1, float y1, float x2, float y2) {
+    float z = 0.0f;
+
+    // bottom-left
+    // bottom-right
+    // top-left
+    // top-right
+    return new float[]{
+      x1, y1, z, 1, 0,
+      x2, y1, z, 1, 1,
+      x1, y2, z, 0, 0,
+      x2, y2, z, 0, 1,
+    };
+  }
+
+  // stored -> displayed 180 degree
+  public static float[] getTriangleVerticesData180(float x1, float y1, float x2, float y2) {
+    float z = 0.0f;
+
+    // bottom-left
+    // bottom-right
+    // top-left
+    // top-right
+    return new float[]{
+      x1, y1, z, 1, 1,
+      x2, y1, z, 0, 1,
+      x1, y2, z, 1, 0,
+      x2, y2, z, 0, 0,
+    };
+  }
+
+  // stored -> displayed 270 degree
+  public static float[] getTriangleVerticesData270(float x1, float y1, float x2, float y2) {
+    float z = 0.0f;
+
+    // bottom-left
+    // bottom-right
+    // top-left
+    // top-right
+    return new float[]{
+      x1, y1, z, 0, 1,
+      x2, y1, z, 0, 0,
+      x1, y2, z, 1, 1,
+      x2, y2, z, 1, 0,
+    };
+  }
 
   private int[] getImageDimen(int drawableId) {
     Drawable d = context.getResources().getDrawable(drawableId);
@@ -182,5 +234,79 @@ public class CoordConverter {
     }
 
     return new int[]{w,h};
+  }
+
+  @TargetApi(Build.VERSION_CODES.M)
+  public static float[] getVerticesCoord(
+    MediaFormat inputVideoFormat,
+    MediaMetadataRetriever mmr,
+    int outputVideoWidth, int outputVideoHeight
+  ) {
+    // --- get rotation from input format ---
+    int rotation = 0;
+    boolean gotRotationFromMMR = false;
+
+    rotation = MediaFormatHelper.getInteger(inputVideoFormat, MediaFormat.KEY_ROTATION, 0);
+
+    if (rotation == 0 && mmr != null) {
+      String rotationStr = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION);
+      if (rotationStr != null) {
+        rotation = Integer.valueOf(rotationStr);
+        gotRotationFromMMR = true;
+      }
+    }
+
+    // --- get size from input format ---
+    int inputVideoWidth = MediaFormatHelper.getInteger(
+            inputVideoFormat, MediaFormat.KEY_WIDTH, outputVideoWidth);
+    int inputVideoHeight = MediaFormatHelper.getInteger(
+            inputVideoFormat, MediaFormat.KEY_HEIGHT, outputVideoHeight);
+
+    // swap weight and height if rotation is 90/270
+    if (rotation == 90 || rotation == 270) {
+      int tmp = inputVideoWidth;
+      //noinspection SuspiciousNameCombination
+      inputVideoWidth = inputVideoHeight;
+      inputVideoHeight = tmp;
+    }
+
+    // --- calculate output size ---
+    float outputRatio = (float)outputVideoHeight / outputVideoWidth;
+    float width = inputVideoWidth;
+    float height = inputVideoHeight;
+    float ratio = height / width;
+
+    if (ratio > outputRatio) {
+      width = outputVideoHeight / ratio;
+      height = outputVideoHeight;
+    } else {
+      width = outputVideoWidth;
+      height = outputVideoWidth * ratio;
+    }
+
+    // --- calculate padding ---
+    // horizontal
+    float hDiff = outputVideoWidth - width;
+    int hOffset = (int)hDiff / 2;
+
+    // vertical
+    float vDiff = outputVideoHeight - height;
+    int vOffset = (int)vDiff / 2;
+
+    // --- generate vertices ---
+    float x1 = rectCoordToGLCoord(hOffset, outputVideoWidth);
+    float x2 = rectCoordToGLCoord(outputVideoWidth - hOffset, outputVideoWidth);
+    float y1 = rectCoordToGLCoord(vOffset, outputVideoHeight);
+    float y2 = rectCoordToGLCoord(outputVideoHeight - vOffset, outputVideoHeight);
+
+    if (gotRotationFromMMR) {
+      switch (rotation) {
+        case 90: return getTriangleVerticesData90(x1, y1, x2, y2);
+        case 180: return getTriangleVerticesData180(x1, y1, x2, y2);
+        case 270: return getTriangleVerticesData270(x1, y1, x2, y2);
+      }
+    }
+
+    return getTriangleVerticesData(x1, y1, x2, y2);
   }
 }

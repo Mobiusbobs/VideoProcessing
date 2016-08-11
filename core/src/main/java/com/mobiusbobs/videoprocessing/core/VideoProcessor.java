@@ -6,6 +6,7 @@ import android.media.MediaCodecInfo;
 import android.media.MediaCodecList;
 import android.media.MediaExtractor;
 import android.media.MediaFormat;
+import android.media.MediaMetadataRetriever;
 import android.media.MediaMuxer;
 import android.util.Log;
 import android.view.Surface;
@@ -16,6 +17,8 @@ import com.mobiusbobs.videoprocessing.core.gldrawer.OutputSurfaceDrawer;
 import com.mobiusbobs.videoprocessing.core.gles.surface.InputSurface;
 import com.mobiusbobs.videoprocessing.core.gles.surface.OutputSurface;
 import com.mobiusbobs.videoprocessing.core.util.CoordConverter;
+import com.mobiusbobs.videoprocessing.core.util.MediaFormatHelper;
+import com.mobiusbobs.videoprocessing.core.util.Util;
 
 import java.io.IOException;
 import java.lang.IllegalStateException;
@@ -23,8 +26,6 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
-
-import static com.mobiusbobs.videoprocessing.core.util.CoordConverter.rectCoordToGLCoord;
 
 /**
  * VideoProcessor
@@ -53,7 +54,8 @@ public class VideoProcessor {
 
   private OnProgressListener onProgressListener;
 
-  public String outputPath;
+  private MediaMetadataRetriever inputMetadataRetriever;
+  public String outputFilePath;
 
   // ----- format parameters -----
   // parameters for the video encoder
@@ -198,7 +200,7 @@ public class VideoProcessor {
     audioDecoder = createAudioDecoder(inputAudioFormat);
 
     // --- muxer ---
-    muxer = new MediaMuxer(outputPath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
+    muxer = new MediaMuxer(outputFilePath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
 
     // --- do the actual extract decode edit encode mux ---
     doProcess(
@@ -962,56 +964,15 @@ public class VideoProcessor {
   }
 
   private int getMediaDataOrDefault(MediaFormat inputVideoFormat, String key, int defaultValue) {
-    if (inputVideoFormat.containsKey(key)) return inputVideoFormat.getInteger(key);
-    else return defaultValue;
+    return MediaFormatHelper.getInteger(inputVideoFormat, key, defaultValue);
   }
 
   private float[] getOutputSurfaceRenderVerticesData(MediaFormat inputVideoFormat) {
-    float outputRatio = (float)OUTPUT_VIDEO_HEIGHT / OUTPUT_VIDEO_WIDTH;
-
-    int rotation = 0;
-    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-      rotation = getMediaDataOrDefault(inputVideoFormat, MediaFormat.KEY_ROTATION, 0);
-    }
-
-    int inputVideoWidth = getMediaDataOrDefault(
-        inputVideoFormat, MediaFormat.KEY_WIDTH, OUTPUT_VIDEO_WIDTH);
-    int inputVideoHeight = getMediaDataOrDefault(
-        inputVideoFormat, MediaFormat.KEY_HEIGHT, OUTPUT_VIDEO_HEIGHT);
-
-    // swap weight and height if rotation is 90/270
-    if (rotation == 90 || rotation == 270) {
-      int tmp = inputVideoWidth;
-      //noinspection SuspiciousNameCombination
-      inputVideoWidth = inputVideoHeight;
-      inputVideoHeight = tmp;
-    }
-
-    float width = inputVideoWidth;
-    float height = inputVideoHeight;
-    float ratio = height / width;
-
-    if (ratio > outputRatio) {
-      width = OUTPUT_VIDEO_HEIGHT / ratio;
-      height = OUTPUT_VIDEO_HEIGHT;
-    } else {
-      width = OUTPUT_VIDEO_WIDTH;
-      height = OUTPUT_VIDEO_WIDTH * ratio;
-    }
-
-    // horizontal
-    float hDiff = OUTPUT_VIDEO_WIDTH - width;
-    int hOffset = (int)hDiff / 2;
-
-    // vertical
-    float vDiff = OUTPUT_VIDEO_HEIGHT - height;
-    int vOffset = (int)vDiff / 2;
-
-    float x1 = rectCoordToGLCoord(hOffset, OUTPUT_VIDEO_WIDTH);
-    float x2 = rectCoordToGLCoord(OUTPUT_VIDEO_WIDTH - hOffset, OUTPUT_VIDEO_WIDTH);
-    float y1 = rectCoordToGLCoord(vOffset, OUTPUT_VIDEO_HEIGHT);
-    float y2 = rectCoordToGLCoord(OUTPUT_VIDEO_HEIGHT - vOffset, OUTPUT_VIDEO_HEIGHT);
-    return CoordConverter.getTriangleVerticesData(x1, y1, x2, y2);
+    return CoordConverter.getVerticesCoord(
+      inputVideoFormat,
+      inputMetadataRetriever,
+      OUTPUT_VIDEO_WIDTH, OUTPUT_VIDEO_HEIGHT
+    );
   }
 
   // ----- listener -----
@@ -1076,7 +1037,7 @@ public class VideoProcessor {
       return this;
     }
 
-    private MediaExtractor createAudioExtractor(Context context) throws IOException{
+    private MediaExtractor createAudioExtractor(Context context) throws IOException {
       if (musicFilePath != null)
         return Extractor.createExtractor(musicFilePath);
       else if (musicResId > 0)
@@ -1089,14 +1050,28 @@ public class VideoProcessor {
         throw new IllegalStateException("No input specified");
     }
 
+    private MediaMetadataRetriever getMediaMetadataRetreiver(Context context, int resId) {
+      MediaMetadataRetriever mmr = new MediaMetadataRetriever();
+      mmr.setDataSource(context, Util.resourceToUri(context, resId));
+      return mmr;
+    }
+
+    private MediaMetadataRetriever getMediaMetadataRetreiver(String inputPath) {
+      MediaMetadataRetriever mmr = new MediaMetadataRetriever();
+      mmr.setDataSource(inputPath);
+      return mmr;
+    }
+
     public VideoProcessor build(Context context) throws IOException {
       VideoProcessor processor = new VideoProcessor();
       processor.drawerList = drawableList;
 
       if (inputResId != -1) {
         processor.videoExtractor = Extractor.createExtractor(context, inputResId);
+        processor.inputMetadataRetriever = getMediaMetadataRetreiver(context, inputResId);
       } else if (inputFilePath != null) {
         processor.videoExtractor = Extractor.createExtractor(inputFilePath);
+        processor.inputMetadataRetriever = getMediaMetadataRetreiver(inputFilePath);
       } else {
         throw new IllegalStateException("No input specified");
       }
@@ -1104,7 +1079,7 @@ public class VideoProcessor {
       processor.audioExtractor = createAudioExtractor(context);
 
       if (outputFilePath != null) {
-        processor.outputPath = outputFilePath;
+        processor.outputFilePath = outputFilePath;
       } else {
         throw new IllegalStateException("No output specified");
       }
