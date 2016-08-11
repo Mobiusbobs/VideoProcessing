@@ -13,16 +13,13 @@ import android.view.Surface;
 import com.mobiusbobs.videoprocessing.core.codec.Extractor;
 import com.mobiusbobs.videoprocessing.core.gldrawer.GLDrawable;
 import com.mobiusbobs.videoprocessing.core.gldrawer.OutputSurfaceDrawer;
-import com.mobiusbobs.videoprocessing.core.gles.Drawable2d;
 import com.mobiusbobs.videoprocessing.core.gles.surface.InputSurface;
 import com.mobiusbobs.videoprocessing.core.gles.surface.OutputSurface;
 import com.mobiusbobs.videoprocessing.core.util.CoordConverter;
-import com.mobiusbobs.videoprocessing.core.util.MediaMetadataDumper;
 
 import java.io.IOException;
 import java.lang.IllegalStateException;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -636,6 +633,7 @@ public class VideoProcessor {
             encoderInputBuffer.position(0);
 
             // handle extra frame
+            //noinspection PointlessArithmeticExpression
             long fadeDuration = 1 * 1000 * 1000;                // amount of time to fade the audio to zero
             long thresholdTime = videoDuration - fadeDuration;  // when it should start fading
 
@@ -964,7 +962,10 @@ public class VideoProcessor {
     private float[] getOutputSurfaceRenderVerticesData(MediaFormat inputVideoFormat) {
         float outputRatio = (float)OUTPUT_VIDEO_HEIGHT / OUTPUT_VIDEO_WIDTH;
 
-        int rotation = getMediaDataOrDefault(inputVideoFormat, MediaFormat.KEY_ROTATION, 0);
+        int rotation = 0;
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+            rotation = getMediaDataOrDefault(inputVideoFormat, MediaFormat.KEY_ROTATION, 0);
+        }
 
         int inputVideoWidth = getMediaDataOrDefault(
             inputVideoFormat, MediaFormat.KEY_WIDTH, OUTPUT_VIDEO_WIDTH);
@@ -974,6 +975,7 @@ public class VideoProcessor {
         // swap weight and height if rotation is 90/270
         if (rotation == 90 || rotation == 270) {
             int tmp = inputVideoWidth;
+            //noinspection SuspiciousNameCombination
             inputVideoWidth = inputVideoHeight;
             inputVideoHeight = tmp;
         }
@@ -1037,6 +1039,12 @@ public class VideoProcessor {
             return this;
         }
 
+        public Builder setOutputFilePath(String outputFilePath) {
+            this.outputFilePath = outputFilePath;
+            return this;
+        }
+
+        @Deprecated
         public Builder setOutputPath(String outputFilePath) {
             this.outputFilePath = outputFilePath;
             return this;
@@ -1047,11 +1055,15 @@ public class VideoProcessor {
             return this;
         }
 
+        // TODO add demo
+        @SuppressWarnings("unused")
         public Builder setBackgroundMusic(String musicFilePath) {
             this.musicFilePath = musicFilePath;
             return this;
         }
 
+        // TODO add demo
+        @SuppressWarnings("unused")
         public Builder setOnProcessListener(OnProgressListener listener) {
             this.onProgressListener = listener;
             return this;

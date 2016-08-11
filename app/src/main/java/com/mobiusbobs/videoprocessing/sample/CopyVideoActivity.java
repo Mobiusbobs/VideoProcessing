@@ -83,7 +83,7 @@ public class CopyVideoActivity extends AppCompatActivity {
     try {
       videoProcessor = new VideoProcessor.Builder()
         .setInputFilePath(sourcePath)
-        .setOutputPath(targetPath)
+        .setOutputFilePath(targetPath)
         .build(this);
     } catch (IOException e) {
       Util.toastLong(this, "Failed while building video processor");
