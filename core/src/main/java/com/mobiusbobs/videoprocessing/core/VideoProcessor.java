@@ -130,8 +130,10 @@ public class VideoProcessor {
   int outputVideoTrack = -1;
   int outputAudioTrack = -1;
 
+  // for audio hotfix on pipe audio stream
+  long lastAudioPTForPipeAudio = 0;
   // for audio hotfix on audio muxer
-  long lastAudioPresentationTime = 0;
+  long lastAudioPTForMuxer = 0;
 
   // Constructor
   private VideoProcessor() {}
@@ -625,6 +627,10 @@ public class VideoProcessor {
     ByteBuffer encoderInputBuffer = audioEncoderInputBuffers[encoderInputBufferIndex];
     int size = audioDecoderOutputBufferInfo.size;
     long presentationTime = audioDecoderOutputBufferInfo.presentationTimeUs + pTimeOffset;
+    if (presentationTime <= lastAudioPTForPipeAudio) {
+      presentationTime = lastAudioPTForPipeAudio + 1;
+    }
+    lastAudioPTForPipeAudio = presentationTime;
 
     if (size >= 0) {
       ByteBuffer decoderOutputBuffer =
@@ -791,10 +797,11 @@ public class VideoProcessor {
     }
 
     long presentationTime = audioEncoderOutputBufferInfo.presentationTimeUs;
-    if (lastAudioPresentationTime >= presentationTime) {
-      audioEncoderOutputBufferInfo.presentationTimeUs = lastAudioPresentationTime + 1;
+    if (presentationTime <= lastAudioPTForMuxer) {
+      presentationTime = lastAudioPTForMuxer + 1;
     }
-    lastAudioPresentationTime = presentationTime;
+    audioEncoderOutputBufferInfo.presentationTimeUs = presentationTime;
+    lastAudioPTForMuxer = presentationTime;
 
     if (audioEncoderOutputBufferInfo.size != 0) {
       Log.d(TAG, "write Audio sample to muxer");
