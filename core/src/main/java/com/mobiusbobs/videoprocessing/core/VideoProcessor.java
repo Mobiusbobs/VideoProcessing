@@ -76,7 +76,7 @@ public class VideoProcessor {
   private static final int OUTPUT_AUDIO_AAC_PROFILE =
       MediaCodecInfo.CodecProfileLevel.AACObjectLC;   // AACObjectHE
   private static final int OUTPUT_AUDIO_SAMPLE_RATE_HZ = 44100; // Must match the input stream.
-  private static final int OUTPUT_AUDIO_MAX_INPUT_SIZE = 4096 * 2;
+  private static final int OUTPUT_AUDIO_MAX_INPUT_SIZE = 16 * 1024; //set the inputBuffer size
 
   // ----- other parameters -----
 
@@ -631,6 +631,13 @@ public class VideoProcessor {
       decoderOutputBuffer.limit(audioDecoderOutputBufferInfo.offset + size);
 
       encoderInputBuffer.position(0);
+
+      // TODO: leave this log here for now for round 2, 3 testing
+      int encoderBufferCapacity = encoderInputBuffer.capacity();
+      int decoderBufferLimit = decoderOutputBuffer.limit();
+      if (decoderBufferLimit >= encoderBufferCapacity) {
+        Log.e(TAG, "decoderBufferLimit(" + decoderBufferLimit + ") exceeds encoderBufferCapacity(" + encoderBufferCapacity + ")");
+      }
 
       // handle extra frame
       //noinspection PointlessArithmeticExpression
