@@ -29,6 +29,7 @@ public class Util {
         return new int[] {size.x, size.y};
     }
 
+  // from http://stackoverflow.com/questions/4896223/how-to-get-an-uri-of-an-image-resource-in-android
   public static Uri resourceToUri(Context context, int resID) {
     return Uri.parse(ContentResolver.SCHEME_ANDROID_RESOURCE + "://" +
       context.getResources().getResourcePackageName(resID) + '/' +

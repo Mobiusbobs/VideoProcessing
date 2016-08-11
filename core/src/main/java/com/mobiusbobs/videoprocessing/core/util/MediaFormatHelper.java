@@ -9,12 +9,11 @@ import android.media.MediaFormat;
  * Copyright (c) 2016 MobiusBobs Inc. All rights reserved.
  */
 public class MediaFormatHelper {
-
-    public static int getInteger(MediaFormat inputVideoFormat, String key, int defaultValue) {
-        if (inputVideoFormat.containsKey(key)) {
-            return inputVideoFormat.getInteger(key);
-        }
-
-        return defaultValue;
+  public static int getInteger(MediaFormat inputVideoFormat, String key, int defaultValue) {
+    if (inputVideoFormat.containsKey(key)) {
+      return inputVideoFormat.getInteger(key);
     }
+
+    return defaultValue;
+  }
 }
