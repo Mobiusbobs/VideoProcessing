@@ -102,7 +102,8 @@ public class CameraView
         width = w;
         height = h;
 
-        openCameraIfNeeded();
+        // only open camera when width and height are both not 0
+        if (width != 0 && height != 0) openCameraIfNeeded();
     }
 
     private void openCameraIfNeeded() {
