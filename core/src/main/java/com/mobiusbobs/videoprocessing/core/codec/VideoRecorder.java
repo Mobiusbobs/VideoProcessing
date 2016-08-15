@@ -5,7 +5,6 @@ import android.media.MediaMuxer;
 import android.opengl.EGL14;
 import android.opengl.EGLContext;
 import android.opengl.GLSurfaceView;
-import android.util.Log;
 
 import java.io.File;
 import java.io.IOException;
@@ -72,30 +71,26 @@ public class VideoRecorder {
     isCapturing = true;
     isRecording = true;
 
+    // audioRecorder
+    audioRecorder.startRecord();
 
-      // audioRecorder
-      audioRecorder.startRecord();
-
-      // textureMovieEncoder
-      glView.queueEvent(new Runnable() {
-        @Override
-        public void run() {
-          TextureMovieEncoder.EncoderConfig config =
-            new TextureMovieEncoder.EncoderConfig(
-              VIDEO_WIDTH,
-              VIDEO_HEIGHT,
-              VIDEO_BITRATE,
-              EGL14.eglGetCurrentContext());
-          try {
-            textureMovieEncoder.startRecording(config);
-          } catch(NullPointerException e) {
-            callback.onStartRecordFail(e);
-          }
+    // textureMovieEncoder
+    glView.queueEvent(new Runnable() {
+      @Override
+      public void run() {
+        TextureMovieEncoder.EncoderConfig config =
+          new TextureMovieEncoder.EncoderConfig(
+            VIDEO_WIDTH,
+            VIDEO_HEIGHT,
+            VIDEO_BITRATE,
+            EGL14.eglGetCurrentContext());
+        try {
+          textureMovieEncoder.startRecording(config);
+        } catch(NullPointerException e) {
+          callback.onStartRecordFail(e);
         }
-      });
-
-
-
+      }
+    });
   }
 
   public void resumeRecord(GLSurfaceView glView) {

@@ -128,7 +128,6 @@ public class TextureMovieEncoder implements Runnable {
         }
     }
 
-
     /**
      * Tells the video recorder to start recording.  (Call from non-encoder thread.)
      * <p>
