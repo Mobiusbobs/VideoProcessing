@@ -47,6 +47,11 @@ public class CameraController {
         CameraInstanceManager.CameraType cameraType =
                 CameraInstanceManager.CameraType.valueOf(type);
         mCamera = cameraInstanceManager.getCamera(cameraType);
+
+        if (mCamera == null) {
+            callback.onOpenCameraFail(new NullPointerException("open camera: getCamera returns null..."));
+            return null;
+        }
         mCamera.setDisplayOrientation(90);
 
         // setup preview size
@@ -152,6 +157,8 @@ public class CameraController {
 
     public interface Callback {
         void onPreviewSizeChanged(int width, int height);
-    }
 
+        // error handle
+        void onOpenCameraFail(Exception e);
+    }
 }

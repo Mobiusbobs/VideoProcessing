@@ -5,6 +5,7 @@ import android.media.MediaMuxer;
 import android.opengl.EGL14;
 import android.opengl.EGLContext;
 import android.opengl.GLSurfaceView;
+import android.util.Log;
 
 import java.io.File;
 import java.io.IOException;
@@ -36,9 +37,13 @@ public class VideoRecorder {
   // File
   private File outputFile;
 
+  // Error handle callback
+  private Callback callback;
+
   // constructor
-  public VideoRecorder(File outputFile) throws IOException {
+  public VideoRecorder(File outputFile, Callback callback) throws IOException {
     this.outputFile = outputFile;
+    this.callback = callback;
     resetRecorder(outputFile);
   }
 
@@ -67,22 +72,29 @@ public class VideoRecorder {
     isCapturing = true;
     isRecording = true;
 
-    // audioRecorder
-    audioRecorder.startRecord();
 
-    // textureMovieEncoder
-    glView.queueEvent(new Runnable() {
-      @Override
-      public void run() {
-        TextureMovieEncoder.EncoderConfig config =
-          new TextureMovieEncoder.EncoderConfig(
-            VIDEO_WIDTH,
-            VIDEO_HEIGHT,
-            VIDEO_BITRATE,
-            EGL14.eglGetCurrentContext());
-        textureMovieEncoder.startRecording(config);
-      }
-    });
+      // audioRecorder
+      audioRecorder.startRecord();
+
+      // textureMovieEncoder
+      glView.queueEvent(new Runnable() {
+        @Override
+        public void run() {
+          TextureMovieEncoder.EncoderConfig config =
+            new TextureMovieEncoder.EncoderConfig(
+              VIDEO_WIDTH,
+              VIDEO_HEIGHT,
+              VIDEO_BITRATE,
+              EGL14.eglGetCurrentContext());
+          try {
+            textureMovieEncoder.startRecording(config);
+          } catch(NullPointerException e) {
+            callback.onStartRecordFail(e);
+          }
+        }
+      });
+
+
 
   }
 
@@ -92,21 +104,33 @@ public class VideoRecorder {
     } else {
       isRecording = true;
       audioRecorder.resumeRecord();
-      textureMovieEncoder.resumeRecording();
+      try {
+        textureMovieEncoder.resumeRecording();
+      } catch(NullPointerException e) {
+        callback.onResumeRecordFail(e);
+      }
     }
   }
 
   public void pauseRecord() {
     isRecording = false;
     audioRecorder.pauseRecrod();
-    textureMovieEncoder.pauseRecording();
+    try {
+      textureMovieEncoder.pauseRecording();
+    } catch(NullPointerException e) {
+      callback.onPauseRecordFail(e);
+    }
   }
 
   public void stopRecord() {
     isCapturing = false;
     isRecording = false;
     audioRecorder.stopRecord();
-    textureMovieEncoder.stopRecording();
+    try {
+      textureMovieEncoder.stopRecording();
+    } catch(NullPointerException e) {
+      callback.onStopRecordFail(e);
+    }
     release();
   }
 
@@ -136,6 +160,14 @@ public class VideoRecorder {
     if (!isRecording) return;
 
     textureMovieEncoder.updateSharedContext(sharedContext);
+  }
+
+  public interface Callback {
+    // error handle
+    void onStartRecordFail(Exception e);
+    void onPauseRecordFail(Exception e);
+    void onResumeRecordFail(Exception e);
+    void onStopRecordFail(Exception e);
   }
 
 }
