@@ -136,7 +136,7 @@ public class TextureMovieEncoder implements Runnable {
      * Returns after the recorder thread has started and is ready to accept Messages.  The
      * encoder may not yet be fully configured.
      */
-    public void startRecording(EncoderConfig config) throws NullPointerException {
+    public void startRecording(EncoderConfig config) {
         Log.d(TAG, "Encoder: startRecording()");
         synchronized (mReadyFence) {
             if (mRunning) {
@@ -156,11 +156,11 @@ public class TextureMovieEncoder implements Runnable {
         mHandler.sendMessage(mHandler.obtainMessage(MSG_START_RECORDING, config));
     }
 
-    public void resumeRecording() throws NullPointerException {
+    public void resumeRecording() {
         mHandler.sendMessage(mHandler.obtainMessage(MSG_RESUME_RECORDING));
     }
 
-    public void pauseRecording() throws NullPointerException {
+    public void pauseRecording() {
         mHandler.sendMessage(mHandler.obtainMessage(MSG_PAUSE_RECORDING));
     }
 
@@ -173,7 +173,7 @@ public class TextureMovieEncoder implements Runnable {
      * so we can provide reasonable status UI (and let the caller know that movie encoding
      * has completed).
      */
-    public void stopRecording() throws NullPointerException {
+    public void stopRecording() {
         mHandler.sendMessage(mHandler.obtainMessage(MSG_STOP_RECORDING));
         mHandler.sendMessage(mHandler.obtainMessage(MSG_QUIT));
         // We don't know when these will actually finish (or even start).  We don't want to

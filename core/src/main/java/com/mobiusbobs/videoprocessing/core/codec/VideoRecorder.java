@@ -86,8 +86,8 @@ public class VideoRecorder {
             EGL14.eglGetCurrentContext());
         try {
           textureMovieEncoder.startRecording(config);
-        } catch(NullPointerException e) {
-          callback.onStartRecordFail(e);
+        } catch(Exception e) {
+          callback.onError(e);
         }
       }
     });
@@ -101,8 +101,8 @@ public class VideoRecorder {
       audioRecorder.resumeRecord();
       try {
         textureMovieEncoder.resumeRecording();
-      } catch(NullPointerException e) {
-        callback.onResumeRecordFail(e);
+      } catch(Exception e) {
+        callback.onError(e);
       }
     }
   }
@@ -112,8 +112,8 @@ public class VideoRecorder {
     audioRecorder.pauseRecrod();
     try {
       textureMovieEncoder.pauseRecording();
-    } catch(NullPointerException e) {
-      callback.onPauseRecordFail(e);
+    } catch(Exception e) {
+      callback.onError(e);
     }
   }
 
@@ -123,8 +123,8 @@ public class VideoRecorder {
     audioRecorder.stopRecord();
     try {
       textureMovieEncoder.stopRecording();
-    } catch(NullPointerException e) {
-      callback.onStopRecordFail(e);
+    } catch(Exception e) {
+      callback.onError(e);
     }
     release();
   }
@@ -159,10 +159,7 @@ public class VideoRecorder {
 
   public interface Callback {
     // error handle
-    void onStartRecordFail(Exception e);
-    void onPauseRecordFail(Exception e);
-    void onResumeRecordFail(Exception e);
-    void onStopRecordFail(Exception e);
+    void onError(Exception e);
   }
 
 }
