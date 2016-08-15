@@ -49,7 +49,7 @@ public class CameraController {
         mCamera = cameraInstanceManager.getCamera(cameraType);
 
         if (mCamera == null) {
-            callback.onOpenCameraFail(new NullPointerException("open camera: getCamera returns null..."));
+            callback.onError(new NullPointerException("open camera: getCamera returns null..."));
             return null;
         }
         mCamera.setDisplayOrientation(90);
@@ -159,6 +159,6 @@ public class CameraController {
         void onPreviewSizeChanged(int width, int height);
 
         // error handle
-        void onOpenCameraFail(Exception e);
+        void onError(Exception e);
     }
 }
