@@ -1,6 +1,7 @@
 package com.mobiusbobs.videoprocessing.core;
 
 import android.content.Context;
+import android.media.AudioFormat;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaCodecList;
@@ -78,7 +79,8 @@ public class VideoProcessor {
   private static final int OUTPUT_AUDIO_AAC_PROFILE =
       MediaCodecInfo.CodecProfileLevel.AACObjectLC;   // AACObjectHE
   private static final int OUTPUT_AUDIO_SAMPLE_RATE_HZ = 44100; // Must match the input stream.
-  private static final int OUTPUT_AUDIO_MAX_INPUT_SIZE = 16 * 1024; //set the inputBuffer size
+  private static final int OUTPUT_AUDIO_MAX_INPUT_SIZE =
+    OUTPUT_AUDIO_SAMPLE_RATE_HZ * 16 * OUTPUT_AUDIO_CHANNEL_COUNT; //set the inputBuffer size
 
   // ----- other parameters -----
 
@@ -643,7 +645,7 @@ public class VideoProcessor {
       // TODO: leave this log here for now for round 2, 3 testing
       int encoderBufferCapacity = encoderInputBuffer.capacity();
       int decoderBufferLimit = decoderOutputBuffer.limit();
-      if (decoderBufferLimit >= encoderBufferCapacity) {
+      if (decoderBufferLimit > encoderBufferCapacity) {
         Log.e(TAG, "decoderBufferLimit(" + decoderBufferLimit + ") exceeds encoderBufferCapacity(" + encoderBufferCapacity + ")");
       }
 
