@@ -36,9 +36,13 @@ public class VideoRecorder {
   // File
   private File outputFile;
 
+  // Error handle callback
+  private Callback callback;
+
   // constructor
-  public VideoRecorder(File outputFile) throws IOException {
+  public VideoRecorder(File outputFile, Callback callback) throws IOException {
     this.outputFile = outputFile;
+    this.callback = callback;
     resetRecorder(outputFile);
   }
 
@@ -80,10 +84,13 @@ public class VideoRecorder {
             VIDEO_HEIGHT,
             VIDEO_BITRATE,
             EGL14.eglGetCurrentContext());
-        textureMovieEncoder.startRecording(config);
+        try {
+          textureMovieEncoder.startRecording(config);
+        } catch(Exception e) {
+          callback.onError(e);
+        }
       }
     });
-
   }
 
   public void resumeRecord(GLSurfaceView glView) {
@@ -92,21 +99,33 @@ public class VideoRecorder {
     } else {
       isRecording = true;
       audioRecorder.resumeRecord();
-      textureMovieEncoder.resumeRecording();
+      try {
+        textureMovieEncoder.resumeRecording();
+      } catch(Exception e) {
+        callback.onError(e);
+      }
     }
   }
 
   public void pauseRecord() {
     isRecording = false;
     audioRecorder.pauseRecrod();
-    textureMovieEncoder.pauseRecording();
+    try {
+      textureMovieEncoder.pauseRecording();
+    } catch(Exception e) {
+      callback.onError(e);
+    }
   }
 
   public void stopRecord() {
     isCapturing = false;
     isRecording = false;
     audioRecorder.stopRecord();
-    textureMovieEncoder.stopRecording();
+    try {
+      textureMovieEncoder.stopRecording();
+    } catch(Exception e) {
+      callback.onError(e);
+    }
     release();
   }
 
@@ -136,6 +155,11 @@ public class VideoRecorder {
     if (!isRecording) return;
 
     textureMovieEncoder.updateSharedContext(sharedContext);
+  }
+
+  public interface Callback {
+    // error handle
+    void onError(Exception e);
   }
 
 }

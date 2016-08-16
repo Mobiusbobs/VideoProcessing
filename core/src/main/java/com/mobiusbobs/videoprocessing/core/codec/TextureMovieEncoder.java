@@ -153,7 +153,6 @@ public class TextureMovieEncoder implements Runnable {
                 }
             }
         }
-
         mHandler.sendMessage(mHandler.obtainMessage(MSG_START_RECORDING, config));
     }
 
