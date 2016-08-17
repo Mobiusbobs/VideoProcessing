@@ -47,9 +47,8 @@ public class GifDrawer implements GLDrawable {
   @Override
   public void init(GLDrawable prevDrawer) throws IOException {
     basicDrawer.init(prevDrawer);
-    setupGifDecoder(gifDecoder);
-
     basicDrawer.setTextureHandleSize(1);
+    setupGifDecoder(gifDecoder); // this need be before setTextureHandleSize
   }
 
   // TODO refactor this
@@ -88,21 +87,27 @@ public class GifDrawer implements GLDrawable {
     gifDecoder.resetFrameIndex();
     gifDecoder.advance();
 
+    // force decode the first frame to prevent alpha channel missing
+    Bitmap bitmap = gifDecoder.getNextFrame();
+    basicDrawer.loadBitmapToTexture(bitmap, 0);
+
+    gifDecoder.resetFrameIndex();
+    gifDecoder.advance();
     gifFrameDelay = gifDecoder.getNextDelay();
   }
 
   protected void updateFrame(long currentTimeMs) {
     long currentFrameTime = gifLastFrameTime;
     while (currentTimeMs >= currentFrameTime + gifFrameDelay) {
-      currentFrameTime += gifFrameDelay;
       gifDecoder.advance();
       gifFrameDelay = gifDecoder.getNextDelay();
+
+      currentFrameTime += gifFrameDelay;
     }
 
     if (currentFrameTime > gifLastFrameTime) {
       Bitmap bitmap = gifDecoder.getNextFrame();
       basicDrawer.loadBitmapToTexture(bitmap, 0);
-      bitmap.recycle();
     }
 
     gifLastFrameTime = currentFrameTime;
