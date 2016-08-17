@@ -26,7 +26,8 @@ public class GifDrawer implements GLDrawable {
   protected BasicDrawer basicDrawer;
 
   private GifDecoder gifDecoder;
-  private long gifLastFrameTime;
+  private long gifLastFrameTime = 0L;
+  private int gifFrameDelay = -1;
 
   public GifDrawer(Context context, GifDecoder gifDecoder) {
     basicDrawer = new BasicDrawer(context);
@@ -47,7 +48,8 @@ public class GifDrawer implements GLDrawable {
   public void init(GLDrawable prevDrawer) throws IOException {
     basicDrawer.init(prevDrawer);
     setupGifDecoder(gifDecoder);
-    loadTextures(gifDecoder.getFrameCount());
+
+    basicDrawer.setTextureHandleSize(1);
   }
 
   // TODO refactor this
@@ -85,43 +87,31 @@ public class GifDrawer implements GLDrawable {
     this.gifDecoder = gifDecoder;
     gifDecoder.resetFrameIndex();
     gifDecoder.advance();
+
+    gifFrameDelay = gifDecoder.getNextDelay();
   }
 
-  public void loadTextures(int frameCount) {
-    basicDrawer.setTextureHandleSize(frameCount);
-    Log.d(TAG, "TOTAL frame count = " + frameCount);
+  protected void updateFrame(long currentTimeMs) {
+    long currentFrameTime = gifLastFrameTime;
+    while (currentTimeMs >= currentFrameTime + gifFrameDelay) {
+      currentFrameTime += gifFrameDelay;
+      gifDecoder.advance();
+      gifFrameDelay = gifDecoder.getNextDelay();
+    }
 
-    // load bitmap into GL texture of textureHandle[i]
-    for (int i=0; i<frameCount; i++) {
+    if (currentFrameTime > gifLastFrameTime) {
       Bitmap bitmap = gifDecoder.getNextFrame();
-      basicDrawer.loadBitmapToTexture(bitmap, i);
+      basicDrawer.loadBitmapToTexture(bitmap, 0);
       bitmap.recycle();
-      gifDecoder.advance();
-    }
-  }
-
-  protected int updateFrameIndex(long currentTimeMs) {
-    if (gifLastFrameTime == 0) {
-      gifLastFrameTime = currentTimeMs;
     }
 
-    int delay = gifDecoder.getNextDelay();
-
-    while(currentTimeMs >= gifLastFrameTime + delay) {
-      gifLastFrameTime += delay;
-      gifDecoder.advance();
-      delay = gifDecoder.getNextDelay();
-    }
-
-    return gifDecoder.getCurrentFrameIndex();
+    gifLastFrameTime = currentFrameTime;
   }
 
   @Override
   public void draw(long timeMs) {
-    basicDrawer.drawBackground(timeMs);
-
-    int textureIndex = updateFrameIndex(timeMs);
-    basicDrawer.drawThisOnly(textureIndex);
+    updateFrame(timeMs);
+    basicDrawer.draw(timeMs);
   }
 
 }

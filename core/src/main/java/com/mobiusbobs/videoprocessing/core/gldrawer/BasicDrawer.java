@@ -105,8 +105,10 @@ public class BasicDrawer implements GLDrawable {
 
     // ----- texture -----
     public void setTextureHandleSize(int textureCount) {
-        textureHandle = new int[textureCount];
+        releaseTextures();
+
         // alloc texture
+        textureHandle = new int[textureCount];
         GLES20.glGenTextures(textureCount, textureHandle, 0);
     }
 
@@ -160,5 +162,17 @@ public class BasicDrawer implements GLDrawable {
 
         // Draw the sticker.
         GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, 6);
+    }
+
+    private void releaseTextures() {
+        if (textureHandle == null) return;
+
+        GLES20.glDeleteTextures(textureHandle.length, textureHandle, 0);
+    }
+
+    @Override
+    protected void finalize() throws Throwable {
+        releaseTextures();
+        super.finalize();
     }
 }
