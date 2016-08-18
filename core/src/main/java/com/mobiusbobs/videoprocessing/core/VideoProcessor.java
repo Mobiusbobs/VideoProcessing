@@ -201,7 +201,8 @@ public class VideoProcessor {
     // Create a MediaCodec for the decoder, based on the extractor's format.
     audioDecoder = createAudioDecoder(inputAudioFormat);
 
-    int encoderMaxInputSize = calcAudioEncoderInputSize(audioDecoder, inputAudioFormat);
+    // get audioDecoder's outputBuffer size
+    int encoderMaxInputSize = getOutputBufferSize(audioDecoder);
     MediaFormat outputAudioFormat = createOutputAudioFormat(inputAudioFormat, encoderMaxInputSize);
     audioEncoder = createAudioEncoder(audioCodecInfo, outputAudioFormat);
 
@@ -695,11 +696,11 @@ public class VideoProcessor {
       }
 
       audioEncoder.queueInputBuffer(
-          encoderInputBufferIndex,
-          0,
-          size,
-          presentationTime,
-          audioDecoderOutputBufferInfo.flags);
+        encoderInputBufferIndex,
+        0,
+        size,
+        presentationTime,
+        audioDecoderOutputBufferInfo.flags);
 
     }
     audioDecoder.releaseOutputBuffer(pendingAudioDecoderOutputBufferIndex, false);
@@ -890,35 +891,18 @@ public class VideoProcessor {
     return format.getString(MediaFormat.KEY_MIME);
   }
 
-  // http://stackoverflow.com/questions/21804390/pcm-aac-encoder-pcmdecoder-in-real-time-with-correct-optimization
-  private int calcAudioEncoderInputSize (MediaCodec audioDecoder, MediaFormat inputAudioFormat) {
-    // 1.) get decoder inputBufferSize
-    // 2.) calculate the compressAmount
-    // 3.) get the encoder inputBufferSize
-    int decoderInputBufferSize = 0;
-    ByteBuffer[] decoderBuffers = audioDecoder.getInputBuffers();
-    for (ByteBuffer buffer: decoderBuffers) {
-      if (decoderInputBufferSize < buffer.capacity()) {
-        decoderInputBufferSize = buffer.capacity();
+  private int getOutputBufferSize(MediaCodec mediaCodec) {
+    int outputBufferSize = 0;
+    ByteBuffer[] outputBuffers = mediaCodec.getOutputBuffers();
+    for (ByteBuffer buffer: outputBuffers) {
+      if (outputBufferSize < buffer.capacity()) {
+        outputBufferSize = buffer.capacity();
       }
     }
 
-    // https://developer.android.com/guide/appendix/media-formats.html#recommendations
-    int sampleRate = getMediaDataOrDefault(inputAudioFormat, MediaFormat.KEY_SAMPLE_RATE, DEFAULT_AUDIO_SAMPLE_RATE_HZ);
-    int bitRate = getMediaDataOrDefault(inputAudioFormat, MediaFormat.KEY_BIT_RATE, DEFAULT_AUDIO_BIT_RATE);
-    int channelCount = getMediaDataOrDefault(inputAudioFormat, MediaFormat.KEY_CHANNEL_COUNT, DEFAULT_AUDIO_CHANNEL_COUNT);
-    int compressEstimate = (int) Math.ceil((sampleRate * DEFAULT_AUDIO_BIT_DEPTH * channelCount) / bitRate);
-
-    int encoderMaxInputSize = decoderInputBufferSize * compressEstimate;
     // TODO: keep this log for round 3, 4, 5, 6 test
-    Log.d(TAG, "CALC_BUFF_SIZE: decoderInputBufferSize = " + decoderInputBufferSize);
-    Log.d(TAG, "CALC_BUFF_SIZE: sampleRate = " + sampleRate);
-    Log.d(TAG, "CALC_BUFF_SIZE: channelCount = " + channelCount);
-    Log.d(TAG, "CALC_BUFF_SIZE: bitRate = " + bitRate);
-    Log.d(TAG, "CALC_BUFF_SIZE: compressEstimate = " + compressEstimate);
-    Log.d(TAG, "CALC_BUFF_SIZE: encoderMaxInputSize = " + encoderMaxInputSize);
-
-    return encoderMaxInputSize;
+    Log.d(TAG, "CALC_BUFF_SIZE: outputBufferSize = " + outputBufferSize);
+    return outputBufferSize;
   }
 
   private MediaFormat createOutputAudioFormat(MediaFormat inputAudioFormat, int maxInputSize) {
@@ -932,11 +916,6 @@ public class VideoProcessor {
         MediaFormat.KEY_CHANNEL_COUNT,
         OUTPUT_AUDIO_CHANNEL_COUNT
     );
-    int audioMaxInputSize = getMediaDataOrDefault(
-        inputAudioFormat,
-        MediaFormat.KEY_MAX_INPUT_SIZE,
-        maxInputSize
-    );
 
     MediaFormat outputAudioFormat = MediaFormat.createAudioFormat(
         OUTPUT_AUDIO_MIME_TYPE,
@@ -946,7 +925,7 @@ public class VideoProcessor {
 
     outputAudioFormat.setInteger(MediaFormat.KEY_BIT_RATE, OUTPUT_AUDIO_BIT_RATE);
     outputAudioFormat.setInteger(MediaFormat.KEY_AAC_PROFILE, OUTPUT_AUDIO_AAC_PROFILE);
-    outputAudioFormat.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, audioMaxInputSize);
+    outputAudioFormat.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, maxInputSize);
     return outputAudioFormat;
   }
 
