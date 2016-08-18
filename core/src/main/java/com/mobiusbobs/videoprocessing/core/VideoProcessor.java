@@ -79,12 +79,6 @@ public class VideoProcessor {
       MediaCodecInfo.CodecProfileLevel.AACObjectLC;   // AACObjectHE
   private static final int OUTPUT_AUDIO_SAMPLE_RATE_HZ = 44100; // Must match the input stream.
 
-  // default input audio parameter
-  private static final int DEFAULT_AUDIO_SAMPLE_RATE_HZ = 44100;
-  private static final int DEFAULT_AUDIO_BIT_RATE = 128 * 1024;
-  private static final int DEFAULT_AUDIO_BIT_DEPTH = 16;
-  private static final int DEFAULT_AUDIO_CHANNEL_COUNT = 2;
-
   // ----- other parameters -----
 
   // drawers
