@@ -208,7 +208,6 @@ public class VideoProcessor {
     // --- muxer ---
     muxer = new MediaMuxer(outputFilePath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
 
-
     // --- do the actual extract decode edit encode mux ---
     doProcess(
         videoExtractor,
