@@ -2,7 +2,7 @@ package com.mobiusbobs.videoprocessing.core.gldrawer;
 
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.util.Log;
+import android.os.Build;
 
 
 import com.mobiusbobs.videoprocessing.core.gif.GifDecoder;
@@ -26,7 +26,10 @@ public class GifDrawer implements GLDrawable {
   protected BasicDrawer basicDrawer;
 
   private GifDecoder gifDecoder;
-  private long gifLastFrameTime;
+  private long gifLastFrameTime = 0L;
+  private int frameDelay = -1;
+  private int currentFrameIndex = 0;
+  private boolean preloadAllFrame = Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP;
 
   public GifDrawer(Context context, GifDecoder gifDecoder) {
     basicDrawer = new BasicDrawer(context);
@@ -46,8 +49,8 @@ public class GifDrawer implements GLDrawable {
   @Override
   public void init(GLDrawable prevDrawer) throws IOException {
     basicDrawer.init(prevDrawer);
-    setupGifDecoder(gifDecoder);
-    loadTextures(gifDecoder.getFrameCount());
+    setupTextureHandles();
+    setupGifDecoder(gifDecoder); // this need be before setTextureHandleSize
   }
 
   // TODO refactor this
@@ -80,48 +83,59 @@ public class GifDrawer implements GLDrawable {
     }
   }
 
+  private void setupTextureHandles() {
+    int handleSize = preloadAllFrame ? gifDecoder.getFrameCount() : 1;
+    basicDrawer.setTextureHandleSize(handleSize);
+  }
+
   private void setupGifDecoder(GifDecoder gifDecoder) {
     // by default, current frame index is -1, advance it.
     this.gifDecoder = gifDecoder;
     gifDecoder.resetFrameIndex();
     gifDecoder.advance();
-  }
 
-  public void loadTextures(int frameCount) {
-    basicDrawer.setTextureHandleSize(frameCount);
-    Log.d(TAG, "TOTAL frame count = " + frameCount);
-
-    // load bitmap into GL texture of textureHandle[i]
-    for (int i=0; i<frameCount; i++) {
+    if (preloadAllFrame) {
+      int totalFrames = gifDecoder.getFrameCount();
+      for (int i = 0; i < totalFrames; i++) {
+        Bitmap bitmap = gifDecoder.getNextFrame();
+        basicDrawer.loadBitmapToTexture(bitmap, i);
+      }
+    } else {
+      // force decode the first frame to prevent alpha channel missing
       Bitmap bitmap = gifDecoder.getNextFrame();
-      basicDrawer.loadBitmapToTexture(bitmap, i);
-      bitmap.recycle();
-      gifDecoder.advance();
+      basicDrawer.loadBitmapToTexture(bitmap, 0);
     }
+
+    gifDecoder.resetFrameIndex();
+    gifDecoder.advance();
+    frameDelay = gifDecoder.getNextDelay();
   }
 
-  protected int updateFrameIndex(long currentTimeMs) {
-    if (gifLastFrameTime == 0) {
-      gifLastFrameTime = currentTimeMs;
-    }
-
-    int delay = gifDecoder.getNextDelay();
-
-    while(currentTimeMs >= gifLastFrameTime + delay) {
-      gifLastFrameTime += delay;
+  protected void updateFrame(long currentTimeMs) {
+    long currentFrameTime = gifLastFrameTime;
+    while (currentTimeMs >= currentFrameTime + frameDelay) {
       gifDecoder.advance();
-      delay = gifDecoder.getNextDelay();
+      currentFrameIndex = gifDecoder.getCurrentFrameIndex();
+      frameDelay = gifDecoder.getNextDelay();
+
+      currentFrameTime += frameDelay;
     }
 
-    return gifDecoder.getCurrentFrameIndex();
+    if (currentFrameTime > gifLastFrameTime) {
+      Bitmap bitmap = gifDecoder.getNextFrame();
+      basicDrawer.loadBitmapToTexture(bitmap, 0);
+    }
+
+    gifLastFrameTime = currentFrameTime;
   }
 
   @Override
   public void draw(long timeMs) {
-    basicDrawer.drawBackground(timeMs);
+    updateFrame(timeMs);
+    int textureHandle = preloadAllFrame ? currentFrameIndex : 0;
 
-    int textureIndex = updateFrameIndex(timeMs);
-    basicDrawer.drawThisOnly(textureIndex);
+    basicDrawer.drawBackground(timeMs);
+    basicDrawer.drawThisOnly(textureHandle);
   }
 
 }
