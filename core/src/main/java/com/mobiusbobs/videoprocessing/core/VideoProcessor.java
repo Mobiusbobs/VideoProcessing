@@ -78,7 +78,6 @@ public class VideoProcessor {
   private static final int OUTPUT_AUDIO_AAC_PROFILE =
       MediaCodecInfo.CodecProfileLevel.AACObjectLC;   // AACObjectHE
   private static final int OUTPUT_AUDIO_SAMPLE_RATE_HZ = 44100; // Must match the input stream.
-  private static final int OUTPUT_AUDIO_MAX_INPUT_SIZE = 16 * 1024; //set the inputBuffer size
 
   // ----- other parameters -----
 
@@ -193,13 +192,13 @@ public class VideoProcessor {
     }
 
     // --- audio encoder / decoder ---
-    // Create a MediaCodec for the desired codec, then configure it as an encoder with
-    // our desired properties. Request a Surface to use for input.
-    MediaFormat outputAudioFormat = createOutputAudioFormat(inputAudioFormat);
-    audioEncoder = createAudioEncoder(audioCodecInfo, outputAudioFormat);
-
     // Create a MediaCodec for the decoder, based on the extractor's format.
     audioDecoder = createAudioDecoder(inputAudioFormat);
+
+    // get audioDecoder's outputBuffer size
+    int encoderMaxInputSize = getOutputBufferSize(audioDecoder);
+    MediaFormat outputAudioFormat = createOutputAudioFormat(inputAudioFormat, encoderMaxInputSize);
+    audioEncoder = createAudioEncoder(audioCodecInfo, outputAudioFormat);
 
     // --- muxer ---
     muxer = new MediaMuxer(outputFilePath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
@@ -430,11 +429,11 @@ public class VideoProcessor {
     // 4.) queue the buffer to codec to process
     if (size >= 0) {
       videoDecoder.queueInputBuffer(
-          decoderInputBufferIndex,
-          0,
-          size,
-          presentationTime,
-          videoExtractor.getSampleFlags());
+        decoderInputBufferIndex,
+        0,
+        size,
+        presentationTime,
+        videoExtractor.getSampleFlags());
     }
 
     boolean videoExtractorDone = !videoExtractor.advance();
@@ -469,11 +468,11 @@ public class VideoProcessor {
     if (sampleTime > maxTime) {
       Log.d(TAG, "FLAG: reach videoDuration: duration=" + maxTime + ", sampleTime=" + sampleTime);
       audioDecoder.queueInputBuffer(
-          decoderInputBufferIndex,
-          0,
-          0,
-          0,
-          MediaCodec.BUFFER_FLAG_END_OF_STREAM);
+        decoderInputBufferIndex,
+        0,
+        0,
+        0,
+        MediaCodec.BUFFER_FLAG_END_OF_STREAM);
       return true;
     }
 
@@ -487,11 +486,11 @@ public class VideoProcessor {
     // 4.) queue the buffer to codec to process
     if (size >= 0) {
       audioDecoder.queueInputBuffer(
-          decoderInputBufferIndex,
-          0,
-          size,
-          presentationTime,
-          audioExtractor.getSampleFlags());
+        decoderInputBufferIndex,
+        0,
+        size,
+        presentationTime,
+        audioExtractor.getSampleFlags());
     }
 
     boolean audioExtractorDone = !audioExtractor.advance();
@@ -521,7 +520,7 @@ public class VideoProcessor {
       MediaCodec.BufferInfo videoDecoderOutputBufferInfo
   ) {
     int decoderOutputBufferIndex = videoDecoder.dequeueOutputBuffer(
-        videoDecoderOutputBufferInfo, TIMEOUT_USEC);
+      videoDecoderOutputBufferInfo, TIMEOUT_USEC);
 
     if (decoderOutputBufferIndex == MediaCodec.INFO_TRY_AGAIN_LATER) {
       Log.d(TAG, "no video decoder output buffer");
@@ -640,10 +639,10 @@ public class VideoProcessor {
 
       encoderInputBuffer.position(0);
 
-      // TODO: leave this log here for now for round 2, 3 testing
+      // TODO: keep this log for round 3, 4, 5, 6 test
       int encoderBufferCapacity = encoderInputBuffer.capacity();
       int decoderBufferLimit = decoderOutputBuffer.limit();
-      if (decoderBufferLimit >= encoderBufferCapacity) {
+      if (decoderBufferLimit > encoderBufferCapacity) {
         Log.e(TAG, "decoderBufferLimit(" + decoderBufferLimit + ") exceeds encoderBufferCapacity(" + encoderBufferCapacity + ")");
       }
 
@@ -690,11 +689,11 @@ public class VideoProcessor {
       }
 
       audioEncoder.queueInputBuffer(
-          encoderInputBufferIndex,
-          0,
-          size,
-          presentationTime,
-          audioDecoderOutputBufferInfo.flags);
+        encoderInputBufferIndex,
+        0,
+        size,
+        presentationTime,
+        audioDecoderOutputBufferInfo.flags);
 
     }
     audioDecoder.releaseOutputBuffer(pendingAudioDecoderOutputBufferIndex, false);
@@ -714,7 +713,7 @@ public class VideoProcessor {
    */
   private boolean muxVideo(MediaCodec videoEncoder, MediaMuxer muxer) {
     int encoderOutputBufferIndex = videoEncoder.dequeueOutputBuffer(
-        videoEncoderOutputBufferInfo, TIMEOUT_USEC);
+      videoEncoderOutputBufferInfo, TIMEOUT_USEC);
 
     if (encoderOutputBufferIndex == MediaCodec.INFO_TRY_AGAIN_LATER) {
       Log.d(TAG, "no video encoder output buffer");
@@ -768,7 +767,7 @@ public class VideoProcessor {
    */
   private boolean muxAudio(MediaCodec audioEncoder, MediaMuxer muxer) {
     int encoderOutputBufferIndex = audioEncoder.dequeueOutputBuffer(
-        audioEncoderOutputBufferInfo, TIMEOUT_USEC);
+      audioEncoderOutputBufferInfo, TIMEOUT_USEC);
 
     if (encoderOutputBufferIndex == MediaCodec.INFO_TRY_AGAIN_LATER) {
       Log.d(TAG, "no audio encoder output buffer");
@@ -885,7 +884,21 @@ public class VideoProcessor {
     return format.getString(MediaFormat.KEY_MIME);
   }
 
-  private MediaFormat createOutputAudioFormat(MediaFormat inputAudioFormat) {
+  private int getOutputBufferSize(MediaCodec mediaCodec) {
+    int outputBufferSize = 0;
+    ByteBuffer[] outputBuffers = mediaCodec.getOutputBuffers();
+    for (ByteBuffer buffer: outputBuffers) {
+      if (outputBufferSize < buffer.capacity()) {
+        outputBufferSize = buffer.capacity();
+      }
+    }
+
+    // TODO: keep this log for round 3, 4, 5, 6 test
+    Log.d(TAG, "CALC_BUFF_SIZE: outputBufferSize = " + outputBufferSize);
+    return outputBufferSize;
+  }
+
+  private MediaFormat createOutputAudioFormat(MediaFormat inputAudioFormat, int maxInputSize) {
     int audioSamplingRate = getMediaDataOrDefault(
         inputAudioFormat,
         MediaFormat.KEY_SAMPLE_RATE,
@@ -896,11 +909,6 @@ public class VideoProcessor {
         MediaFormat.KEY_CHANNEL_COUNT,
         OUTPUT_AUDIO_CHANNEL_COUNT
     );
-    int audioMaxInputSize = getMediaDataOrDefault(
-        inputAudioFormat,
-        MediaFormat.KEY_MAX_INPUT_SIZE,
-        OUTPUT_AUDIO_MAX_INPUT_SIZE
-    );
 
     MediaFormat outputAudioFormat = MediaFormat.createAudioFormat(
         OUTPUT_AUDIO_MIME_TYPE,
@@ -910,8 +918,7 @@ public class VideoProcessor {
 
     outputAudioFormat.setInteger(MediaFormat.KEY_BIT_RATE, OUTPUT_AUDIO_BIT_RATE);
     outputAudioFormat.setInteger(MediaFormat.KEY_AAC_PROFILE, OUTPUT_AUDIO_AAC_PROFILE);
-    outputAudioFormat.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, audioMaxInputSize);
-
+    outputAudioFormat.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, maxInputSize);
     return outputAudioFormat;
   }
 
