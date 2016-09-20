@@ -935,16 +935,10 @@ public class VideoProcessor {
         OUTPUT_VIDEO_MAX_INPUT_SIZE
     );
 
-    int outputVideoWidth = outputVideoSize.width;
-    int outputVideoHeight = outputVideoSize.height;
-
-    Log.d(TAG, "createOutputVideoFormat: width = " + outputVideoWidth);
-    Log.d(TAG, "createOutputVideoFormat: height = " + outputVideoHeight);
-
     MediaFormat outputVideoFormat = MediaFormat.createVideoFormat(
         OUTPUT_VIDEO_MIME_TYPE,
-        outputVideoWidth,
-        outputVideoHeight
+        outputVideoSize.width,
+        outputVideoSize.height
     );
     outputVideoFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT, OUTPUT_VIDEO_COLOR_FORMAT);
     outputVideoFormat.setInteger(MediaFormat.KEY_BIT_RATE, OUTPUT_VIDEO_BIT_RATE);

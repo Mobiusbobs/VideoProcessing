@@ -13,7 +13,6 @@ import android.view.View;
 import com.mobiusbobs.videoprocessing.core.util.CoordConverter;
 import com.mobiusbobs.videoprocessing.core.gldrawer.GifDrawer;
 import com.mobiusbobs.videoprocessing.core.ProcessorRunner;
-//import com.mobiusbobs.videoprocessing.core.gldrawer.TextDrawer;
 import com.mobiusbobs.videoprocessing.core.util.Size;
 import com.mobiusbobs.videoprocessing.core.util.Timer;
 import com.mobiusbobs.videoprocessing.core.VideoProcessor;

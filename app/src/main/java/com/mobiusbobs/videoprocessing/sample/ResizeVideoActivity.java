@@ -24,12 +24,12 @@ import java.io.IOException;
 /**
  * VideoProcessing
  *
- * CopyVideoActivity copy video from source to target
+ * Resize video from source to target
  * along with following process:
  *
- * extract -> decode -> encode -> mux
+ * extract -> decode -> render into given size -> encode -> mux
  *
- * Created by rayshih on 8/9/16.
+ * Created by rayshih on 9/20/16.
  * Copyright (c) 2015 MobiusBobs Inc. All rights reserved.
  */
 
