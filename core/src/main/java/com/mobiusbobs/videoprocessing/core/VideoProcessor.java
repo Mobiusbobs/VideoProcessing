@@ -68,8 +68,7 @@ public class VideoProcessor {
 
   private static final int OUTPUT_VIDEO_COLOR_FORMAT =
       MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface;
-  private int outputVideoWidth;
-  private int outputVideoHeight;
+  private Size outputVideoSize;
   private static final int OUTPUT_VIDEO_MAX_INPUT_SIZE = 0;
 
   // parameters for the audio encoder
@@ -936,6 +935,9 @@ public class VideoProcessor {
         OUTPUT_VIDEO_MAX_INPUT_SIZE
     );
 
+    int outputVideoWidth = outputVideoSize.width;
+    int outputVideoHeight = outputVideoSize.height;
+
     Log.d(TAG, "createOutputVideoFormat: width = " + outputVideoWidth);
     Log.d(TAG, "createOutputVideoFormat: height = " + outputVideoHeight);
 
@@ -986,8 +988,7 @@ public class VideoProcessor {
     return CoordConverter.getVerticesCoord(
       inputVideoFormat,
       inputMetadataRetriever,
-      outputVideoWidth,
-      outputVideoHeight
+      outputVideoSize
     );
   }
 
@@ -1003,8 +1004,7 @@ public class VideoProcessor {
     private String inputFilePath = null;
 
     // video output
-    private int outputVideoWidth;
-    private int outputVideoHeight;
+    private Size outputVideoSize;
     private String outputFilePath = null;
 
     // music
@@ -1018,8 +1018,7 @@ public class VideoProcessor {
     private OnProgressListener onProgressListener = null;
 
     public Builder(Size outputVideoSize) {
-      this.outputVideoWidth = outputVideoSize.width;
-      this.outputVideoHeight = outputVideoSize.height;
+      this.outputVideoSize = outputVideoSize;
     }
 
     public Builder addDrawer(GLDrawable drawer) {
@@ -1110,8 +1109,7 @@ public class VideoProcessor {
 
       processor.audioExtractor = createAudioExtractor(context);
 
-      processor.outputVideoWidth = outputVideoWidth;
-      processor.outputVideoHeight = outputVideoHeight;
+      processor.outputVideoSize = outputVideoSize;
       if (outputFilePath != null) {
         processor.outputFilePath = outputFilePath;
       } else {
