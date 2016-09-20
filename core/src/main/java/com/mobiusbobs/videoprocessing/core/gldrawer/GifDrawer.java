@@ -6,6 +6,7 @@ import android.os.Build;
 
 
 import com.mobiusbobs.videoprocessing.core.gif.GifDecoder;
+import com.mobiusbobs.videoprocessing.core.util.Size;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -31,13 +32,13 @@ public class GifDrawer implements GLDrawable {
   private int currentFrameIndex = 0;
   private boolean preloadAllFrame = Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP;
 
-  public GifDrawer(Context context, GifDecoder gifDecoder) {
-    basicDrawer = new BasicDrawer(context);
+  public GifDrawer(Context context, Size outputVideoSize, GifDecoder gifDecoder) {
+    basicDrawer = new BasicDrawer(context, outputVideoSize);
     this.gifDecoder = gifDecoder;
   }
 
-  public GifDrawer(Context context, GifDecoder gifDecoder, float[] verticesPositionData) {
-    basicDrawer = new BasicDrawer(context, verticesPositionData);
+  public GifDrawer(Context context, Size outputVideoSize, GifDecoder gifDecoder, float[] verticesPositionData) {
+    basicDrawer = new BasicDrawer(context, outputVideoSize, verticesPositionData);
     this.gifDecoder = gifDecoder;
   }
 

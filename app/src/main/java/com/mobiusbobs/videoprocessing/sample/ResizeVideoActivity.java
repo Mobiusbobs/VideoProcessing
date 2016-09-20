@@ -27,8 +27,8 @@ import java.io.IOException;
  * Copyright (c) 2015 MobiusBobs Inc. All rights reserved.
  */
 
-public class CopyVideoActivity extends AppCompatActivity {
-  public static final String TAG = "CopyVideoActivity";
+public class ResizeVideoActivity extends AppCompatActivity {
+  public static final String TAG = "ResizeVideoActivity";
 
   public static final int REQUEST_TAKE_GALLERY_VIDEO = 1;
 
@@ -72,17 +72,17 @@ public class CopyVideoActivity extends AppCompatActivity {
           "\\.([^.]*)$", "_processed.$1");
 
         Util.toastLong(this,
-          "Copy video from " + sourcePath + " to " + targetPath);
+          "Resize video from " + sourcePath + " to " + targetPath);
 
-        copyVideo(sourcePath, targetPath);
+        resizeVideo(sourcePath, targetPath);
       }
     }
   }
 
-  private void copyVideo(String sourcePath, String targetPath) {
+  private void resizeVideo(String sourcePath, String targetPath) {
     VideoProcessor videoProcessor;
     try {
-      videoProcessor = new VideoProcessor.Builder(new Size(720, 1280))
+      videoProcessor = new VideoProcessor.Builder(new Size(720, 720))
         .setInputFilePath(sourcePath)
         .setOutputFilePath(targetPath)
         .build(this);
@@ -94,22 +94,23 @@ public class CopyVideoActivity extends AppCompatActivity {
     }
 
     ProcessorRunner.run(
-      videoProcessor, "Copy Video",
+      videoProcessor, "Resize Video",
       new ProcessorRunner.ProcessorRunnerCallback() {
         @Override
         public void onCompleted() {
-          Util.toastLong(CopyVideoActivity.this,
+          Util.toastLong(ResizeVideoActivity.this,
             "Process complete");
         }
 
         @Override
         public void onError(Throwable e) {
-          Util.toastLong(CopyVideoActivity.this,
+          Util.toastLong(ResizeVideoActivity.this,
             "Process failed");
 
           Log.e(TAG, e.getMessage());
           e.printStackTrace();
         }
-      });
+      }
+    );
   }
 }

@@ -276,12 +276,14 @@ public class CoordConverter {
     float height = inputVideoHeight;
     float ratio = height / width;
 
+    // TODO make options: fit, fill
+    // currently fill
     if (ratio > outputRatio) {
-      width = outputVideoHeight / ratio;
-      height = outputVideoHeight;
-    } else {
       width = outputVideoWidth;
       height = outputVideoWidth * ratio;
+    } else {
+      width = outputVideoHeight / ratio;
+      height = outputVideoHeight;
     }
 
     // --- calculate padding ---
