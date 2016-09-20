@@ -50,6 +50,7 @@ public class MainActivity extends AppCompatActivity {
       "Test Record from SurfaceView",
       "Test Video Processing",
       "Copy Video",
+      "Resize Video",
     };
 
     ListView listView = (ListView)findViewById(R.id.list_view);
@@ -72,9 +73,14 @@ public class MainActivity extends AppCompatActivity {
             startActivity(VideoProcessingTestActivity.class);
             break;
           }
-          case 2:
+          case 2: {
             startActivity(CopyVideoActivity.class);
             break;
+          }
+          case 3: {
+            startActivity(ResizeVideoActivity.class);
+            break;
+          }
         }
       }
     });

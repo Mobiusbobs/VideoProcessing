@@ -240,7 +240,7 @@ public class CoordConverter {
   public static float[] getVerticesCoord(
     MediaFormat inputVideoFormat,
     MediaMetadataRetriever mmr,
-    int outputVideoWidth, int outputVideoHeight
+    Size outputVideoSize
   ) {
     // --- get rotation from input format ---
     int rotation = 0;
@@ -255,6 +255,9 @@ public class CoordConverter {
         gotRotationFromMMR = true;
       }
     }
+
+    int outputVideoWidth = outputVideoSize.width;
+    int outputVideoHeight = outputVideoSize.height;
 
     // --- get size from input format ---
     int inputVideoWidth = MediaFormatHelper.getInteger(
@@ -276,12 +279,14 @@ public class CoordConverter {
     float height = inputVideoHeight;
     float ratio = height / width;
 
+    // TODO make options: fit, fill
+    // currently fill
     if (ratio > outputRatio) {
-      width = outputVideoHeight / ratio;
-      height = outputVideoHeight;
-    } else {
       width = outputVideoWidth;
       height = outputVideoWidth * ratio;
+    } else {
+      width = outputVideoHeight / ratio;
+      height = outputVideoHeight;
     }
 
     // --- calculate padding ---

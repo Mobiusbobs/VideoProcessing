@@ -1,6 +1,8 @@
 package com.mobiusbobs.videoprocessing.sample;
 
+import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
@@ -11,6 +13,10 @@ import android.view.View;
 
 import com.mobiusbobs.videoprocessing.core.ProcessorRunner;
 import com.mobiusbobs.videoprocessing.core.VideoProcessor;
+import com.mobiusbobs.videoprocessing.core.gldrawer.BasicDrawer;
+import com.mobiusbobs.videoprocessing.core.gldrawer.GLDrawable;
+import com.mobiusbobs.videoprocessing.core.util.BitmapHelper;
+import com.mobiusbobs.videoprocessing.core.util.CoordConverter;
 import com.mobiusbobs.videoprocessing.core.util.Size;
 
 import java.io.IOException;
@@ -18,17 +24,17 @@ import java.io.IOException;
 /**
  * VideoProcessing
  *
- * CopyVideoActivity copy video from source to target
+ * Resize video from source to target
  * along with following process:
  *
- * extract -> decode -> encode -> mux
+ * extract -> decode -> render into given size -> encode -> mux
  *
- * Created by rayshih on 8/9/16.
+ * Created by rayshih on 9/20/16.
  * Copyright (c) 2015 MobiusBobs Inc. All rights reserved.
  */
 
-public class CopyVideoActivity extends AppCompatActivity {
-  public static final String TAG = "CopyVideoActivity";
+public class ResizeVideoActivity extends AppCompatActivity {
+  public static final String TAG = "ResizeVideoActivity";
 
   public static final int REQUEST_TAKE_GALLERY_VIDEO = 1;
 
@@ -72,18 +78,24 @@ public class CopyVideoActivity extends AppCompatActivity {
           "\\.([^.]*)$", "_processed.$1");
 
         Util.toastLong(this,
-          "Copy video from " + sourcePath + " to " + targetPath);
+          "Resize video from " + sourcePath + " to " + targetPath);
 
-        copyVideo(sourcePath, targetPath);
+        resizeVideo(sourcePath, targetPath);
       }
     }
   }
 
-  private void copyVideo(String sourcePath, String targetPath) {
+  private void resizeVideo(String sourcePath, String targetPath) {
     VideoProcessor videoProcessor;
     try {
-      videoProcessor = new VideoProcessor.Builder(new Size(720, 1280))
+      Size size = new Size(720, 720);
+
+      GLDrawable sticker = new StickerDrawer(
+        this, size, CoordConverter.getVerticesCoord(10, 30, 160, 180));
+
+      videoProcessor = new VideoProcessor.Builder(size)
         .setInputFilePath(sourcePath)
+        .addDrawer(sticker)
         .setOutputFilePath(targetPath)
         .build(this);
     } catch (IOException e) {
@@ -94,22 +106,49 @@ public class CopyVideoActivity extends AppCompatActivity {
     }
 
     ProcessorRunner.run(
-      videoProcessor, "Copy Video",
+      videoProcessor, "Resize Video",
       new ProcessorRunner.ProcessorRunnerCallback() {
         @Override
         public void onCompleted() {
-          Util.toastLong(CopyVideoActivity.this,
+          Util.toastLong(ResizeVideoActivity.this,
             "Process complete");
         }
 
         @Override
         public void onError(Throwable e) {
-          Util.toastLong(CopyVideoActivity.this,
+          Util.toastLong(ResizeVideoActivity.this,
             "Process failed");
 
           Log.e(TAG, e.getMessage());
           e.printStackTrace();
         }
-      });
+      }
+    );
+  }
+
+  // TODO refactor this
+  class StickerDrawer implements GLDrawable {
+    protected BasicDrawer drawer;
+
+    public StickerDrawer(Context context, Size outputVideoSize, float[] verticesPositionData) {
+      drawer = new BasicDrawer(context, outputVideoSize, verticesPositionData);
+    }
+
+    @Override
+    public void setRotate(float rotateInDeg) {
+
+    }
+
+    @Override
+    public void init(GLDrawable prevDrawer) throws IOException {
+      Bitmap bitmap = BitmapHelper.generateBitmap(ResizeVideoActivity.this, R.drawable.game);
+      drawer.init(prevDrawer, bitmap);
+      bitmap.recycle();
+    }
+
+    @Override
+    public void draw(long timeMs) {
+      drawer.draw(timeMs);
+    }
   }
 }

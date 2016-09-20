@@ -18,6 +18,7 @@ import com.mobiusbobs.videoprocessing.core.gles.surface.InputSurface;
 import com.mobiusbobs.videoprocessing.core.gles.surface.OutputSurface;
 import com.mobiusbobs.videoprocessing.core.util.CoordConverter;
 import com.mobiusbobs.videoprocessing.core.util.MediaFormatHelper;
+import com.mobiusbobs.videoprocessing.core.util.Size;
 import com.mobiusbobs.videoprocessing.core.util.Util;
 
 import java.io.IOException;
@@ -67,8 +68,7 @@ public class VideoProcessor {
 
   private static final int OUTPUT_VIDEO_COLOR_FORMAT =
       MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface;
-  public static final int OUTPUT_VIDEO_WIDTH = 720;
-  public static final int OUTPUT_VIDEO_HEIGHT = 1280;
+  private Size outputVideoSize;
   private static final int OUTPUT_VIDEO_MAX_INPUT_SIZE = 0;
 
   // parameters for the audio encoder
@@ -935,13 +935,10 @@ public class VideoProcessor {
         OUTPUT_VIDEO_MAX_INPUT_SIZE
     );
 
-    Log.d(TAG, "createOutputVideoFormat: width = " + OUTPUT_VIDEO_WIDTH);
-    Log.d(TAG, "createOutputVideoFormat: height = " + OUTPUT_VIDEO_HEIGHT);
-
     MediaFormat outputVideoFormat = MediaFormat.createVideoFormat(
         OUTPUT_VIDEO_MIME_TYPE,
-        OUTPUT_VIDEO_WIDTH,
-        OUTPUT_VIDEO_HEIGHT
+        outputVideoSize.width,
+        outputVideoSize.height
     );
     outputVideoFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT, OUTPUT_VIDEO_COLOR_FORMAT);
     outputVideoFormat.setInteger(MediaFormat.KEY_BIT_RATE, OUTPUT_VIDEO_BIT_RATE);
@@ -985,7 +982,7 @@ public class VideoProcessor {
     return CoordConverter.getVerticesCoord(
       inputVideoFormat,
       inputMetadataRetriever,
-      OUTPUT_VIDEO_WIDTH, OUTPUT_VIDEO_HEIGHT
+      outputVideoSize
     );
   }
 
@@ -996,13 +993,27 @@ public class VideoProcessor {
 
   // ----- builder -----
   public static class Builder {
-    private List<GLDrawable> drawableList = new ArrayList<>();
+    // video input
     private int inputResId = -1;
+    private String inputFilePath = null;
+
+    // video output
+    private Size outputVideoSize;
+    private String outputFilePath = null;
+
+    // music
     private int musicResId = -1;
     private String musicFilePath = null;
-    private String inputFilePath = null;
-    private String outputFilePath = null;
+
+    // stickers
+    private List<GLDrawable> drawableList = new ArrayList<>();
+
+    // callbacks
     private OnProgressListener onProgressListener = null;
+
+    public Builder(Size outputVideoSize) {
+      this.outputVideoSize = outputVideoSize;
+    }
 
     public Builder addDrawer(GLDrawable drawer) {
       drawableList.add(drawer);
@@ -1092,6 +1103,7 @@ public class VideoProcessor {
 
       processor.audioExtractor = createAudioExtractor(context);
 
+      processor.outputVideoSize = outputVideoSize;
       if (outputFilePath != null) {
         processor.outputFilePath = outputFilePath;
       } else {

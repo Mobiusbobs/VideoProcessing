@@ -37,6 +37,9 @@
         <activity
             android:name=".CopyVideoActivity"
             android:screenOrientation="portrait"/>
+        <activity
+            android:name=".ResizeVideoActivity"
+            android:screenOrientation="portrait"/>
     </application>
 
 </manifest>

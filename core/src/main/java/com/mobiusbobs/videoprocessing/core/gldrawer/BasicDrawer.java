@@ -5,11 +5,12 @@ import android.graphics.Bitmap;
 import android.opengl.GLES20;
 import android.opengl.GLUtils;
 
-import com.mobiusbobs.videoprocessing.core.VideoProcessor;
 import com.mobiusbobs.videoprocessing.core.program.BasicShaderProgram;
+import com.mobiusbobs.videoprocessing.core.util.Size;
 
 import java.io.IOException;
 
+// TODO re-indent
 /**
  * VideoProcessing
  *
@@ -26,6 +27,7 @@ public class BasicDrawer implements GLDrawable {
     public static final String TAG = "BasicDrawer";
 
     private Context context;
+    private Size outputVideoSize;
 
     protected GLDrawable prevDrawer;
 
@@ -42,12 +44,13 @@ public class BasicDrawer implements GLDrawable {
     private float rotateInDeg = 0.0f;
     private float opacity = 1.0f;
 
-    public BasicDrawer(Context context)  {
+    public BasicDrawer(Context context, Size outputVideoSize)  {
         this.context = context;
+        this.outputVideoSize = outputVideoSize;
     }
 
-    public BasicDrawer(Context context, float[] verticesPositionData)  {
-        this.context = context;
+    public BasicDrawer(Context context, Size outputVideoSize, float[] verticesPositionData)  {
+        this(context, outputVideoSize);
 
         // TODO refactor this
         this.verticesPositionData = verticesPositionData;
@@ -97,8 +100,8 @@ public class BasicDrawer implements GLDrawable {
                 MatrixHelper.createModelMatrix(x1, y1, x2, y2, rotateInDeg),
                 MatrixHelper.createViewMatrix(),
                 MatrixHelper.createProjectionMatrix(
-                        VideoProcessor.OUTPUT_VIDEO_WIDTH,
-                        VideoProcessor.OUTPUT_VIDEO_HEIGHT
+                  outputVideoSize.width,
+                  outputVideoSize.height
                 )
         );
     }

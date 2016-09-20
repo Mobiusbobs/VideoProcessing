@@ -13,7 +13,7 @@ import android.view.View;
 import com.mobiusbobs.videoprocessing.core.util.CoordConverter;
 import com.mobiusbobs.videoprocessing.core.gldrawer.GifDrawer;
 import com.mobiusbobs.videoprocessing.core.ProcessorRunner;
-//import com.mobiusbobs.videoprocessing.core.gldrawer.TextDrawer;
+import com.mobiusbobs.videoprocessing.core.util.Size;
 import com.mobiusbobs.videoprocessing.core.util.Timer;
 import com.mobiusbobs.videoprocessing.core.VideoProcessor;
 import com.mobiusbobs.videoprocessing.core.gif.GifDecoder;
@@ -30,6 +30,8 @@ public class VideoProcessingTestActivity extends AppCompatActivity {
 
     // File Path
     public static final String FILE_OUTPUT_MP4 = "/sdcard/Download/TestCodec4.mp4";
+
+    private Size outputVideoSize = new Size(720, 1280);
 
     // MainComponent
 
@@ -89,7 +91,7 @@ public class VideoProcessingTestActivity extends AppCompatActivity {
         int gifId = R.raw.gif_funny;
         GifDecoder gifDecoder = GifDrawer.createGifDecoder(context, gifId);
         float[] gifVertices = coordConverter.getAlignCenterVertices(gifId);
-        GifDrawer gifDrawer = new GifDrawer(context, gifDecoder, gifVertices);
+        GifDrawer gifDrawer = new GifDrawer(context, outputVideoSize, gifDecoder, gifVertices);
 
         // --- setup watermark ---
         WatermarkDrawer watermarkDrawer = new WatermarkDrawer(context, coordConverter);
@@ -105,7 +107,7 @@ public class VideoProcessingTestActivity extends AppCompatActivity {
 //        );
 
         try {
-            VideoProcessor videoProcessor = new VideoProcessor.Builder()
+            VideoProcessor videoProcessor = new VideoProcessor.Builder(outputVideoSize)
                     .setInputResId(R.raw.test_21)
                     .setBackgroundMusic(R.raw.short1)
                     .addDrawer(gifDrawer)
