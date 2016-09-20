@@ -1,6 +1,8 @@
 package com.mobiusbobs.videoprocessing.sample;
 
+import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
@@ -11,6 +13,10 @@ import android.view.View;
 
 import com.mobiusbobs.videoprocessing.core.ProcessorRunner;
 import com.mobiusbobs.videoprocessing.core.VideoProcessor;
+import com.mobiusbobs.videoprocessing.core.gldrawer.BasicDrawer;
+import com.mobiusbobs.videoprocessing.core.gldrawer.GLDrawable;
+import com.mobiusbobs.videoprocessing.core.util.BitmapHelper;
+import com.mobiusbobs.videoprocessing.core.util.CoordConverter;
 import com.mobiusbobs.videoprocessing.core.util.Size;
 
 import java.io.IOException;
@@ -82,8 +88,14 @@ public class ResizeVideoActivity extends AppCompatActivity {
   private void resizeVideo(String sourcePath, String targetPath) {
     VideoProcessor videoProcessor;
     try {
-      videoProcessor = new VideoProcessor.Builder(new Size(720, 720))
+      Size size = new Size(720, 720);
+
+      GLDrawable sticker = new StickerDrawer(
+        this, size, CoordConverter.getVerticesCoord(10, 30, 160, 180));
+
+      videoProcessor = new VideoProcessor.Builder(size)
         .setInputFilePath(sourcePath)
+        .addDrawer(sticker)
         .setOutputFilePath(targetPath)
         .build(this);
     } catch (IOException e) {
@@ -112,5 +124,31 @@ public class ResizeVideoActivity extends AppCompatActivity {
         }
       }
     );
+  }
+
+  // TODO refactor this
+  class StickerDrawer implements GLDrawable {
+    protected BasicDrawer drawer;
+
+    public StickerDrawer(Context context, Size outputVideoSize, float[] verticesPositionData) {
+      drawer = new BasicDrawer(context, outputVideoSize, verticesPositionData);
+    }
+
+    @Override
+    public void setRotate(float rotateInDeg) {
+
+    }
+
+    @Override
+    public void init(GLDrawable prevDrawer) throws IOException {
+      Bitmap bitmap = BitmapHelper.generateBitmap(ResizeVideoActivity.this, R.drawable.game);
+      drawer.init(prevDrawer, bitmap);
+      bitmap.recycle();
+    }
+
+    @Override
+    public void draw(long timeMs) {
+      drawer.draw(timeMs);
+    }
   }
 }
