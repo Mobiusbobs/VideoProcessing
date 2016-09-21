@@ -47,7 +47,8 @@ public class VideoProcessor {
   /** How long to wait for the next buffer to become available. */
   private static final int TIMEOUT_USEC = 10000;
 
-  public static final int VIDEO_EXTEND_DURATION_US = 1000 * 1000;
+  private long videoExtendDurationUs = 0;
+  private long audioEndFadingDurationUs = 0;
 
   // ----- input & output -----
   private MediaExtractor videoExtractor;
@@ -251,7 +252,7 @@ public class VideoProcessor {
 
     long audioPTimeOffset = 0;
 
-    long videoTotalDuration = videoDuration + VIDEO_EXTEND_DURATION_US;
+    long videoTotalDuration = videoDuration + videoExtendDurationUs;
     long lastPTimeUs = 0;
     boolean hasVideoEncoderEndSignalSent = false;
 
@@ -648,8 +649,7 @@ public class VideoProcessor {
 
       // handle extra frame
       //noinspection PointlessArithmeticExpression
-      long fadeDuration = 1 * 1000 * 1000;        // amount of time to fade the audio to zero
-      long thresholdTime = videoDuration - fadeDuration;  // when it should start fading
+      long thresholdTime = videoDuration - audioEndFadingDurationUs;
 
       // silence
       if (presentationTime >= videoDuration) {
@@ -662,7 +662,7 @@ public class VideoProcessor {
         // fade
       } else if (presentationTime >= thresholdTime) {
         double timeInFadeOut = (double)presentationTime - thresholdTime;
-        double fadeOutRatio = 1.0 - timeInFadeOut / fadeDuration;    //Linear fadeout
+        double fadeOutRatio = 1.0 - timeInFadeOut / audioEndFadingDurationUs;    // Linear fadeout
 
         // fade
         byte[] fadeArray = new byte[size];
@@ -1001,6 +1001,9 @@ public class VideoProcessor {
     private Size outputVideoSize;
     private String outputFilePath = null;
 
+    private long videoExtendDurationUs = 0;
+    private long audioEndFadingDurationUs = 0;
+
     // music
     private int musicResId = -1;
     private String musicFilePath = null;
@@ -1034,6 +1037,16 @@ public class VideoProcessor {
 
     public Builder setOutputFilePath(String outputFilePath) {
       this.outputFilePath = outputFilePath;
+      return this;
+    }
+
+    public Builder setVideoExtendDurationUs(long durationUs) {
+      this.videoExtendDurationUs = durationUs;
+      return this;
+    }
+
+    public Builder setAudioEndFadingDurationUs(long durationUs) {
+      this.audioEndFadingDurationUs = durationUs;
       return this;
     }
 
@@ -1103,6 +1116,8 @@ public class VideoProcessor {
 
       processor.audioExtractor = createAudioExtractor(context);
 
+      processor.videoExtendDurationUs = videoExtendDurationUs;
+      processor.audioEndFadingDurationUs = audioEndFadingDurationUs;
       processor.outputVideoSize = outputVideoSize;
       if (outputFilePath != null) {
         processor.outputFilePath = outputFilePath;
