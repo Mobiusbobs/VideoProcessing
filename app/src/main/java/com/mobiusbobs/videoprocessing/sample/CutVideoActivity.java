@@ -66,14 +66,14 @@ public class CutVideoActivity extends AppCompatActivity {
           "\\.([^.]*)$", "_processed.$1");
 
         Util.toastLong(this,
-          "Resize video from " + sourcePath + " to " + targetPath);
+          "Cut video from " + sourcePath + " to " + targetPath);
 
-        resizeVideo(sourcePath, targetPath);
+        cutVideo(sourcePath, targetPath);
       }
     }
   }
 
-  private void resizeVideo(String sourcePath, String targetPath) {
+  private void cutVideo(String sourcePath, String targetPath) {
     VideoProcessor videoProcessor;
     try {
       Size size = new Size(720, 1280);
@@ -81,6 +81,7 @@ public class CutVideoActivity extends AppCompatActivity {
       videoProcessor = new VideoProcessor.Builder(size)
         .setInputFilePath(sourcePath)
 //        .setVideoExtendDurationUs(5 * 1000 * 1000)
+        .setCutRange(0, 3 * 1000 * 1000)
         .setOutputFilePath(targetPath)
         .build(this);
     } catch (IOException e) {
@@ -91,7 +92,7 @@ public class CutVideoActivity extends AppCompatActivity {
     }
 
     ProcessorRunner.run(
-      videoProcessor, "Resize Video",
+      videoProcessor, "Cut Video",
       new ProcessorRunner.ProcessorRunnerCallback() {
         @Override
         public void onCompleted() {
