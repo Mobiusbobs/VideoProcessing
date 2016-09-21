@@ -81,7 +81,7 @@ public class CutVideoActivity extends AppCompatActivity {
       videoProcessor = new VideoProcessor.Builder(size)
         .setInputFilePath(sourcePath)
 //        .setVideoExtendDurationUs(5 * 1000 * 1000)
-        .setCutRange(0, 3 * 1000 * 1000)
+        .setCutRange(5 * 1000 * 1000, 11 * 1000 * 1000)
         .setOutputFilePath(targetPath)
         .build(this);
     } catch (IOException e) {
