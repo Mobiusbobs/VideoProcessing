@@ -51,6 +51,7 @@ public class MainActivity extends AppCompatActivity {
       "Test Video Processing",
       "Copy Video",
       "Resize Video",
+      "Cut Video"
     };
 
     ListView listView = (ListView)findViewById(R.id.list_view);
@@ -79,6 +80,10 @@ public class MainActivity extends AppCompatActivity {
           }
           case 3: {
             startActivity(ResizeVideoActivity.class);
+            break;
+          }
+          case 4: {
+            startActivity(CutVideoActivity.class);
             break;
           }
         }

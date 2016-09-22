@@ -40,6 +40,9 @@
         <activity
             android:name=".ResizeVideoActivity"
             android:screenOrientation="portrait"/>
+        <activity
+            android:name=".CutVideoActivity"
+            android:screenOrientation="portrait"/>
     </application>
 
 </manifest>
