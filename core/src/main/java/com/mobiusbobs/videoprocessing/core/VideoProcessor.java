@@ -342,16 +342,15 @@ public class VideoProcessor {
       }
 
       // Feed the pending decoded audio buffer to the audio encoder.
-      // TODO check to see if I can implement this into audio Decoder...
-      if (pendingAudioDecoderOutputBufferIndex != -1) {
-        audioDecoderDone = pipeAudioStream(
-          audioDecoder,
-          audioEncoder,
-          outputAudioPTimeOffset,
-          inputVideoStartUs,
-          outputVideoDuration
-        );
-      }
+      // TODO refactor this
+      audioDecoderDone = pipeAudioStream(
+        audioDecoder,
+        audioEncoder,
+        outputAudioPTimeOffset,
+        inputVideoStartUs,
+        audioDecoderDone,
+        outputVideoDuration
+      );
 
       // --- mux video ---
       if (!videoEncoderDone && (encoderOutputVideoFormat == null || muxing)) {
@@ -360,7 +359,7 @@ public class VideoProcessor {
 
       // --- mux audio ---
       if (!audioEncoderDone && (encoderOutputAudioFormat == null || muxing)) {
-        audioEncoderDone = muxAudio(audioEncoder, muxer);
+        audioEncoderDone = muxAudio(audioEncoder, muxer, outputVideoDuration);
       }
 
       if (!muxing &&
@@ -639,95 +638,117 @@ public class VideoProcessor {
       MediaCodec audioEncoder,
       long outputAudioPTimeOffset,
       long inputVideoStartUs,
+      boolean audioDecoderDone,
       long outputVideoDuration
   ) {
     int size = audioDecoderOutputBufferInfo.size;
+    boolean hasInput = size >= 0 && pendingAudioDecoderOutputBufferIndex != -1;
 
-    if (size >= 0) {
-      ByteBuffer decoderOutputBuffer =
-          audioDecoderOutputBuffers[pendingAudioDecoderOutputBufferIndex].duplicate();
+    ByteBuffer decoderOutputBuffer = null;
+    if (hasInput) {
+      decoderOutputBuffer =
+        audioDecoderOutputBuffers[pendingAudioDecoderOutputBufferIndex].duplicate();
       decoderOutputBuffer.position(audioDecoderOutputBufferInfo.offset);
       decoderOutputBuffer.limit(audioDecoderOutputBufferInfo.offset + size);
+    }
 
-      // handle extra frame
-      //noinspection PointlessArithmeticExpression
-      long thresholdTime = outputVideoDuration - audioEndFadingDurationUs;
+    // handle extra frame
+    //noinspection PointlessArithmeticExpression
+    long silenceThresholdTime = outputVideoDuration - videoExtendDurationUs;
+    long thresholdTime = silenceThresholdTime - audioEndFadingDurationUs;
 
-      long presentationTime =
-        audioDecoderOutputBufferInfo.presentationTimeUs + outputAudioPTimeOffset;
+    long presentationTime = -1; // -1 means don't need to encode
+    if (audioDecoderDone) {
+      presentationTime = lastAudioPTForPipeAudio + 21444; // TODO: 21444 is from observation
+    } else if (hasInput) {
+      presentationTime = audioDecoderOutputBufferInfo.presentationTimeUs + outputAudioPTimeOffset;
+    }
 
-      if (presentationTime >= inputVideoStartUs) {
-        presentationTime -= inputVideoStartUs;
+    presentationTime -= inputVideoStartUs;
+    if (presentationTime >= 0 && presentationTime < outputVideoDuration) {
 
-        if (presentationTime <= lastAudioPTForPipeAudio) {
-          presentationTime = lastAudioPTForPipeAudio + 1;
-        }
-        lastAudioPTForPipeAudio = presentationTime;
+      // hot fix the presentation time problem
+      if (presentationTime <= lastAudioPTForPipeAudio) {
+        presentationTime = lastAudioPTForPipeAudio + 1;
+      }
+      lastAudioPTForPipeAudio = presentationTime;
 
-        int encoderInputBufferIndex = audioEncoder.dequeueInputBuffer(TIMEOUT_USEC);
-        if (encoderInputBufferIndex < 0) {
-          Log.e(TAG, "audioEncoder.dequeueInputBuffer: no audio encoder input buffer");
-          return false;
-        }
+      // dequeue encode input buffer
+      int encoderInputBufferIndex = audioEncoder.dequeueInputBuffer(TIMEOUT_USEC);
+      if (encoderInputBufferIndex < 0) {
+        Log.e(TAG, "audioEncoder.dequeueInputBuffer: no audio encoder input buffer");
+        return false;
+      }
 
-        ByteBuffer encoderInputBuffer = audioEncoderInputBuffers[encoderInputBufferIndex];
-        encoderInputBuffer.position(0);
+      ByteBuffer encoderInputBuffer = audioEncoderInputBuffers[encoderInputBufferIndex];
+      encoderInputBuffer.position(0);
 
-        // TODO: keep this log for round 3, 4, 5, 6 test
-        int encoderBufferCapacity = encoderInputBuffer.capacity();
+      // log
+      // TODO: keep this log for round 3, 4, 5, 6 test
+      int encoderBufferCapacity = encoderInputBuffer.capacity();
+      if (decoderOutputBuffer != null) {
         int decoderBufferLimit = decoderOutputBuffer.limit();
         if (decoderBufferLimit > encoderBufferCapacity) {
           Log.e(TAG, "decoderBufferLimit(" + decoderBufferLimit + ") exceeds encoderBufferCapacity(" + encoderBufferCapacity + ")");
         }
+      }
 
-        if (presentationTime >= outputVideoDuration) {
-          // silence
-          // empty buffer
-          byte[] bytes = new byte[size];
-          ByteBuffer emptyBuffer = ByteBuffer.wrap(bytes);
-          emptyBuffer.position(0);
-          encoderInputBuffer.put(emptyBuffer);
+      if (presentationTime >= silenceThresholdTime) {
+        // silence
+        // empty buffer
+        byte[] bytes = new byte[size];
+        ByteBuffer emptyBuffer = ByteBuffer.wrap(bytes);
+        emptyBuffer.position(0);
+        encoderInputBuffer.put(emptyBuffer);
 
-        } else if (presentationTime >= thresholdTime) {
-          // fade
-          double timeInFadeOut = (double)presentationTime - thresholdTime;
-          double fadeOutRatio = 1.0 - timeInFadeOut / audioEndFadingDurationUs;    // Linear fadeout
+      } else if (presentationTime >= thresholdTime && decoderOutputBuffer != null) {
+        // fade
+        double timeInFadeOut = (double)presentationTime - thresholdTime;
+        double fadeOutRatio = 1.0 - timeInFadeOut / audioEndFadingDurationUs;    // Linear fadeout
 
-          // fade
-          byte[] fadeArray = new byte[size];
-          for (int i = 0; i < size; i+=2) {
-            // little-endian
-            byte lsb = decoderOutputBuffer.get(i);
-            byte msb = decoderOutputBuffer.get(i + 1);
-            short audioData = (short)(((msb & 0xFF) << 8) | (lsb & 0xFF));
-            short fadedAudioData = (short)(audioData * fadeOutRatio);
-            lsb = (byte)(fadedAudioData & 0xFF);
-            msb = (byte)((fadedAudioData >> 8) & 0xFF);
+        // fade
+        byte[] fadeArray = new byte[size];
+        for (int i = 0; i < size; i+=2) {
+          // little-endian
+          byte lsb = decoderOutputBuffer.get(i);
+          byte msb = decoderOutputBuffer.get(i + 1);
+          short audioData = (short)(((msb & 0xFF) << 8) | (lsb & 0xFF));
+          short fadedAudioData = (short)(audioData * fadeOutRatio);
+          lsb = (byte)(fadedAudioData & 0xFF);
+          msb = (byte)((fadedAudioData >> 8) & 0xFF);
 
-            fadeArray[i] = lsb;
-            fadeArray[i + 1] = msb;
-          }
-
-          ByteBuffer fadeBuffer = ByteBuffer.wrap(fadeArray);
-          fadeBuffer.position(0);
-          encoderInputBuffer.put(fadeBuffer);
-        } else {
-          // normal audio
-          encoderInputBuffer.put(decoderOutputBuffer);
+          fadeArray[i] = lsb;
+          fadeArray[i + 1] = msb;
         }
 
-        audioEncoder.queueInputBuffer(
-          encoderInputBufferIndex,
-          0,
-          size,
-          presentationTime,
-          audioDecoderOutputBufferInfo.flags);
+        ByteBuffer fadeBuffer = ByteBuffer.wrap(fadeArray);
+        fadeBuffer.position(0);
+        encoderInputBuffer.put(fadeBuffer);
+      } else if (decoderOutputBuffer != null) {
+        // normal audio
+        encoderInputBuffer.put(decoderOutputBuffer);
       }
+
+      // release encoder input buffer
+      audioEncoder.queueInputBuffer(
+        encoderInputBufferIndex,
+        0,
+        size,
+        presentationTime,
+        audioDecoderOutputBufferInfo.flags & ~MediaCodec.BUFFER_FLAG_END_OF_STREAM);
     }
 
-    audioDecoder.releaseOutputBuffer(pendingAudioDecoderOutputBufferIndex, false);
+    // release decoder resource
+    if (pendingAudioDecoderOutputBufferIndex >= 0) {
+      audioDecoder.releaseOutputBuffer(pendingAudioDecoderOutputBufferIndex, false);
+    }
+
     pendingAudioDecoderOutputBufferIndex = -1;
-    if ((audioDecoderOutputBufferInfo.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
+    // TODO refactor this
+    if (
+      ((audioDecoderOutputBufferInfo.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) ||
+        presentationTime >= silenceThresholdTime
+    ) {
       Log.d(TAG, "FLAG: audioDecoderDone!!! audio decoder: EOS");
       return true;
     }
@@ -795,7 +816,7 @@ public class VideoProcessor {
    * @param audioEncoder Where the audio from
    * @return audioEncoderDone
    */
-  private boolean muxAudio(MediaCodec audioEncoder, MediaMuxer muxer) {
+  private boolean muxAudio(MediaCodec audioEncoder, MediaMuxer muxer, long outputVideoDuration) {
     int encoderOutputBufferIndex = audioEncoder.dequeueOutputBuffer(
       audioEncoderOutputBufferInfo, TIMEOUT_USEC);
 
@@ -836,7 +857,10 @@ public class VideoProcessor {
       Log.d(TAG, "write Audio sample to muxer");
       muxer.writeSampleData(outputAudioTrack, encoderOutputBuffer, audioEncoderOutputBufferInfo);
     }
-    if ((audioEncoderOutputBufferInfo.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
+    if (
+      (audioEncoderOutputBufferInfo.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0 ||
+        lastAudioPTForMuxer > outputVideoDuration - 0.1 * 1000 * 1000
+    ) {
       Log.d(TAG, "FLAG: audioEncoderDone!!! audio encoder: EOS");
       return true;
     }
