@@ -696,11 +696,11 @@ public class VideoProcessor {
       if (presentationTime >= silenceThresholdTime) {
         // silence
         // empty buffer
+        size = 2048; // TODO try to not mutate it
         byte[] bytes = new byte[size];
         ByteBuffer emptyBuffer = ByteBuffer.wrap(bytes);
         emptyBuffer.position(0);
         encoderInputBuffer.put(emptyBuffer);
-
       } else if (presentationTime >= thresholdTime && decoderOutputBuffer != null) {
         // fade
         double timeInFadeOut = (double)presentationTime - thresholdTime;
@@ -857,6 +857,7 @@ public class VideoProcessor {
       Log.d(TAG, "write Audio sample to muxer");
       muxer.writeSampleData(outputAudioTrack, encoderOutputBuffer, audioEncoderOutputBufferInfo);
     }
+
     if (
       (audioEncoderOutputBufferInfo.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0 ||
         lastAudioPTForMuxer > outputVideoDuration - 0.1 * 1000 * 1000
@@ -864,6 +865,7 @@ public class VideoProcessor {
       Log.d(TAG, "FLAG: audioEncoderDone!!! audio encoder: EOS");
       return true;
     }
+
     audioEncoder.releaseOutputBuffer(encoderOutputBufferIndex, false);
     audioEncodedFrameCount++;
     return false;
