@@ -729,13 +729,19 @@ public class VideoProcessor {
         encoderInputBuffer.put(decoderOutputBuffer);
       }
 
-      // release encoder input buffer
+      // hand back encoder input buffer
+      int flags = audioDecoderOutputBufferInfo.flags & ~MediaCodec.BUFFER_FLAG_END_OF_STREAM;
+      if (presentationTime >= outputVideoDuration - 0.1 * 1000 * 1000) {
+        flags = flags | MediaCodec.BUFFER_FLAG_END_OF_STREAM;
+      }
+
       audioEncoder.queueInputBuffer(
         encoderInputBufferIndex,
         0,
         size,
         presentationTime,
-        audioDecoderOutputBufferInfo.flags & ~MediaCodec.BUFFER_FLAG_END_OF_STREAM);
+        flags
+      );
     }
 
     // release decoder resource
