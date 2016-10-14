@@ -326,8 +326,8 @@ public class VideoProcessor {
             videoDecodedFrameCount++;
             long timeUs = videoDecoderOutputBufferInfo.presentationTimeUs;
 
-            outputSurface.awaitNewImage();
             if (timeUs >= inputVideoStartUs) {
+              outputSurface.awaitNewImage();
               long outputPTimeUs = timeUs - inputVideoStartUs;
               render(drawer, inputSurface, outputPTimeUs);
               outputVideoLastPTimeUs = outputPTimeUs;
