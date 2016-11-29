@@ -56,7 +56,7 @@ public class CutVideoActivity extends AppCompatActivity {
   }
 
   @Override
-  protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+  protected void onActivityResult(Activity activity, int requestCode, int resultCode, Intent data) {
     if (resultCode == RESULT_OK) {
       if (requestCode == REQUEST_TAKE_GALLERY_VIDEO) {
         Uri videoUri = data.getData();
