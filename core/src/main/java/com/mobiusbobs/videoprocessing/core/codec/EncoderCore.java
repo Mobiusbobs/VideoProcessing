@@ -52,7 +52,7 @@ public class EncoderCore {
     /**
      * Releases encoder resources.
      */
-    public void release() {
+    public synchronized void release() {
         if (VERBOSE) Log.d(TAG, "releasing encoder objects");
         if (encoder != null) {
             encoder.stop();
