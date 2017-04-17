@@ -57,7 +57,13 @@ public class CameraInstanceManager {
             releaseCamera(currentCamera);
         }
 
-        Camera camera = Camera.open(cameraId);
+        Camera camera = null;
+        try {
+            camera = Camera.open(cameraId);
+        } catch (RuntimeException e) {
+            // ignore error it is impossible to handle by ourselves
+            // TODO create and emit error
+        }
 
         if (camera == null) return null;
 
