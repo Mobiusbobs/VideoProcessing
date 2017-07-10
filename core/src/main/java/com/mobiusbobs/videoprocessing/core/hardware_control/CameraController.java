@@ -68,7 +68,11 @@ public class CameraController {
         parms.setRecordingHint(true);
 
         // leave the frame rate set to default
-        mCamera.setParameters(parms);
+        try {
+            mCamera.setParameters(parms);
+        } catch (RuntimeException e) {
+            callback.onError(e);
+        }
 
         // log preview fact
         int[] fpsRange = new int[2];
